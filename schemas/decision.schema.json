@@ -1,0 +1,463 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://bridge-node-7.github.io/frontier-decision-engine/schemas/decision.schema.json",
+  "title": "Frontier Decision Engine Case",
+  "type": "object",
+  "required": [
+    "schema_version",
+    "decision_id",
+    "title",
+    "profile",
+    "question",
+    "decision_owner",
+    "objectives",
+    "uncertainties",
+    "strategies",
+    "scenarios",
+    "human_decision",
+    "adaptive_pathway",
+    "provenance"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": "0.2.10"
+    },
+    "decision_id": {
+      "type": "string",
+      "pattern": "^FDE-[A-Z0-9-]+$"
+    },
+    "title": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 200
+    },
+    "profile": {
+      "type": "string",
+      "minLength": 1
+    },
+    "question": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 4000
+    },
+    "decision_owner": {
+      "type": "string",
+      "minLength": 1
+    },
+    "time_horizon": {
+      "type": "string"
+    },
+    "urgency": {
+      "enum": [
+        "immediate",
+        "near-term",
+        "planned"
+      ]
+    },
+    "reversibility": {
+      "enum": [
+        "reversible",
+        "partially-reversible",
+        "irreversible"
+      ]
+    },
+    "status": {
+      "enum": [
+        "draft",
+        "under-review",
+        "approved",
+        "superseded",
+        "closed"
+      ]
+    },
+    "stakeholders": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/stakeholder"
+      }
+    },
+    "evidence_summary": {
+      "$ref": "#/$defs/evidenceSummary"
+    },
+    "uncertainties": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "$ref": "#/$defs/uncertainty"
+      }
+    },
+    "objectives": {
+      "type": "array",
+      "minItems": 2,
+      "items": {
+        "$ref": "#/$defs/objective"
+      }
+    },
+    "relationships": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/relationship"
+      }
+    },
+    "strategies": {
+      "type": "array",
+      "minItems": 2,
+      "items": {
+        "$ref": "#/$defs/strategy"
+      }
+    },
+    "scenarios": {
+      "type": "array",
+      "minItems": 2,
+      "items": {
+        "$ref": "#/$defs/scenario"
+      }
+    },
+    "human_decision": {
+      "$ref": "#/$defs/humanDecision"
+    },
+    "adaptive_pathway": {
+      "$ref": "#/$defs/adaptivePathway"
+    },
+    "provenance": {
+      "$ref": "#/$defs/provenance"
+    }
+  },
+  "additionalProperties": true,
+  "$defs": {
+    "stakeholder": {
+      "type": "object",
+      "required": [
+        "stakeholder_id",
+        "name",
+        "role"
+      ],
+      "properties": {
+        "stakeholder_id": {
+          "type": "string"
+        },
+        "name": {
+          "type": "string"
+        },
+        "role": {
+          "type": "string"
+        },
+        "objectives": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      },
+      "additionalProperties": true
+    },
+    "evidenceSummary": {
+      "type": "object",
+      "required": [
+        "known",
+        "assumed",
+        "unknown"
+      ],
+      "properties": {
+        "known": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "assumed": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "unknown": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      },
+      "additionalProperties": false
+    },
+    "uncertainty": {
+      "type": "object",
+      "required": [
+        "uncertainty_id",
+        "label",
+        "states",
+        "source_status"
+      ],
+      "properties": {
+        "uncertainty_id": {
+          "type": "string"
+        },
+        "label": {
+          "type": "string"
+        },
+        "description": {
+          "type": "string"
+        },
+        "states": {
+          "type": "array",
+          "minItems": 2,
+          "items": {
+            "type": "string"
+          }
+        },
+        "source_status": {
+          "type": "string"
+        },
+        "reducibility": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": true
+    },
+    "objective": {
+      "type": "object",
+      "required": [
+        "objective_id",
+        "label",
+        "threshold",
+        "direction",
+        "critical"
+      ],
+      "properties": {
+        "objective_id": {
+          "type": "string"
+        },
+        "label": {
+          "type": "string"
+        },
+        "description": {
+          "type": "string"
+        },
+        "threshold": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 100
+        },
+        "unit": {
+          "type": "string"
+        },
+        "direction": {
+          "enum": [
+            "at-least",
+            "at-most"
+          ]
+        },
+        "critical": {
+          "type": "boolean"
+        }
+      },
+      "additionalProperties": true
+    },
+    "relationship": {
+      "type": "object",
+      "required": [
+        "relationship_id",
+        "statement",
+        "evidence_class",
+        "confidence"
+      ],
+      "properties": {
+        "relationship_id": {
+          "type": "string"
+        },
+        "statement": {
+          "type": "string"
+        },
+        "evidence_class": {
+          "type": "string"
+        },
+        "confidence": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": true
+    },
+    "strategy": {
+      "type": "object",
+      "required": [
+        "strategy_id",
+        "label",
+        "description",
+        "baseline",
+        "action_now",
+        "monitor",
+        "trigger",
+        "contingency"
+      ],
+      "properties": {
+        "strategy_id": {
+          "type": "string"
+        },
+        "label": {
+          "type": "string"
+        },
+        "description": {
+          "type": "string"
+        },
+        "baseline": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 100
+          }
+        },
+        "action_now": {
+          "type": "string"
+        },
+        "monitor": {
+          "type": "string"
+        },
+        "trigger": {
+          "type": "string"
+        },
+        "contingency": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": true
+    },
+    "scenario": {
+      "type": "object",
+      "required": [
+        "scenario_id",
+        "label",
+        "description",
+        "states",
+        "strategy_modifiers"
+      ],
+      "properties": {
+        "scenario_id": {
+          "type": "string"
+        },
+        "label": {
+          "type": "string"
+        },
+        "description": {
+          "type": "string"
+        },
+        "states": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "string"
+          }
+        },
+        "strategy_modifiers": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "number",
+              "minimum": -100,
+              "maximum": 100
+            }
+          }
+        }
+      },
+      "additionalProperties": true
+    },
+    "humanDecision": {
+      "type": "object",
+      "required": [
+        "selected_strategy_id",
+        "rationale",
+        "next_action"
+      ],
+      "properties": {
+        "selected_strategy_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "rationale": {
+          "type": "string",
+          "minLength": 1
+        },
+        "next_action": {
+          "type": "string",
+          "minLength": 1
+        },
+        "approved_by": {
+          "type": "string"
+        },
+        "approved_at": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "format": "date-time"
+        }
+      },
+      "additionalProperties": true
+    },
+    "adaptivePathway": {
+      "type": "object",
+      "required": [
+        "act_now",
+        "monitor",
+        "triggers",
+        "contingencies",
+        "reassessment"
+      ],
+      "properties": {
+        "act_now": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "monitor": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "triggers": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "contingencies": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "reassessment": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": false
+    },
+    "provenance": {
+      "type": "object",
+      "required": [
+        "model_type",
+        "probability_model_used",
+        "values_are_analyst_assigned",
+        "generated_at"
+      ],
+      "properties": {
+        "model_type": {
+          "type": "string"
+        },
+        "probability_model_used": {
+          "type": "boolean"
+        },
+        "values_are_analyst_assigned": {
+          "type": "boolean"
+        },
+        "generated_at": {
+          "type": "string",
+          "format": "date-time"
+        }
+      },
+      "additionalProperties": true
+    }
+  }
+}

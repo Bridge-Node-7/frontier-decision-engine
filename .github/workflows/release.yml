@@ -1,0 +1,117 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - "v*"
+
+permissions:
+  contents: write
+  id-token: write
+  attestations: write
+
+jobs:
+  publish:
+    environment:
+      name: release
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Set up Node
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: 22
+          package-manager-cache: false
+      - name: Verify npm lockfile
+        run: npm ci --ignore-scripts --no-audit --no-fund
+      - name: Install browser test tooling
+        run: |
+          python3 -m pip install --disable-pip-version-check -r requirements-dev.txt
+          python3 -m playwright install --with-deps chromium
+      - name: Verify signed annotated tag and release identity
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          test "$(git cat-file -t "$GITHUB_REF_NAME")" = "tag"
+          python3 scripts/verify_release_tag.py "$GITHUB_REF_NAME"
+          TAG_OBJECT_TYPE="$(gh api "repos/$GITHUB_REPOSITORY/git/ref/tags/$GITHUB_REF_NAME" --jq '.object.type')"
+          TAG_OBJECT_SHA="$(gh api "repos/$GITHUB_REPOSITORY/git/ref/tags/$GITHUB_REF_NAME" --jq '.object.sha')"
+          test "$TAG_OBJECT_TYPE" = "tag"
+          test "$(gh api "repos/$GITHUB_REPOSITORY/git/tags/$TAG_OBJECT_SHA" --jq '.verification.verified')" = "true"
+          test "$(gh api "repos/$GITHUB_REPOSITORY/git/tags/$TAG_OBJECT_SHA" --jq '.verification.reason')" = "valid"
+      - name: Verify immutable releases are enabled
+        env:
+          RELEASE_ADMIN_TOKEN: ${{ secrets.RELEASE_ADMIN_TOKEN }}
+        run: |
+          if [ -z "$RELEASE_ADMIN_TOKEN" ]; then
+            echo "::error::RELEASE_ADMIN_TOKEN is required with Administration: read access to this repository."
+            exit 1
+          fi
+          IMMUTABLE_RELEASES="$(GH_TOKEN="$RELEASE_ADMIN_TOKEN" gh api \
+            -H "X-GitHub-Api-Version: 2026-03-10" \
+            "repos/$GITHUB_REPOSITORY/immutable-releases" \
+            --jq '.enabled')"
+          test "$IMMUTABLE_RELEASES" = "true"
+      - name: Run complete release gate
+        run: |
+          npm run check
+          git diff --exit-code
+      - name: Build and verify deterministic artifacts
+        run: |
+          npm run package:release
+          cd dist
+          sha256sum --check "frontier-decision-engine-${GITHUB_REF_NAME}.zip.sha256"
+      - name: Attest deterministic release artifacts
+        uses: actions/attest@508db95dd578ae2727ebd6217d5ba78e4fbda05d # v4.2.1
+        with:
+          subject-path: |
+            dist/frontier-decision-engine-${{ github.ref_name }}.zip
+            dist/frontier-decision-engine-${{ github.ref_name }}.zip.sha256
+      - name: Publish GitHub Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release create "$GITHUB_REF_NAME" \
+            "dist/frontier-decision-engine-${GITHUB_REF_NAME}.zip" \
+            "dist/frontier-decision-engine-${GITHUB_REF_NAME}.zip.sha256" \
+            --verify-tag \
+            --title "Frontier Decision Engine ${GITHUB_REF_NAME}" \
+            --notes-file "docs/releases/${GITHUB_REF_NAME}.md"
+      - name: Download and verify hosted release assets
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          rm -rf hosted-verification
+          mkdir hosted-verification
+          gh release download "$GITHUB_REF_NAME" \
+            --repo "$GITHUB_REPOSITORY" \
+            --dir hosted-verification \
+            --pattern "frontier-decision-engine-${GITHUB_REF_NAME}.zip*"
+          cd hosted-verification
+          sha256sum --check "frontier-decision-engine-${GITHUB_REF_NAME}.zip.sha256"
+          verified=false
+          for attempt in 1 2 3 4 5 6; do
+            if gh release verify "$GITHUB_REF_NAME" --repo "$GITHUB_REPOSITORY"; then
+              verified=true
+              break
+            fi
+            sleep 5
+          done
+          test "$verified" = "true"
+          gh release verify-asset "$GITHUB_REF_NAME" \
+            "frontier-decision-engine-${GITHUB_REF_NAME}.zip" \
+            --repo "$GITHUB_REPOSITORY"
+          gh release verify-asset "$GITHUB_REF_NAME" \
+            "frontier-decision-engine-${GITHUB_REF_NAME}.zip.sha256" \
+            --repo "$GITHUB_REPOSITORY"
+          gh attestation verify \
+            "frontier-decision-engine-${GITHUB_REF_NAME}.zip" \
+            --repo "$GITHUB_REPOSITORY"
+          gh attestation verify \
+            "frontier-decision-engine-${GITHUB_REF_NAME}.zip.sha256" \
+            --repo "$GITHUB_REPOSITORY"

@@ -1,0 +1,53 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://bridge-node-7.github.io/frontier-decision-engine/schemas/asset.schema.json",
+  "title": "OPV Asset",
+  "type": "object",
+  "required": [
+    "asset_id",
+    "name",
+    "asset_class",
+    "sha256",
+    "size_bytes",
+    "media_type"
+  ],
+  "properties": {
+    "asset_id": {
+      "type": "string"
+    },
+    "name": {
+      "type": "string"
+    },
+    "asset_class": {
+      "enum": [
+        "original",
+        "derived",
+        "enhanced",
+        "reconstruction",
+        "generated"
+      ]
+    },
+    "is_evidence": {
+      "type": "boolean"
+    },
+    "sha256": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{64}$"
+    },
+    "size_bytes": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "media_type": {
+      "type": "string"
+    },
+    "last_modified": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "format": "date-time"
+    }
+  },
+  "additionalProperties": false
+}

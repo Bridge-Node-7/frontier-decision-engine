@@ -1,0 +1,16 @@
+.DS_Store
+Thumbs.db
+node_modules/
+coverage/
+.private-input/
+*.xlsx
+*.xls
+*.opv.json
+*.opv.html
+
+dist/
+
+__pycache__/
+*.py[cod]
+
+hosted-verification/

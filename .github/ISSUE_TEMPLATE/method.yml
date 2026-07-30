@@ -1,0 +1,23 @@
+name: Method improvement
+description: Propose an evidence, calibration, privacy, or reproducibility improvement.
+title: "method: "
+labels: [method]
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: Which methodological problem does this solve?
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposed change
+    validations:
+      required: true
+  - type: textarea
+    id: validation
+    attributes:
+      label: How should it be validated?
+    validations:
+      required: true

@@ -1,0 +1,67 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://bridge-node-7.github.io/frontier-decision-engine/schemas/dataset.schema.json",
+  "title": "OPV Dataset Envelope",
+  "type": "object",
+  "required": [
+    "dataset_id",
+    "dataset_type",
+    "title",
+    "schema_version",
+    "evidence_class",
+    "source",
+    "summary",
+    "limitations"
+  ],
+  "properties": {
+    "dataset_id": {
+      "type": "string"
+    },
+    "dataset_type": {
+      "enum": [
+        "observation",
+        "experience",
+        "reference_map"
+      ]
+    },
+    "title": {
+      "type": "string"
+    },
+    "schema_version": {
+      "const": "0.1.0"
+    },
+    "evidence_class": {
+      "type": "string"
+    },
+    "source": {
+      "type": "object",
+      "required": [
+        "filename",
+        "sha256",
+        "included_in_public_repository"
+      ],
+      "properties": {
+        "filename": {
+          "type": "string"
+        },
+        "sha256": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$"
+        },
+        "included_in_public_repository": {
+          "type": "boolean"
+        }
+      }
+    },
+    "summary": {
+      "type": "object"
+    },
+    "limitations": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    }
+  },
+  "additionalProperties": true
+}

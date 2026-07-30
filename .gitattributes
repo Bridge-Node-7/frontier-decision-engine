@@ -1,0 +1,11 @@
+# Normalize text files to LF across operating systems for reproducible releases.
+* text=auto eol=lf
+
+# Preserve binary assets exactly.
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.webp binary
+*.pdf binary
+*.zip binary

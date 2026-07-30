@@ -1,0 +1,1209 @@
+{
+  "dataset_id": "opv-thematic-reference-map-v1",
+  "dataset_type": "reference_map",
+  "title": "UAP Thematic Research Map",
+  "schema_version": "0.1.0",
+  "evidence_class": "referenced-and-analyst-interpreted",
+  "source": {
+    "filename": "UAP_Thematic_Reference_Map-3-STABLE.xlsx",
+    "sha256": "62b662e0bb8f7bd9d4e6328678a774089210165de5b6fe0df7dfa656c50b36af",
+    "included_in_public_repository": false
+  },
+  "summary": {
+    "reference_clusters": 53,
+    "theme_counts": {
+      "Additional Thematic Fits": 5,
+      "General Overviews, Handbooks & Guidance": 3,
+      "Gravitational Lensing, Modified Gravity & Optical Scalars": 8,
+      "History, Policy, Culture & Safety": 6,
+      "Observational Field Studies, Instrumentation & Data": 6,
+      "Plasma, Ball Lightning & Atmospheric Luminous Phenomena": 9,
+      "Propulsion, Field Drives & Inertia/Gravity Couplings": 7,
+      "Statistics, Reporting Dynamics & Catalogs": 3,
+      "Transformation Optics, Cloaking & Metamaterials": 6
+    },
+    "signature_association_counts": {
+      "halos_filaments": 15,
+      "localized_lensing_cloaking": 18,
+      "pane_like_laminar_shells": 10,
+      "symmetric_axial_emissions": 3,
+      "trans_medium_no_wake": 13
+    },
+    "average_boundary_link_score": 2.773585,
+    "average_srms_link_score": 3.018868
+  },
+  "limitations": [
+    "Rows are reference clusters and may bundle multiple publications.",
+    "Mappings and scores are analyst judgments, not probabilities or independent confirmation.",
+    "Bibliographic identifiers, direct quotations, page references, peer-review status, and replication status require verification.",
+    "Established science, observational resemblance, and speculative engineering application must remain separate evidence classes."
+  ],
+  "references": [
+    {
+      "reference_id": "REF-001",
+      "citation_as_entered": "Abrahamson & Dinniss (2000)",
+      "about": "Proposes ball lightning from oxidation of soil-derived nanoparticles after lightning strikes. Highlights conductive silica/carbon networks that self-sustain luminous globes for seconds–minutes. Provides a naturalistic plasma-chemical route to long-lived aerial luminescence.",
+      "boundary_interpretation": "Explains transient halos/filaments akin to shell-like fringes, but not the persistent, pane-like stratified layers or trans-medium entries without turbulence you document. Primarily addresses stochastic, ground-linked events rather than coherent airborne field structures.",
+      "srms_interpretation": "Shows how energetic plasma states can self-stabilize, yet lacks field-resonant control. SRMS would extend beyond chemistry to resonance-driven stability enabling repeatable, drag-free maneuvering instead of rare natural occurrences.",
+      "theme": "Plasma, Ball Lightning & Atmospheric Luminous Phenomena",
+      "source_table": null,
+      "signatures": {
+        "halos_filaments": true,
+        "pane_like_laminar_shells": false,
+        "trans_medium_no_wake": false,
+        "localized_lensing_cloaking": false,
+        "symmetric_axial_emissions": false
+      },
+      "scores": {
+        "boundary_link_score": 2,
+        "srms_link_score": 2,
+        "notes": null
+      },
+      "verification_status": "workbook_mapping_only"
+    },
+    {
+      "reference_id": "REF-002",
+      "citation_as_entered": "Smirnov (1993); Smirnov & Cherepanov (1997)",
+      "about": "Explores theoretical/experimental models of ball lightning with electromagnetic self-confinement and oscillatory feedback. Positions plasmas as self-organizing resonant entities in natural contexts.",
+      "boundary_interpretation": "Self-confinement and oscillatory shells partially support stratified laminar structures seen in boundary-layer frames. Luminous shells, flickering envelopes, and interference-like fringes echo layered observations, yet remain unstable versus your repeatable pane-phase transitions.",
+      "srms_interpretation": "Suggests field-oscillation feedback as a precursor to engineered resonance. SRMS aims to convert stochastic short-lived confinement into tuned, long-duration resonant states powering trans-medium motion.",
+      "theme": "Plasma, Ball Lightning & Atmospheric Luminous Phenomena",
+      "source_table": null,
+      "signatures": {
+        "halos_filaments": true,
+        "pane_like_laminar_shells": true,
+        "trans_medium_no_wake": false,
+        "localized_lensing_cloaking": false,
+        "symmetric_axial_emissions": false
+      },
+      "scores": {
+        "boundary_link_score": 3,
+        "srms_link_score": 3,
+        "notes": null
+      },
+      "verification_status": "workbook_mapping_only"
+    },
+    {
+      "reference_id": "REF-003",
+      "citation_as_entered": "Stenhoff (1999)",
+      "about": "Monograph compiling hundreds of ball lightning cases, durations, color variability, and interactions with structures. Benchmarks diversity and heterogeneity; difficult to unify under a single model.",
+      "boundary_interpretation": "Recurring halos and coherent outlines support the presence of luminous boundary sheaths. However, not framed as aerodynamic boundary-layer substitutes or as indicators of trans-medium stability.",
+      "srms_interpretation": "Serves as a natural database of luminous structures for SRMS comparison. SRMS posits engineered resonance to achieve stability/control beyond spontaneous plasmas.",
+      "theme": "Plasma, Ball Lightning & Atmospheric Luminous Phenomena",
+      "source_table": null,
+      "signatures": {
+        "halos_filaments": true,
+        "pane_like_laminar_shells": true,
+        "trans_medium_no_wake": false,
+        "localized_lensing_cloaking": false,
+        "symmetric_axial_emissions": false
+      },
+      "scores": {
+        "boundary_link_score": 3,
+        "srms_link_score": 2,
+        "notes": null
+      },
+      "verification_status": "workbook_mapping_only"
+    },
+    {
+      "reference_id": "REF-004",
+      "citation_as_entered": "Turner (1997; 2003)",
+      "about": "Reports anomalous ball lightning interactions with solids, including glass penetration without damage. Argues for exotic boundary coupling mechanisms.",
+      "boundary_interpretation": "Strongly resonates with pane-phase ‘membrane traversal’—objects passing through media without disturbance—paralleling indexed boundary layers.",
+      "srms_interpretation": "Suggests controlled scalar-resonant fields could replicate membrane-like traversal. Phenomenological precedent for SRMS boundary coupling and field-index modulation.",
+      "theme": "Plasma, Ball Lightning & Atmospheric Luminous Phenomena",
+      "source_table": null,
+      "signatures": {
+        "halos_filaments": true,
+        "pane_like_laminar_shells": true,
+        "trans_medium_no_wake": true,
+        "localized_lensing_cloaking": false,
+        "symmetric_axial_emissions": false
+      },
+      "scores": {
+        "boundary_link_score": 4,
+        "srms_link_score": 4,
+        "notes": null
+      },
+      "verification_status": "workbook_mapping_only"
+    },
+    {
+      "reference_id": "REF-005",
+      "citation_as_entered": "Surkov & Hayakawa (2020)",
+      "about": "Review of transient luminous events (sprites, elves, halos) with observational/modeling perspectives. Shows turbulence, charge distribution, and instabilities generating complex luminous geometries.",
+      "boundary_interpretation": "Accounts for wake suppression and luminous halos in plasma regimes, but not coherent pane-layered shells or structured axial emissions seen in your cases.",
+      "srms_interpretation": "Establishes a plasma baseline model. SRMS differs by resonance-driven organization producing coherent, repeatable structures beyond random atmospheric instabilities.",
+      "theme": "Plasma, Ball Lightning & Atmospheric Luminous Phenomena",
+      "source_table": null,
+      "signatures": {
+        "halos_filaments": true,
+        "pane_like_laminar_shells": false,
+        "trans_medium_no_wake": false,
+        "localized_lensing_cloaking": false,
+        "symmetric_axial_emissions": false
+      },
+      "scores": {
+        "boundary_link_score": 2,
+        "srms_link_score": 2,
+        "notes": null
+      },
+      "verification_status": "workbook_mapping_only"
+    },
+    {
+      "reference_id": "REF-006",
+      "citation_as_entered": "Zhilyaev et al. (2022a,b)",
+      "about": "Observational/theoretical studies offering quantitative estimates of size, luminosity, and motion for UAP. Argue for structured, energy-rich plasma-like phenomena.",
+      "boundary_interpretation": "Quantitative evidence of luminous stratification and localized warping supports nested-shell typology. Persistence and reproducibility echo repeatable laminar structures.",
+      "srms_interpretation": "Provides observational test cases with measurable parameters to evaluate SRMS claims of resonant mobility and structural coherence.",
+      "theme": "Plasma, Ball Lightning & Atmospheric Luminous Phenomena",
+      "source_table": null,
+      "signatures": {
+        "halos_filaments": true,
+        "pane_like_laminar_shells": true,
+        "trans_medium_no_wake": false,
+        "localized_lensing_cloaking": true,
+        "symmetric_axial_emissions": false
+      },
+      "scores": {
+        "boundary_link_score": 4,
+        "srms_link_score": 4,
+        "notes": null
+      },
+      "verification_status": "workbook_mapping_only"
+    },
+    {
+      "reference_id": "REF-007",
+      "citation_as_entered": "Pascoli (2024)",
+      "about": "Proposes Hessdalen lights via subsoil geophysical interactions and EM fields, linking mineralogy with plasma generation. Frames Hessdalen as an environmental plasma laboratory.",
+      "boundary_interpretation": "Resonates with ‘transition interval’ sheaths where local conditions foster luminous halos. Does not fully explain symmetric layering or drag-free signatures.",
+      "srms_interpretation": "Shows natural resonance conditions can foster plasma anomalies; SRMS extends by asserting controllable field tuning for stable craft dynamics.",
+      "theme": "Plasma, Ball Lightning & Atmospheric Luminous Phenomena",
+      "source_table": null,
+      "signatures": {
+        "halos_filaments": true,
+        "pane_like_laminar_shells": true,
+        "trans_medium_no_wake": false,
+        "localized_lensing_cloaking": false,
+        "symmetric_axial_emissions": false
+      },
+      "scores": {
+        "boundary_link_score": 3,
+        "srms_link_score": 3,
+        "notes": null
+      },
+      "verification_status": "workbook_mapping_only"
+    },
+    {
+      "reference_id": "REF-008",
+      "citation_as_entered": "Teodorani (2000–2024, selected)",
+      "about": "Long-term monitoring with optical/spectroscopic/radio instrumentation reveals periodicities, emission lines, dynamic structuring indicative of non-random processes.",
+      "boundary_interpretation": "Phase-locked periodicities and structured luminous envelopes support nested laminar shells and oscillatory sheaths; phenomena carry measurable signatures beyond artefacts.",
+      "srms_interpretation": "Suggests resonance as organizing principle; SRMS posits scalar-field resonance driving mobility—natural analogues of engineered resonance states.",
+      "theme": "Plasma, Ball Lightning & Atmospheric Luminous Phenomena",
+      "source_table": null,
+      "signatures": {
+        "halos_filaments": true,
+        "pane_like_laminar_shells": true,
+        "trans_medium_no_wake": false,
+        "localized_lensing_cloaking": true,
+        "symmetric_axial_emissions": false
+      },
+      "scores": {
+        "boundary_link_score": 4,
+        "srms_link_score": 4,
+        "notes": null
+      },
+      "verification_status": "workbook_mapping_only"
+    },
+    {
+      "reference_id": "REF-009",
+      "citation_as_entered": "Joseph et al. (2024)",
+      "about": "Broad synthesis linking plasma states, UAP manifestations, and speculative aerospace connections. Positions plasma as a unifying explanatory medium.",
+      "boundary_interpretation": "Explains halos and transient luminous states but not absence of inertial signatures or pane-layer transitions with symmetric axial discharges.",
+      "srms_interpretation": "Sets a plasma baseline that SRMS must surpass by introducing scalar resonance for controllable, high-performance maneuvering.",
+      "theme": "Plasma, Ball Lightning & Atmospheric Luminous Phenomena",
+      "source_table": null,
+      "signatures": {
+        "halos_filaments": true,
+        "pane_like_laminar_shells": false,
+        "trans_medium_no_wake": false,
+        "localized_lensing_cloaking": false,
+        "symmetric_axial_emissions": false
+      },
+      "scores": {
+        "boundary_link_score": 2,
+        "srms_link_score": 2,
+        "notes": null
+      },
+      "verification_status": "workbook_mapping_only"
+    },
+    {
+      "reference_id": "REF-010",
+      "citation_as_entered": "Narayan & Bartelmann (1997)",
+      "about": "Foundational review of gravitational lensing—mathematics for weak/strong regimes and reconstruction of lens potentials. Gold-standard baseline for curvature-induced optical effects.",
+      "boundary_interpretation": "Boundary frames show localized warping near luminous objects; this provides the control model. If warps occur without sufficient mass, they indicate a field-index pane rather than a mass lens, motivating lensing observables as probes of near-object structure.",
+      "srms_interpretation": "SRMS posits resonance-induced optical path changes; the formalism quantifies deviations from GR expectations as evidence of resonant scalar coupling and enables parameterized testing.",
+      "theme": "Gravitational Lensing, Modified Gravity & Optical Scalars",
+      "source_table": null,
+      "signatures": {
+        "halos_filaments": false,
+        "pane_like_laminar_shells": false,
+        "trans_medium_no_wake": false,
+        "localized_lensing_cloaking": true,
+        "symmetric_axial_emissions": false
+      },
+      "scores": {
+        "boundary_link_score": 3,
+        "srms_link_score": 3,
+        "notes": null
+      },
+      "verification_status": "workbook_mapping_only"
+    },
+    {
+      "reference_id": "REF-011",
+      "citation_as_entered": "Frittelli, Kling & Newman (2000)",
+      "about": "Optical scalar (Sachs) formalism—expansion, shear, twist—to describe light-bundle evolution in curved or refractive media. Sensitive to local gradients and rapid distortions.",
+      "boundary_interpretation": "Maps to localized dilation, directional stretching, and transient rotation near boundaries. Enables encoding of boundary-layer signatures as time series of optical scalars.",
+      "srms_interpretation": "SRMS uses tunable index landscapes; optical scalars measure how engineered fields steer light. Suggests phase-sensitive experiments keyed to drive frequency.",
+      "theme": "Gravitational Lensing, Modified Gravity & Optical Scalars",
+      "source_table": null,
+      "signatures": {
+        "halos_filaments": false,
+        "pane_like_laminar_shells": false,
+        "trans_medium_no_wake": false,
+        "localized_lensing_cloaking": true,
+        "symmetric_axial_emissions": false
+      },
+      "scores": {
+        "boundary_link_score": 3,
+        "srms_link_score": 3,
+        "notes": null
+      },
+      "verification_status": "workbook_mapping_only"
+    },
+    {
+      "reference_id": "REF-012",
+      "citation_as_entered": "Virbhadra & Ellis (2002)",
+      "about": "Explores extreme lensing scenarios (e.g., naked singularities) with distinctive image morphologies as guides to nonstandard metrics.",
+      "boundary_interpretation": "Abrupt appearance/disappearance and odd arcs can arise from exotic effective geometries; supports treating boundaries as effective metrics with distinctive caustics.",
+      "srms_interpretation": "Small geometry changes yield large optical consequences—motivates SRMS tuning for cloaking/displacement without mass relocation; image topology becomes a diagnostic.",
+      "theme": "Gravitational Lensing, Modified Gravity & Optical Scalars",
+      "source_table": null,
+      "signatures": {
+        "halos_filaments": false,
+        "pane_like_laminar_shells": false,
+        "trans_medium_no_wake": false,
+        "localized_lensing_cloaking": true,
+        "symmetric_axial_emissions": false
+      },
+      "scores": {
+        "boundary_link_score": 3,
+        "srms_link_score": 3,
+        "notes": null
+      },
+      "verification_status": "workbook_mapping_only"
+    },
+    {
+      "reference_id": "REF-013",
+      "citation_as_entered": "Bekenstein & Sanders (1993)",
+      "about": "Alternative gravity work shows added fields can modify light propagation without large unseen mass, opening scalar/tensor extensions as optics actors.",
+      "boundary_interpretation": "Supports field-mediated deflections consistent with pane-layer sheaths controlling local refraction absent mass concentrations.",
+      "srms_interpretation": "SRMS applies this principle at craft scale: scalar resonance sets index profiles dynamically, achieving lensing/cloaking effects on demand.",
+      "theme": "Gravitational Lensing, Modified Gravity & Optical Scalars",
+      "source_table": null,
+      "signatures": {
+        "halos_filaments": false,
+        "pane_like_laminar_shells": false,
+        "trans_medium_no_wake": false,
+        "localized_lensing_cloaking": true,
+        "symmetric_axial_emissions": false
+      },
+      "scores": {
+        "boundary_link_score": 3,
+        "srms_link_score": 4,
+        "notes": null
+      },
+      "verification_status": "workbook_mapping_only"
+    },
+    {
+      "reference_id": "REF-014",
+      "citation_as_entered": "Wyman (2011)",
+      "about": "Galilean-invariant scalar fields with screening enabling strong local effects while evading cosmological limits; gradients matter.",
+      "boundary_interpretation": "Thin laminar sheaths with sharp gradients fit screened scalar zones, not volumetric lenses—consistent with observed pane signatures.",
+      "srms_interpretation": "Confined, resonant scalar energy in engineered membranes is plausible; points to parameter ranges SRMS can target for strong local optics with weak far-field signatures.",
+      "theme": "Gravitational Lensing, Modified Gravity & Optical Scalars",
+      "source_table": null,
+      "signatures": {
+        "halos_filaments": false,
+        "pane_like_laminar_shells": false,
+        "trans_medium_no_wake": false,
+        "localized_lensing_cloaking": true,
+        "symmetric_axial_emissions": false
+      },
+      "scores": {
+        "boundary_link_score": 4,
+        "srms_link_score": 4,
+        "notes": null
+      },
+      "verification_status": "workbook_mapping_only"
+    },
+    {
+      "reference_id": "REF-015",
+      "citation_as_entered": "Schneider et al. (2024); Vegetti et al. (2024)",
+      "about": "Modern lens inversions and substructure detection extract small perturbations from images/time delays, converting messy scenes into quantitative deflection maps.",
+      "boundary_interpretation": "Frame-by-frame inversions can reveal persistent localized gradients at the pane, turning qualitative warps into rigorous reconstructions.",
+      "srms_interpretation": "Pipelines verify SRMS: recover effective deflection maps under different resonance states and compare to SRMS simulations to estimate index contrast and potential depth.",
+      "theme": "Gravitational Lensing, Modified Gravity & Optical Scalars",
+      "source_table": null,
+      "signatures": {
+        "halos_filaments": false,
+        "pane_like_laminar_shells": false,
+        "trans_medium_no_wake": false,
+        "localized_lensing_cloaking": true,
+        "symmetric_axial_emissions": false
+      },
+      "scores": {
+        "boundary_link_score": 3,
+        "srms_link_score": 3,
+        "notes": null
+      },
+      "verification_status": "workbook_mapping_only"
+    },
+    {
+      "reference_id": "REF-016",
+      "citation_as_entered": "Tizfahm et al. (2025)",
+      "about": "Modified-gravity lensing with scalar/tensor additions showing systematic departures from GR in defined parameter spaces.",
+      "boundary_interpretation": "Provides alternative transfer functions to fit when mass is insufficient; good fits to scalar-enhanced models support boundary-as-field hypotheses.",
+      "srms_interpretation": "SRMS can adopt these transfer functions as target effective optics for its resonance layer, informing control laws for specific cloaking/displacement modes.",
+      "theme": "Gravitational Lensing, Modified Gravity & Optical Scalars",
+      "source_table": null,
+      "signatures": {
+        "halos_filaments": false,
+        "pane_like_laminar_shells": false,
+        "trans_medium_no_wake": false,
+        "localized_lensing_cloaking": true,
+        "symmetric_axial_emissions": false
+      },
+      "scores": {
+        "boundary_link_score": 3,
+        "srms_link_score": 4,
+        "notes": null
+      },
+      "verification_status": "workbook_mapping_only"
+    },
+    {
+      "reference_id": "REF-017",
+      "citation_as_entered": "Gao et al. (2024); Hanif et al. (2024); Marletto & Vedral (2025)",
+      "about": "Precision/conceptual studies at quantum-gravity/optics interface refine what counts as genuine gravity-field optical effects in controlled experiments.",
+      "boundary_interpretation": "Phase-sensitive and correlation-based strategies help disentangle true near-object optical potentials from camera or atmospheric artefacts.",
+      "srms_interpretation": "SRMS experiments can use such readouts; predicted phase/correlation responses under resonance provide publishable, falsifiable tests beyond imagery.",
+      "theme": "Gravitational Lensing, Modified Gravity & Optical Scalars",
+      "source_table": null,
+      "signatures": {
+        "halos_filaments": false,
+        "pane_like_laminar_shells": false,
+        "trans_medium_no_wake": false,
+        "localized_lensing_cloaking": true,
+        "symmetric_axial_emissions": false
+      },
+      "scores": {
+        "boundary_link_score": 2,
+        "srms_link_score": 3,
+        "notes": null
+      },
+      "verification_status": "workbook_mapping_only"
+    },
+    {
+      "reference_id": "REF-018",
+      "citation_as_entered": "Leonhardt (2006)",
+      "about": "Optical conformal mapping steers rays via geometric transformations; translates desired geometry into refractive-index blueprints—pillar of transformation optics.",
+      "boundary_interpretation": "Pane regions producing local lensing and outline suppression map to Leonhardt-style index profiles concentrated in thin sheaths; explains disappear/reappear edges and muted wakes.",
+      "srms_interpretation": "SRMS uses scalar-resonant fields to instantiate those index maps dynamically; the framework supplies target optical effects while SRMS provides the control law.",
+      "theme": "Transformation Optics, Cloaking & Metamaterials",
+      "source_table": null,
+      "signatures": {
+        "halos_filaments": false,
+        "pane_like_laminar_shells": false,
+        "trans_medium_no_wake": false,
+        "localized_lensing_cloaking": true,
+        "symmetric_axial_emissions": false
+      },
+      "scores": {
+        "boundary_link_score": 4,
+        "srms_link_score": 4,
+        "notes": null
+      },
+      "verification_status": "workbook_mapping_only"
+    },
+    {
+      "reference_id": "REF-019",
+      "citation_as_entered": "Pendry, Schurig & Smith (2006)",
+      "about": "Canonical invisibility cloak via spatially varying anisotropic ε/μ in metamaterials; bends rays around a volume with minimal scattering—engineering target.",
+      "boundary_interpretation": "Recorded edge suppression and refractive warping resemble cloak phenomenology; your thin energetic sheath stands in for bulky metamaterial shells.",
+      "srms_interpretation": "SRMS reframes cloak as a field-programmable boundary where resonant membranes reproduce effective ε/μ distributions without physical lattices.",
+      "theme": "Transformation Optics, Cloaking & Metamaterials",
+      "source_table": null,
+      "signatures": {
+        "halos_filaments": false,
+        "pane_like_laminar_shells": false,
+        "trans_medium_no_wake": false,
+        "localized_lensing_cloaking": true,
+        "symmetric_axial_emissions": false
+      },
+      "scores": {
+        "boundary_link_score": 4,
+        "srms_link_score": 5,
+        "notes": null
+      },
+      "verification_status": "workbook_mapping_only"
+    },
+    {
+      "reference_id": "REF-020",
+      "citation_as_entered": "Greenleaf, Lassas, Uhlmann & Kurylev (2007)",
+      "about": "Extends cloaking to full-wave regimes and broader PDE contexts; clarifies uniqueness and limitations—mathematical foundation for ideal cloaks.",
+      "boundary_interpretation": "Explains transient invisibility and reappearance as tuning between admissible parameter ranges; shimmering edges indicate mis-tuning near boundary conditions.",
+      "srms_interpretation": "Defines SRMS stability corridors; controllers must keep resonance within cloaking-eligible bands during maneuvers.",
+      "theme": "Transformation Optics, Cloaking & Metamaterials",
+      "source_table": null,
+      "signatures": {
+        "halos_filaments": false,
+        "pane_like_laminar_shells": false,
+        "trans_medium_no_wake": false,
+        "localized_lensing_cloaking": true,
+        "symmetric_axial_emissions": false
+      },
+      "scores": {
+        "boundary_link_score": 4,
+        "srms_link_score": 4,
+        "notes": null
+      },
+      "verification_status": "workbook_mapping_only"
+    },
+    {
+      "reference_id": "REF-021",
+      "citation_as_entered": "Nassar et al. (2020)",
+      "about": "Survey of resonant cloaking and scattering cancellation across polar/thermal/acoustic metamaterials; generalizes transparency via resonance.",
+      "boundary_interpretation": "Observed scattering suppression (edge fade, outline compression) matches resonance-assisted cancellation in thin sheaths during dynamic motion.",
+      "srms_interpretation": "SRMS is resonance-centric, targeting cancellation modes across optical/RF/aero-acoustic channels during high-speed turns.",
+      "theme": "Transformation Optics, Cloaking & Metamaterials",
+      "source_table": null,
+      "signatures": {
+        "halos_filaments": false,
+        "pane_like_laminar_shells": true,
+        "trans_medium_no_wake": false,
+        "localized_lensing_cloaking": true,
+        "symmetric_axial_emissions": false
+      },
+      "scores": {
+        "boundary_link_score": 4,
+        "srms_link_score": 4,
+        "notes": null
+      },
+      "verification_status": "workbook_mapping_only"
+    },
+    {
+      "reference_id": "REF-022",
+      "citation_as_entered": "Peralta et al. (2020)",
+      "about": "Thermal/diffusive analogues of cloaking via transformation principles; proves multiphysics hiding beyond light.",
+      "boundary_interpretation": "Multiphyics cloaking parallels panes acting on light, air flow, and thermal gradients—explains muted wakes and lack of shock signatures.",
+      "srms_interpretation": "SRMS aims for a single resonant field modulating multiple transport properties simultaneously—composite objectives for trans-medium maneuvers.",
+      "theme": "Transformation Optics, Cloaking & Metamaterials",
+      "source_table": null,
+      "signatures": {
+        "halos_filaments": false,
+        "pane_like_laminar_shells": false,
+        "trans_medium_no_wake": true,
+        "localized_lensing_cloaking": true,
+        "symmetric_axial_emissions": false
+      },
+      "scores": {
+        "boundary_link_score": 4,
+        "srms_link_score": 4,
+        "notes": null
+      },
+      "verification_status": "workbook_mapping_only"
+    },
+    {
+      "reference_id": "REF-023",
+      "citation_as_entered": "Gupta & Beckwith (2025)",
+      "about": "Review of broadband cloaking in architected metamaterials, stressing robustness and hybrid passive–active strategies from lab to systems.",
+      "boundary_interpretation": "Your observations imply broadband, rapid-response behavior—beyond narrowband passive cloaks—necessitating active control and reconfiguration on the fly.",
+      "srms_interpretation": "SRMS matches the hybrid-active motif: scalar resonant membranes continually re-tune to maintain low scattering across changing conditions; provides KPIs (bandwidth, latency, stability).",
+      "theme": "Transformation Optics, Cloaking & Metamaterials",
+      "source_table": null,
+      "signatures": {
+        "halos_filaments": false,
+        "pane_like_laminar_shells": false,
+        "trans_medium_no_wake": false,
+        "localized_lensing_cloaking": true,
+        "symmetric_axial_emissions": false
+      },
+      "scores": {
+        "boundary_link_score": 3,
+        "srms_link_score": 4,
+        "notes": null
+      },
+      "verification_status": "workbook_mapping_only"
+    },
+    {
+      "reference_id": "REF-024",
+      "citation_as_entered": "Haisch, Rueda & Puthoff (1994); Puthoff (1987)",
+      "about": "ZPF-based accounts of inertia and vacuum engineering; reframes inertia as emergent from vacuum fluctuations and suggests pathways to manipulate vacuum–matter coupling.",
+      "boundary_interpretation": "Supports drag-free transitions and sudden accelerations without wakes if inertial coupling can be gated at the sheath/pane.",
+      "srms_interpretation": "SRMS extends by using scalar resonance as a local control knob for inertia coupling, turning conceptual vacuum engineering into tunable mobility states.",
+      "theme": "Propulsion, Field Drives & Inertia/Gravity Couplings",
+      "source_table": null,
+      "signatures": {
+        "halos_filaments": false,
+        "pane_like_laminar_shells": false,
+        "trans_medium_no_wake": true,
+        "localized_lensing_cloaking": false,
+        "symmetric_axial_emissions": false
+      },
+      "scores": {
+        "boundary_link_score": 3,
+        "srms_link_score": 4,
+        "notes": null
+      },
+      "verification_status": "workbook_mapping_only"
+    },
+    {
+      "reference_id": "REF-025",
+      "citation_as_entered": "Holt (1979); Valone (2012)",
+      "about": "Field resonance propulsion and surveys of non-conventional electrokinetic concepts; proposes oscillatory fields as propulsion channels beyond rockets.",
+      "boundary_interpretation": "Aligns with axial luminous emissions and controlled sheath venting enabling motion without turbulent wakes.",
+      "srms_interpretation": "SRMS specifies the operative channel—scalar resonance—providing physical substrate and testable parameters the early concepts lacked.",
+      "theme": "Propulsion, Field Drives & Inertia/Gravity Couplings",
+      "source_table": null,
+      "signatures": {
+        "halos_filaments": false,
+        "pane_like_laminar_shells": false,
+        "trans_medium_no_wake": true,
+        "localized_lensing_cloaking": false,
+        "symmetric_axial_emissions": true
+      },
+      "scores": {
+        "boundary_link_score": 3,
+        "srms_link_score": 4,
+        "notes": null
+      },
+      "verification_status": "workbook_mapping_only"
+    },
+    {
+      "reference_id": "REF-026",
+      "citation_as_entered": "Tajmar et al. (2024)",
+      "about": "Replications/limit tests on alleged EM–gravity couplings with stringent null results; sets careful experimental constraints.",
+      "boundary_interpretation": "Reminds that wake-free transits are not automatically EM–gravity effects; pane-layer signatures must exceed such bounds.",
+      "srms_interpretation": "Frames SRMS as a distinct, testable mechanism (scalar resonance) with effects above detection thresholds and separable from failed EM–gravity claims.",
+      "theme": "Propulsion, Field Drives & Inertia/Gravity Couplings",
+      "source_table": null,
+      "signatures": {
+        "halos_filaments": false,
+        "pane_like_laminar_shells": false,
+        "trans_medium_no_wake": false,
+        "localized_lensing_cloaking": false,
+        "symmetric_axial_emissions": false
+      },
+      "scores": {
+        "boundary_link_score": 1,
+        "srms_link_score": 1,
+        "notes": null
+      },
+      "verification_status": "workbook_mapping_only"
+    },
+    {
+      "reference_id": "REF-027",
+      "citation_as_entered": "Aquino (2010, 2012, 2016, 2021)",
+      "about": "Claims EM influence on gravitational mass and weight variations; controversial with reproducibility challenges.",
+      "boundary_interpretation": "Would manifest as sheath-related changes at boundaries; your observations suggest indexed refraction rather than mass change—partial overlap.",
+      "srms_interpretation": "SRMS adopts tunable coupling intuition but grounds it in resonance physics; prioritizes controlled, repeatable signatures and falsifiability.",
+      "theme": "Propulsion, Field Drives & Inertia/Gravity Couplings",
+      "source_table": null,
+      "signatures": {
+        "halos_filaments": false,
+        "pane_like_laminar_shells": false,
+        "trans_medium_no_wake": true,
+        "localized_lensing_cloaking": false,
+        "symmetric_axial_emissions": false
+      },
+      "scores": {
+        "boundary_link_score": 2,
+        "srms_link_score": 3,
+        "notes": null
+      },
+      "verification_status": "workbook_mapping_only"
+    },
+    {
+      "reference_id": "REF-028",
+      "citation_as_entered": "Minami (2022; 2023)",
+      "about": "Engineering analyses of UAP performance estimating accelerations and energy demands that exceed known propulsion capabilities.",
+      "boundary_interpretation": "Boundary-layer dynamics (laminar sheaths, no shock) provide a mechanism consistent with reported high-g maneuvers without aero artefacts.",
+      "srms_interpretation": "Defines quantitative benchmarks and envelopes for SRMS prototypes to meet or exceed.",
+      "theme": "Propulsion, Field Drives & Inertia/Gravity Couplings",
+      "source_table": null,
+      "signatures": {
+        "halos_filaments": false,
+        "pane_like_laminar_shells": false,
+        "trans_medium_no_wake": true,
+        "localized_lensing_cloaking": false,
+        "symmetric_axial_emissions": false
+      },
+      "scores": {
+        "boundary_link_score": 3,
+        "srms_link_score": 3,
+        "notes": null
+      },
+      "verification_status": "workbook_mapping_only"
+    },
+    {
+      "reference_id": "REF-029",
+      "citation_as_entered": "Meessen (2012a,b)",
+      "about": "Proposes low-frequency magnetic and pulsed EM drivers for anomalous motion; bridges lab physics with propulsion claims.",
+      "boundary_interpretation": "Symmetric axial emissions mirror pulsed-drive signatures; sheaths may act as resonant cavities/antennas while suppressing turbulence.",
+      "srms_interpretation": "SRMS specifies scalar resonance as the tuning that makes pulsed drivers effective and repeatable.",
+      "theme": "Propulsion, Field Drives & Inertia/Gravity Couplings",
+      "source_table": null,
+      "signatures": {
+        "halos_filaments": false,
+        "pane_like_laminar_shells": false,
+        "trans_medium_no_wake": true,
+        "localized_lensing_cloaking": false,
+        "symmetric_axial_emissions": true
+      },
+      "scores": {
+        "boundary_link_score": 3,
+        "srms_link_score": 4,
+        "notes": null
+      },
+      "verification_status": "workbook_mapping_only"
+    },
+    {
+      "reference_id": "REF-030",
+      "citation_as_entered": "Hall & Covington (2025)",
+      "about": "Unified Scalar Resonance Model (USRM) with intrinsic constants and scaling laws governing field-coupled mobility.",
+      "boundary_interpretation": "Predicts boundary signatures at resonance thresholds—abrupt cloaking, laminar shells, inertia-suppressed motion—matching pane-layer motifs.",
+      "srms_interpretation": "Complementary to SRMS: USRM provides mathematics; SRMS provides materials, drives, and architecture to realize resonant mobility.",
+      "theme": "Propulsion, Field Drives & Inertia/Gravity Couplings",
+      "source_table": null,
+      "signatures": {
+        "halos_filaments": false,
+        "pane_like_laminar_shells": true,
+        "trans_medium_no_wake": true,
+        "localized_lensing_cloaking": true,
+        "symmetric_axial_emissions": false
+      },
+      "scores": {
+        "boundary_link_score": 5,
+        "srms_link_score": 5,
+        "notes": null
+      },
+      "verification_status": "workbook_mapping_only"
+    },
+    {
+      "reference_id": "REF-031",
+      "citation_as_entered": "Knuth et al. (2019; 2025)",
+      "about": "Kinematic analyses and a measurement-first scientific agenda for UAP; extract acceleration profiles and dynamic performance from heterogeneous data.",
+      "boundary_interpretation": "High-g turns without shock align with drag-free pane sheaths that decouple from ambient air; curves are indirect evidence for laminar suppression of momentum exchange.",
+      "srms_interpretation": "Translate anomalies into engineering targets (turn rates, jerk spectra) and drive required sensor suites for SRMS validation.",
+      "theme": "Observational Field Studies, Instrumentation & Data",
+      "source_table": null,
+      "signatures": {
+        "halos_filaments": false,
+        "pane_like_laminar_shells": false,
+        "trans_medium_no_wake": true,
+        "localized_lensing_cloaking": false,
+        "symmetric_axial_emissions": false
+      },
+      "scores": {
+        "boundary_link_score": 4,
+        "srms_link_score": 4,
+        "notes": null
+      },
+      "verification_status": "workbook_mapping_only"
+    },
+    {
+      "reference_id": "REF-032",
+      "citation_as_entered": "Watters et al. (2023)",
+      "about": "Blueprints for synchronized, multimodal observatories (optical, spectra, RF, environmental) with calibration and timing discipline.",
+      "boundary_interpretation": "Enables verification of laminar shells, refractive warps, and axial emissions via cross-sensor correlation and high frame-rate capture.",
+      "srms_interpretation": "Becomes the SRMS test harness linking resonance settings to spectral, polarization, and RF sidebands for data-driven control.",
+      "theme": "Observational Field Studies, Instrumentation & Data",
+      "source_table": null,
+      "signatures": {
+        "halos_filaments": false,
+        "pane_like_laminar_shells": false,
+        "trans_medium_no_wake": false,
+        "localized_lensing_cloaking": false,
+        "symmetric_axial_emissions": false
+      },
+      "scores": {
+        "boundary_link_score": 2,
+        "srms_link_score": 3,
+        "notes": null
+      },
+      "verification_status": "workbook_mapping_only"
+    },
+    {
+      "reference_id": "REF-033",
+      "citation_as_entered": "Ailleris (2024); Ammon (2024)",
+      "about": "Best-practice methods for UAP fieldwork: chain-of-custody, metadata completeness, openness, and rigor for publishable datasets.",
+      "boundary_interpretation": "Standardized protocols make boundary signatures (halos, warps, no-wake transits) verifiable and replicable across teams.",
+      "srms_interpretation": "Define certification pathways: document drive parameters and conditions so SRMS claims are independently testable.",
+      "theme": "Observational Field Studies, Instrumentation & Data",
+      "source_table": null,
+      "signatures": {
+        "halos_filaments": false,
+        "pane_like_laminar_shells": false,
+        "trans_medium_no_wake": false,
+        "localized_lensing_cloaking": false,
+        "symmetric_axial_emissions": false
+      },
+      "scores": {
+        "boundary_link_score": 2,
+        "srms_link_score": 2,
+        "notes": null
+      },
+      "verification_status": "workbook_mapping_only"
+    },
+    {
+      "reference_id": "REF-034",
+      "citation_as_entered": "Tedesco & Tedesco (2024)",
+      "about": "Coastal observations with instrument-assisted documentation and context; examines recurrence and patterns of appearance.",
+      "boundary_interpretation": "Separates mirage artefacts from luminous structures maintaining shape and axial brightening across vantage angles—supporting active sheaths.",
+      "srms_interpretation": "Suggests environmental ‘gain settings’ and sensor choices (thermal IR, polarization) for SRMS demonstrations.",
+      "theme": "Observational Field Studies, Instrumentation & Data",
+      "source_table": null,
+      "signatures": {
+        "halos_filaments": true,
+        "pane_like_laminar_shells": true,
+        "trans_medium_no_wake": false,
+        "localized_lensing_cloaking": false,
+        "symmetric_axial_emissions": false
+      },
+      "scores": {
+        "boundary_link_score": 3,
+        "srms_link_score": 3,
+        "notes": null
+      },
+      "verification_status": "workbook_mapping_only"
+    },
+    {
+      "reference_id": "REF-035",
+      "citation_as_entered": "Szydagis et al. (2025)",
+      "about": "UAPx expedition with multi-sensor captures and replication attempts; correlates optical and RF anomalies under controlled protocols.",
+      "boundary_interpretation": "Multi-modal signatures (outline softening + RF changes) indicate active sheaths rather than camera artefacts.",
+      "srms_interpretation": "Template for SRMS field tests with predicted sidebands and spectral shifts across modalities.",
+      "theme": "Observational Field Studies, Instrumentation & Data",
+      "source_table": null,
+      "signatures": {
+        "halos_filaments": false,
+        "pane_like_laminar_shells": false,
+        "trans_medium_no_wake": false,
+        "localized_lensing_cloaking": true,
+        "symmetric_axial_emissions": false
+      },
+      "scores": {
+        "boundary_link_score": 3,
+        "srms_link_score": 3,
+        "notes": null
+      },
+      "verification_status": "workbook_mapping_only"
+    },
+    {
+      "reference_id": "REF-036",
+      "citation_as_entered": "Medina et al. (2023)",
+      "about": "Statistical analysis of environmental correlates of public reports—nonrandom clustering in time/space.",
+      "boundary_interpretation": "Guides pre-registered observation windows to maximize laminar-shell detection and controls for ‘null’ nights.",
+      "srms_interpretation": "Informs SRMS scheduling to reveal membrane effects against quiet backgrounds and disentangle environmental confounds.",
+      "theme": "Observational Field Studies, Instrumentation & Data",
+      "source_table": null,
+      "signatures": {
+        "halos_filaments": false,
+        "pane_like_laminar_shells": false,
+        "trans_medium_no_wake": false,
+        "localized_lensing_cloaking": false,
+        "symmetric_axial_emissions": false
+      },
+      "scores": {
+        "boundary_link_score": 2,
+        "srms_link_score": 2,
+        "notes": null
+      },
+      "verification_status": "workbook_mapping_only"
+    },
+    {
+      "reference_id": "REF-037",
+      "citation_as_entered": "Antonio et al. (2022)",
+      "about": "Complex-systems analysis of sighting report dynamics, uncovering temporal/spatial clustering and human/environmental drivers.",
+      "boundary_interpretation": "Explains why coherent signatures might cluster—conditions that favor visible boundary effects or social amplification. Sets a baseline for expected frequency.",
+      "srms_interpretation": "Helps prioritize SRMS deployments in regions/times most conducive to capturing comparable signatures under controlled drives.",
+      "theme": "Statistics, Reporting Dynamics & Catalogs",
+      "source_table": null,
+      "signatures": {
+        "halos_filaments": false,
+        "pane_like_laminar_shells": false,
+        "trans_medium_no_wake": false,
+        "localized_lensing_cloaking": false,
+        "symmetric_axial_emissions": false
+      },
+      "scores": {
+        "boundary_link_score": 2,
+        "srms_link_score": 2,
+        "notes": null
+      },
+      "verification_status": "workbook_mapping_only"
+    },
+    {
+      "reference_id": "REF-038",
+      "citation_as_entered": "Poher & Poher (2010)",
+      "about": "Global collation of sighting statistics seeking periodicities and long-term geographical patterns beyond stochastic noise.",
+      "boundary_interpretation": "Temporal periodicities align with oscillating halos and repeating flashes tied to field cycling—indicative of structured processes.",
+      "srms_interpretation": "Resonance is cyclical; SRMS can mimic recurrence windows to test if controlled resonance reproduces observed cycles.",
+      "theme": "Statistics, Reporting Dynamics & Catalogs",
+      "source_table": null,
+      "signatures": {
+        "halos_filaments": true,
+        "pane_like_laminar_shells": false,
+        "trans_medium_no_wake": false,
+        "localized_lensing_cloaking": false,
+        "symmetric_axial_emissions": false
+      },
+      "scores": {
+        "boundary_link_score": 2,
+        "srms_link_score": 2,
+        "notes": null
+      },
+      "verification_status": "workbook_mapping_only"
+    },
+    {
+      "reference_id": "REF-039",
+      "citation_as_entered": "Phillips (1975)",
+      "about": "Catalog of physical trace cases (imprints, scorch, magnetic anomalies) linking aerial events to tangible residues.",
+      "boundary_interpretation": "Trace morphology matches pane predictions: axial thermal spots and symmetric pressure imprints as a fossil record of boundary dynamics.",
+      "srms_interpretation": "SRMS can deliberately replicate such signatures in controlled tests, offering a strong falsifiability pathway.",
+      "theme": "Statistics, Reporting Dynamics & Catalogs",
+      "source_table": null,
+      "signatures": {
+        "halos_filaments": false,
+        "pane_like_laminar_shells": false,
+        "trans_medium_no_wake": false,
+        "localized_lensing_cloaking": false,
+        "symmetric_axial_emissions": true
+      },
+      "scores": {
+        "boundary_link_score": 3,
+        "srms_link_score": 3,
+        "notes": null
+      },
+      "verification_status": "workbook_mapping_only"
+    },
+    {
+      "reference_id": "REF-040",
+      "citation_as_entered": "Condon (1969); McDonald (1969)",
+      "about": "USAF-commissioned report vs. a physicist’s critique; shaped official policy and debates on anomalous evidence for decades.",
+      "boundary_interpretation": "Illustrates how subtle optical/structural signatures can be misclassified without rigorous analysis—relevant to pane-layer interpretation.",
+      "srms_interpretation": "SRMS offers a physics-grounded model to move beyond the dismissal/advocacy impasse by producing reproducible boundary effects.",
+      "theme": "History, Policy, Culture & Safety",
+      "source_table": null,
+      "signatures": {
+        "halos_filaments": false,
+        "pane_like_laminar_shells": false,
+        "trans_medium_no_wake": false,
+        "localized_lensing_cloaking": false,
+        "symmetric_axial_emissions": false
+      },
+      "scores": {
+        "boundary_link_score": 1,
+        "srms_link_score": 1,
+        "notes": null
+      },
+      "verification_status": "workbook_mapping_only"
+    },
+    {
+      "reference_id": "REF-041",
+      "citation_as_entered": "Hynek (1972; 2020); Vallée (1998; 2014)",
+      "about": "Systematic classification (Hynek) and sociotechnical frameworks (Vallée) that modernized scholarly UAP study.",
+      "boundary_interpretation": "Recurring glows, silent passes, and disappearances align with pane-layer motifs; legitimizes treating such motifs as structured data.",
+      "srms_interpretation": "Provides categorical bins and conceptual openness for testing SRMS predictions within established research traditions.",
+      "theme": "History, Policy, Culture & Safety",
+      "source_table": null,
+      "signatures": {
+        "halos_filaments": true,
+        "pane_like_laminar_shells": false,
+        "trans_medium_no_wake": false,
+        "localized_lensing_cloaking": false,
+        "symmetric_axial_emissions": false
+      },
+      "scores": {
+        "boundary_link_score": 2,
+        "srms_link_score": 2,
+        "notes": null
+      },
+      "verification_status": "workbook_mapping_only"
+    },
+    {
+      "reference_id": "REF-042",
+      "citation_as_entered": "Kean (2010); Dolan (2002; 2009)",
+      "about": "Government/military archives and credible witness reports establishing a global, consistent UAP issue.",
+      "boundary_interpretation": "Many documented cases show wake-free flight, rapid acceleration, and glowing edges—matching boundary-layer hallmarks.",
+      "srms_interpretation": "Archival baselines that SRMS must match/replicate to validate resonance-mobility claims.",
+      "theme": "History, Policy, Culture & Safety",
+      "source_table": null,
+      "signatures": {
+        "halos_filaments": false,
+        "pane_like_laminar_shells": false,
+        "trans_medium_no_wake": true,
+        "localized_lensing_cloaking": false,
+        "symmetric_axial_emissions": false
+      },
+      "scores": {
+        "boundary_link_score": 3,
+        "srms_link_score": 3,
+        "notes": null
+      },
+      "verification_status": "workbook_mapping_only"
+    },
+    {
+      "reference_id": "REF-043",
+      "citation_as_entered": "Weinstein (2012)",
+      "about": "Aviation safety synthesis of UAP near-misses and operational risks, emphasizing risk management over speculation.",
+      "boundary_interpretation": "Near-collision reports without turbulence or sonic booms support laminar sheath suppression of aerodynamic coupling.",
+      "srms_interpretation": "Underscores need for SRMS deconfliction protocols and predictable behavior in shared airspace.",
+      "theme": "History, Policy, Culture & Safety",
+      "source_table": null,
+      "signatures": {
+        "halos_filaments": false,
+        "pane_like_laminar_shells": false,
+        "trans_medium_no_wake": true,
+        "localized_lensing_cloaking": false,
+        "symmetric_axial_emissions": false
+      },
+      "scores": {
+        "boundary_link_score": 3,
+        "srms_link_score": 3,
+        "notes": null
+      },
+      "verification_status": "workbook_mapping_only"
+    },
+    {
+      "reference_id": "REF-044",
+      "citation_as_entered": "Wendt & Duvall (2015)",
+      "about": "International-relations framing: UAP challenge sovereignty and governance logics; ignoring UAP is a political choice.",
+      "boundary_interpretation": "Not about boundary physics per se, but shows how pane-layer capabilities (cloaking, wake suppression) disrupt airspace assumptions.",
+      "srms_interpretation": "Signals geopolitical implications of SRMS; motivates international frameworks around resonant mobility tech.",
+      "theme": "History, Policy, Culture & Safety",
+      "source_table": null,
+      "signatures": {
+        "halos_filaments": false,
+        "pane_like_laminar_shells": false,
+        "trans_medium_no_wake": false,
+        "localized_lensing_cloaking": false,
+        "symmetric_axial_emissions": false
+      },
+      "scores": {
+        "boundary_link_score": 1,
+        "srms_link_score": 2,
+        "notes": null
+      },
+      "verification_status": "workbook_mapping_only"
+    },
+    {
+      "reference_id": "REF-045",
+      "citation_as_entered": "Lomas (2024)",
+      "about": "Cultural shift analysis as UAP enters mainstream discourse; implications for science communication and trust.",
+      "boundary_interpretation": "Highlights importance of clear communication of pane-layer optics to avoid misinterpretation as artefacts.",
+      "srms_interpretation": "Points to stakeholder engagement/education as part of SRMS deployment strategy.",
+      "theme": "History, Policy, Culture & Safety",
+      "source_table": null,
+      "signatures": {
+        "halos_filaments": false,
+        "pane_like_laminar_shells": false,
+        "trans_medium_no_wake": false,
+        "localized_lensing_cloaking": false,
+        "symmetric_axial_emissions": false
+      },
+      "scores": {
+        "boundary_link_score": 1,
+        "srms_link_score": 2,
+        "notes": null
+      },
+      "verification_status": "workbook_mapping_only"
+    },
+    {
+      "reference_id": "REF-046",
+      "citation_as_entered": "Hill (1995); Kocher (1968); Hendry (1979); Hynek (2020)",
+      "about": "Early systematic observation/investigation handbooks and aerodynamic analyses; foundational methodological toolkit.",
+      "boundary_interpretation": "Noted recurring glow, silent transit, and apparent drag violations—precursors to laminar/pane vocabulary used today.",
+      "srms_interpretation": "Provide procedural baselines for documenting SRMS experiments; map Hynek categories to SRMS predictions.",
+      "theme": "General Overviews, Handbooks & Guidance",
+      "source_table": null,
+      "signatures": {
+        "halos_filaments": true,
+        "pane_like_laminar_shells": false,
+        "trans_medium_no_wake": false,
+        "localized_lensing_cloaking": false,
+        "symmetric_axial_emissions": false
+      },
+      "scores": {
+        "boundary_link_score": 2,
+        "srms_link_score": 2,
+        "notes": null
+      },
+      "verification_status": "workbook_mapping_only"
+    },
+    {
+      "reference_id": "REF-047",
+      "citation_as_entered": "Clark (1998)",
+      "about": "Comprehensive encyclopedia of cases/themes/persons—broad, indexed archive rather than new theory.",
+      "boundary_interpretation": "Many entries describe luminous sheaths and sudden disappearances; provides rapid pattern mining for pane-like phenomena.",
+      "srms_interpretation": "Serves as empirical reservoir for testing SRMS predictions across decades and geographies.",
+      "theme": "General Overviews, Handbooks & Guidance",
+      "source_table": null,
+      "signatures": {
+        "halos_filaments": true,
+        "pane_like_laminar_shells": false,
+        "trans_medium_no_wake": false,
+        "localized_lensing_cloaking": false,
+        "symmetric_axial_emissions": false
+      },
+      "scores": {
+        "boundary_link_score": 2,
+        "srms_link_score": 2,
+        "notes": null
+      },
+      "verification_status": "workbook_mapping_only"
+    },
+    {
+      "reference_id": "REF-048",
+      "citation_as_entered": "Rutledge (1981)",
+      "about": "Years-long Project Identification: systematic field study with instrumentation and community logging.",
+      "boundary_interpretation": "Consistent shape retention, structured halos, rapid silent motion—historical validation of laminar traits.",
+      "srms_interpretation": "Method/empirical template for SRMS field trials using modern instrumentation.",
+      "theme": "General Overviews, Handbooks & Guidance",
+      "source_table": null,
+      "signatures": {
+        "halos_filaments": true,
+        "pane_like_laminar_shells": true,
+        "trans_medium_no_wake": true,
+        "localized_lensing_cloaking": false,
+        "symmetric_axial_emissions": false
+      },
+      "scores": {
+        "boundary_link_score": 4,
+        "srms_link_score": 3,
+        "notes": null
+      },
+      "verification_status": "workbook_mapping_only"
+    },
+    {
+      "reference_id": "REF-049",
+      "citation_as_entered": "Loeb & Kirkpatrick (2023)",
+      "about": "Physical constraints analysis: drag, heat, energy for proposed UAP trajectories; tests claims against established physics.",
+      "boundary_interpretation": "Highlights paradox of missing shock/ionization given speeds; pane sheaths resolve by decoupling flow and suppressing wakes.",
+      "srms_interpretation": "Sets performance constraints SRMS must satisfy—resonance-driven sheaths as a feasible mechanism addressing critiques.",
+      "theme": "Additional Thematic Fits",
+      "source_table": null,
+      "signatures": {
+        "halos_filaments": false,
+        "pane_like_laminar_shells": false,
+        "trans_medium_no_wake": true,
+        "localized_lensing_cloaking": false,
+        "symmetric_axial_emissions": false
+      },
+      "scores": {
+        "boundary_link_score": 3,
+        "srms_link_score": 2,
+        "notes": null
+      },
+      "verification_status": "workbook_mapping_only"
+    },
+    {
+      "reference_id": "REF-050",
+      "citation_as_entered": "Berghaus et al. (2024)",
+      "about": "Cosmological scalar dynamics (chameleon, Galileon) with screening; scalar fields as viable large-scale actors.",
+      "boundary_interpretation": "If scalar fields screen and localize cosmologically, craft-scale laminar zones become plausible by analogy.",
+      "srms_interpretation": "Provides theoretical scaffolding for SRMS local resonance within broader scalar-field physics.",
+      "theme": "Additional Thematic Fits",
+      "source_table": null,
+      "signatures": {
+        "halos_filaments": false,
+        "pane_like_laminar_shells": false,
+        "trans_medium_no_wake": false,
+        "localized_lensing_cloaking": false,
+        "symmetric_axial_emissions": false
+      },
+      "scores": {
+        "boundary_link_score": 2,
+        "srms_link_score": 3,
+        "notes": null
+      },
+      "verification_status": "workbook_mapping_only"
+    },
+    {
+      "reference_id": "REF-051",
+      "citation_as_entered": "Gobbi (2021); Konfluence (2019)",
+      "about": "Speculative proposals on field propulsion and spacetime engineering; visionary rather than empirical.",
+      "boundary_interpretation": "Hint at vortical/field-index mechanisms overlapping conceptually with pane signatures.",
+      "srms_interpretation": "SRMS adds rigor—defining constants, drives, and membranes to convert seed ideas into testable engineering.",
+      "theme": "Additional Thematic Fits",
+      "source_table": null,
+      "signatures": {
+        "halos_filaments": false,
+        "pane_like_laminar_shells": false,
+        "trans_medium_no_wake": false,
+        "localized_lensing_cloaking": false,
+        "symmetric_axial_emissions": false
+      },
+      "scores": {
+        "boundary_link_score": 2,
+        "srms_link_score": 3,
+        "notes": null
+      },
+      "verification_status": "workbook_mapping_only"
+    },
+    {
+      "reference_id": "REF-052",
+      "citation_as_entered": "Wu et al. (2016)",
+      "about": "Electrospun nanofibers aligning under fields, producing anisotropic, field-responsive composites.",
+      "boundary_interpretation": "Material-science analogue for field-aligned membranes forming coherent laminar shells.",
+      "srms_interpretation": "Suggests smart-membrane substrates responsive to resonance—materials pathway for SRMS.",
+      "theme": "Additional Thematic Fits",
+      "source_table": null,
+      "signatures": {
+        "halos_filaments": false,
+        "pane_like_laminar_shells": false,
+        "trans_medium_no_wake": false,
+        "localized_lensing_cloaking": false,
+        "symmetric_axial_emissions": false
+      },
+      "scores": {
+        "boundary_link_score": 2,
+        "srms_link_score": 3,
+        "notes": null
+      },
+      "verification_status": "workbook_mapping_only"
+    },
+    {
+      "reference_id": "REF-053",
+      "citation_as_entered": "Editorial (2025)",
+      "about": "Field overview urging rigor, interdisciplinarity, and openness to new paradigms.",
+      "boundary_interpretation": "Recognizes laminar glows, trans-medium transitions, and cloaking as legitimate study targets.",
+      "srms_interpretation": "Positions SRMS within an emerging paradigm shift aligned with aerospace R&D priorities.",
+      "theme": "Additional Thematic Fits",
+      "source_table": null,
+      "signatures": {
+        "halos_filaments": false,
+        "pane_like_laminar_shells": false,
+        "trans_medium_no_wake": false,
+        "localized_lensing_cloaking": false,
+        "symmetric_axial_emissions": false
+      },
+      "scores": {
+        "boundary_link_score": 2,
+        "srms_link_score": 3,
+        "notes": null
+      },
+      "verification_status": "workbook_mapping_only"
+    }
+  ]
+}

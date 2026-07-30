@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1920" height="1080" viewBox="0 0 1920 1080" role="img" aria-labelledby="title desc">
+  <title id="title">Synthetic angular measurement control</title>
+  <desc id="desc">A generated 192-pixel white horizontal line on a dark background.</desc>
+  <rect width="1920" height="1080" fill="#111827"/>
+  <line x1="864" y1="540" x2="1056" y2="540" stroke="#ffffff" stroke-width="8"/>
+  <circle cx="864" cy="540" r="10" fill="#79b8d3"/>
+  <circle cx="1056" cy="540" r="10" fill="#79b8d3"/>
+</svg>

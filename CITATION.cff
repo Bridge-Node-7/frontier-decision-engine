@@ -1,0 +1,10 @@
+cff-version: 1.2.0
+title: Frontier Decision Engine
+message: Please cite the software and the specific dataset or case version used.
+type: software
+version: 0.2.10
+date-released: 2026-07-29
+authors:
+- name: Bridge Node 7
+license: Apache-2.0
+repository-code: https://github.com/Bridge-Node-7/frontier-decision-engine

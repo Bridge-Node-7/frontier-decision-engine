@@ -1,0 +1,229 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://bridge-node-7.github.io/frontier-decision-engine/schemas/case.schema.json",
+  "title": "Open Phenomenon Verification Case",
+  "type": "object",
+  "required": [
+    "schema_version",
+    "case_id",
+    "title",
+    "created_at",
+    "evidence_level",
+    "verdict",
+    "assets",
+    "calibration",
+    "measurements",
+    "limitations"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": "0.1.0"
+    },
+    "case_id": {
+      "type": "string",
+      "pattern": "^OPV-[A-Z0-9-]+$"
+    },
+    "title": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 160
+    },
+    "created_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "privacy": {
+      "enum": [
+        "private",
+        "public-safe-draft",
+        "public"
+      ]
+    },
+    "observation_summary": {
+      "type": "string",
+      "maxLength": 4000
+    },
+    "evidence_level": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 7
+    },
+    "verdict": {
+      "enum": [
+        "identified",
+        "probably-identified",
+        "unresolved",
+        "insufficient-evidence"
+      ]
+    },
+    "assets": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/asset"
+      }
+    },
+    "calibration": {
+      "$ref": "#/$defs/calibration"
+    },
+    "measurements": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/measurement"
+      }
+    },
+    "limitations": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "review": {
+      "type": "object"
+    }
+  },
+  "additionalProperties": true,
+  "$defs": {
+    "asset": {
+      "title": "OPV Asset",
+      "type": "object",
+      "required": [
+        "asset_id",
+        "name",
+        "asset_class",
+        "sha256",
+        "size_bytes",
+        "media_type"
+      ],
+      "properties": {
+        "asset_id": {
+          "type": "string"
+        },
+        "name": {
+          "type": "string"
+        },
+        "asset_class": {
+          "enum": [
+            "original",
+            "derived",
+            "enhanced",
+            "reconstruction",
+            "generated"
+          ]
+        },
+        "is_evidence": {
+          "type": "boolean"
+        },
+        "sha256": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$"
+        },
+        "size_bytes": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "media_type": {
+          "type": "string"
+        },
+        "last_modified": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "format": "date-time"
+        }
+      },
+      "additionalProperties": false
+    },
+    "calibration": {
+      "title": "OPV Calibration",
+      "type": "object",
+      "properties": {
+        "horizontal_field_of_view_deg": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "exclusiveMinimum": 0,
+          "maximum": 360
+        },
+        "horizontal_pixels": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "minimum": 1
+        },
+        "vertical_pixels": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "minimum": 1
+        },
+        "frame_rate_fps": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "exclusiveMinimum": 0
+        },
+        "status": {
+          "enum": [
+            "unknown",
+            "estimated",
+            "partially-calibrated",
+            "calibrated"
+          ]
+        }
+      },
+      "additionalProperties": true
+    },
+    "measurement": {
+      "title": "OPV Image-Line Measurement",
+      "type": "object",
+      "required": [
+        "measurement_id",
+        "pixel_extent",
+        "angular_extent_deg",
+        "formula",
+        "status"
+      ],
+      "properties": {
+        "measurement_id": {
+          "type": "string"
+        },
+        "asset_id": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "pixel_extent": {
+          "type": "number",
+          "minimum": 0
+        },
+        "angular_extent_deg": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 360
+        },
+        "formula": {
+          "const": "pixel_extent * horizontal_field_of_view_deg / horizontal_pixels"
+        },
+        "status": {
+          "enum": [
+            "measured",
+            "derived",
+            "assumption-based"
+          ]
+        },
+        "points": {
+          "type": "array",
+          "minItems": 2,
+          "maxItems": 2
+        }
+      },
+      "additionalProperties": true
+    }
+  }
+}

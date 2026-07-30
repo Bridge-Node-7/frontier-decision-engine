@@ -1,0 +1,49 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://bridge-node-7.github.io/frontier-decision-engine/schemas/measurement.schema.json",
+  "title": "OPV Image-Line Measurement",
+  "type": "object",
+  "required": [
+    "measurement_id",
+    "pixel_extent",
+    "angular_extent_deg",
+    "formula",
+    "status"
+  ],
+  "properties": {
+    "measurement_id": {
+      "type": "string"
+    },
+    "asset_id": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "pixel_extent": {
+      "type": "number",
+      "minimum": 0
+    },
+    "angular_extent_deg": {
+      "type": "number",
+      "minimum": 0,
+      "maximum": 360
+    },
+    "formula": {
+      "const": "pixel_extent * horizontal_field_of_view_deg / horizontal_pixels"
+    },
+    "status": {
+      "enum": [
+        "measured",
+        "derived",
+        "assumption-based"
+      ]
+    },
+    "points": {
+      "type": "array",
+      "minItems": 2,
+      "maxItems": 2
+    }
+  },
+  "additionalProperties": true
+}

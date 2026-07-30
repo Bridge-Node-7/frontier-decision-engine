@@ -1,0 +1,46 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://bridge-node-7.github.io/frontier-decision-engine/schemas/calibration.schema.json",
+  "title": "OPV Calibration",
+  "type": "object",
+  "properties": {
+    "horizontal_field_of_view_deg": {
+      "type": [
+        "number",
+        "null"
+      ],
+      "exclusiveMinimum": 0,
+      "maximum": 360
+    },
+    "horizontal_pixels": {
+      "type": [
+        "integer",
+        "null"
+      ],
+      "minimum": 1
+    },
+    "vertical_pixels": {
+      "type": [
+        "integer",
+        "null"
+      ],
+      "minimum": 1
+    },
+    "frame_rate_fps": {
+      "type": [
+        "number",
+        "null"
+      ],
+      "exclusiveMinimum": 0
+    },
+    "status": {
+      "enum": [
+        "unknown",
+        "estimated",
+        "partially-calibrated",
+        "calibrated"
+      ]
+    }
+  },
+  "additionalProperties": true
+}

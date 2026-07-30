@@ -1,0 +1,26 @@
+{
+  "profile_id": "phenomena",
+  "title": "Open Phenomenon Verification",
+  "version": "0.2.10",
+  "decision_prompts": [
+    "Is additional collection justified?",
+    "Should a synchronized observation station be deployed?",
+    "Is the evidence sufficient for independent review?",
+    "Is public release responsible?",
+    "Which conventional control should be performed next?"
+  ],
+  "evidence_classes": [
+    "physical-observation",
+    "reported-experience",
+    "candidate-mechanism",
+    "analyst-interpretation",
+    "generated-visualization"
+  ],
+  "safeguards": [
+    "Generated visualizations are never evidence.",
+    "Assumed range is never represented as measured range.",
+    "Reported experiences remain separate from physical sensor observations.",
+    "The system does not automatically declare extraordinary origin, intent, or mechanism.",
+    "Human review owns every consequential conclusion."
+  ]
+}

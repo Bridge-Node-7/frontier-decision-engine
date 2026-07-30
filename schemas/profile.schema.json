@@ -1,0 +1,44 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://bridge-node-7.github.io/frontier-decision-engine/schemas/profile.schema.json",
+  "title": "Frontier Decision Engine Profile",
+  "type": "object",
+  "required": [
+    "profile_id",
+    "title",
+    "version",
+    "decision_prompts",
+    "evidence_classes",
+    "safeguards"
+  ],
+  "properties": {
+    "profile_id": {
+      "type": "string"
+    },
+    "title": {
+      "type": "string"
+    },
+    "version": {
+      "type": "string"
+    },
+    "decision_prompts": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "evidence_classes": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "safeguards": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    }
+  },
+  "additionalProperties": true
+}
