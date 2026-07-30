@@ -1,0 +1,48 @@
+{
+  "schema_version": "0.1.0",
+  "case_id": "OPV-SYNTHETIC-CONTROL-001",
+  "title": "Synthetic angular measurement control",
+  "created_at": "2026-07-29T20:00:00Z",
+  "privacy": "public",
+  "observation_summary": "Generated calibration fixture with a 192-pixel horizontal line in a 1920-pixel-wide image.",
+  "evidence_level": 0,
+  "verdict": "identified",
+  "assets": [
+    {
+      "asset_id": "ASSET-SYNTHETIC-001",
+      "name": "control.svg",
+      "asset_class": "generated",
+      "is_evidence": false,
+      "sha256": "cb0f888aff16b30ca95124dd4ab4a4b19e7646f854cd17d6bd545d078d69760c",
+      "size_bytes": 534,
+      "media_type": "image/svg+xml",
+      "last_modified": null
+    }
+  ],
+  "calibration": {
+    "horizontal_field_of_view_deg": 40,
+    "horizontal_pixels": 1920,
+    "vertical_pixels": 1080,
+    "frame_rate_fps": null,
+    "status": "calibrated"
+  },
+  "measurements": [
+    {
+      "measurement_id": "MEASUREMENT-001",
+      "asset_id": "ASSET-SYNTHETIC-001",
+      "pixel_extent": 192,
+      "angular_extent_deg": 4,
+      "formula": "pixel_extent * horizontal_field_of_view_deg / horizontal_pixels",
+      "status": "derived",
+      "points": [{"x": 864, "y": 540}, {"x": 1056, "y": 540}]
+    }
+  ],
+  "limitations": [
+    "This fixture is generated and is not observation evidence.",
+    "It tests calculation and asset-class controls only."
+  ],
+  "review": {
+    "conventional_checks": ["Synthetic control verified"],
+    "reviewer_notes": "Expected result: 4 degrees. Generated asset correctly remains Evidence Level 0."
+  }
+}
