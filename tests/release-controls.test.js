@@ -50,15 +50,8 @@ test('release preflight is minimally privileged and never publishes', async () =
   assert.match(workflow, /npm run package:release/);
 });
 
-test('public release records distinguish implemented controls from v0.2.10 evidence', async () => {
-  const text = (await Promise.all([
-    read('README.md'),
-    read('RELEASE_PROVENANCE.md'),
-    read('V_AND_V_REPORT.md'),
-    read('docs/releases/v0.2.10.md'),
-  ])).join('\n');
-  assert.match(text, /not exercised for v0\.2\.10/i);
-  assert.equal(text.includes('49 automated Node tests'), false);
-  assert.equal(text.includes('48 automated Node tests'), false);
-  assert.equal(text.includes('46 Node tests pass'), false);
+test('historical release note keeps the execution boundary concise', async () => {
+  const notes = await read('docs/releases/v0.2.10.md');
+  assert.match(notes, /not exercised for\s+this historical release/i);
+  assert.ok(notes.split(/\r?\n/).length <= 12);
 });

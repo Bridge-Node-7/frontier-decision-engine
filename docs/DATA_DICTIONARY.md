@@ -1,13 +1,14 @@
-# Data Dictionary
+# Data
 
-## Observation dataset
+The public application uses three sample datasets.
 
-Contains calibration assumptions, object measurements, track points, and sequence-level summaries. Physical-size and speed scenarios remain assumption-bound unless range is independently measured.
+| Dataset | Class | Purpose |
+| --- | --- | --- |
+| `morphology.json` | Measured / derived | Demonstrates image-plane morphology and angular-motion summaries. |
+| `experiences.json` | Synthetic | Demonstrates event hierarchy, classification, filtering, and limitations. |
+| `references.json` | Referenced / interpreted | Demonstrates research-navigation mappings and analyst scores. |
 
-## Experience dataset
-
-Contains public-safe event identifiers, labels, life periods, stage codes, category codes, event type, and parent relationships. Exact dates, ages, locations, and narratives are omitted.
-
-## Reference map
-
-Contains citations as entered, summaries, analyst interpretations, binary signature mappings, and analyst relevance scores. `verification_status: workbook_mapping_only` means the original publication and supporting passage have not been independently verified in this repository.
+The synthetic event registry contains no personal source history. The other
+datasets exclude original workbooks and source media. A stored source
+fingerprint identifies the derivation input but does not establish authenticity,
+identity, range, causation, or scientific confirmation.

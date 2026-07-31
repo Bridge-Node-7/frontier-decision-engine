@@ -49,34 +49,32 @@ def prepare_page(browser, viewport: dict[str, int], color_scheme: str):
     return context, page
 
 
-def advance_decision(page, steps: int) -> None:
-    for _ in range(steps):
-        page.locator("#decision-next").click()
-        page.locator("#decision-step-heading").wait_for(state="visible")
-        page.locator("#decision-step-heading:focus").wait_for(state="attached")
 
 
 def capture(browser) -> None:
+    # Capture the single product screenshot used by the public README.
     OUTPUT.mkdir(parents=True, exist_ok=True)
+    context, page = prepare_page(
+        browser,
+        {"width": 1440, "height": 1200},
+        "light",
+    )
+    try:
+        route(
+            page,
+            "http://fde.test",
+            "/decision",
+            "#decision-step-heading",
+            "Frame the real decision",
+        )
+        page.screenshot(
+            path=str(OUTPUT / "desktop-decision-frame.png"),
+            full_page=False,
+        )
+    finally:
+        context.close()
 
-    context, page = prepare_page(browser, {"width": 1440, "height": 1200}, "light")
-    route(page, "http://fde.test", "/decision", "#decision-step-heading", "Frame the real decision")
-    page.screenshot(path=str(OUTPUT / "desktop-decision-frame.png"), full_page=False)
-    advance_decision(page, 5)
-    page.screenshot(path=str(OUTPUT / "desktop-decision-brief.png"), full_page=False)
-    context.close()
 
-    context, page = prepare_page(browser, {"width": 1440, "height": 1200}, "dark")
-    route(page, "http://fde.test", "/decision", "#decision-step-heading", "Frame the real decision")
-    advance_decision(page, 4)
-    page.screenshot(path=str(OUTPUT / "desktop-stress-test-dark.png"), full_page=False)
-    context.close()
-
-    context, page = prepare_page(browser, {"width": 390, "height": 844}, "light")
-    route(page, "http://fde.test", "/decision", "#decision-step-heading", "Frame the real decision")
-    advance_decision(page, 5)
-    page.screenshot(path=str(OUTPUT / "mobile-decision-brief.png"), full_page=False)
-    context.close()
 
 
 def main() -> None:

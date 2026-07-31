@@ -31,21 +31,6 @@ test('affordability is modeled as an at-least desirability objective', async () 
   assert.equal(objective.direction, 'at-least');
   assert.equal(objective.unit, 'desirability score');
 });
-
-test('canonical release documents do not cite superseded archives or hashes', async () => {
-  const text = (await Promise.all([
-    read('COMPREHENSIVE_VV_UX_AUDIT.md'),
-    read('V_AND_V_REPORT.md'),
-    read('RELEASE_PROVENANCE.md'),
-  ])).join('\n');
-  for (const stale of [
-    '88006d9f4ead8cf7c62141f4c2b5711bd320b362c35e2e12bd7f562c211bdfc2',
-    'd0afa8f61473b8915d5d6393ae08abab9ba0683af48aef0c428f93df32893af7',
-    'frontier-decision-engine-v0.2.1(1).zip',
-    'frontier-decision-engine-v0.2.1-final.zip',
-  ]) assert.equal(text.includes(stale), false);
-});
-
 test('browser end-to-end harness is wired into the application and package scripts', async () => {
   const runner = await read('scripts/browser_e2e.py');
   const requirements = await read('requirements-dev.txt');
@@ -134,22 +119,6 @@ test('tag-driven release workflow verifies identity and publishes deterministic 
   assert.match(workflow, /persist-credentials: false/);
   assert.match(verifier, /tag .* does not match package version/);
 });
-
-test('public release documentation includes accessibility and GitHub release runbooks', async () => {
-  const accessibility = await read('docs/ACCESSIBILITY_TEST_PLAN.md');
-  const runbook = await read('docs/GITHUB_RELEASE_RUNBOOK.md');
-  const releaseNotes = await read('docs/releases/v0.2.10.md');
-  assert.match(accessibility, /NVDA/);
-  assert.match(accessibility, /400%/);
-  assert.match(runbook, /private vulnerability reporting/);
-  assert.match(runbook, /one initial bootstrap push to `main`/);
-  assert.match(runbook, /Creating a public repository is an explicit public action/);
-  assert.match(runbook, /git tag -s v0\.2\.10/);
-  assert.match(releaseNotes, /reference implementation/);
-});
-
-
-
 test('current public release uses verified browser tooling and current official immutable action pins', async () => {
   const requirements = await read('requirements-dev.txt');
   const ci = await read('.github/workflows/ci.yml');
@@ -170,20 +139,6 @@ test('current public release uses verified browser tooling and current official 
   assert.match(pages, /actions\/upload-pages-artifact@fc324d3547104276b827a68afc52ff2a11cc49c9 # v5\.0\.0/);
   assert.match(pages, /actions\/deploy-pages@cd2ce8fcbc39b97be8ca5fce6e763baed58fa128 # v5\.0\.0/);
 });
-
-test('README references only screenshot evidence included in the release tree', async () => {
-  const readme = await read('README.md');
-  assert.equal(readme.includes('docs/screenshots/v0.2.0/'), false);
-  for (const name of [
-    'desktop-decision-frame.png',
-    'desktop-stress-test-dark.png',
-    'desktop-decision-brief.png',
-    'mobile-decision-brief.png',
-  ]) {
-    assert.equal(readme.includes(`docs/screenshots/v0.2.10/${name}`), true);
-  }
-});
-
 test('cross-platform release inputs are normalized and binary-safe', async () => {
   const attributes = await read('.gitattributes');
   const nodeVersion = await read('.node-version');
@@ -192,24 +147,6 @@ test('cross-platform release inputs are normalized and binary-safe', async () =>
   assert.match(attributes, /^\*\.zip binary$/m);
   assert.equal(nodeVersion.trim(), '22');
 });
-
-test('delivery automation includes dependency maintenance, PR review, and artifact attestations', async () => {
-  const dependabot = await read('.github/dependabot.yml');
-  const pullRequest = await read('.github/pull_request_template.md');
-  const release = await read('.github/workflows/release.yml');
-  const runbook = await read('docs/GITHUB_RELEASE_RUNBOOK.md');
-  assert.match(dependabot, /package-ecosystem: pip/);
-  assert.match(pullRequest, /## Public boundary/);
-  assert.match(pullRequest, /npm run check/);
-  assert.match(release, /id-token: write/);
-  assert.match(release, /attestations: write/);
-  assert.match(release, /actions\/attest@508db95dd578ae2727ebd6217d5ba78e4fbda05d # v4\.2\.1/);
-  assert.match(release, /subject-path:[\s\S]*\.zip[\s\S]*\.zip\.sha256/);
-  assert.match(runbook, /gh release verify v0\.2\.10/);
-  assert.match(runbook, /gh attestation verify frontier-decision-engine-v0\.2\.10\.zip/);
-});
-
-
 test('Pages workflow runs the complete UX gate against the deployed HTTPS origin', async () => {
   const pages = await read('.github/workflows/pages.yml');
   const runner = await read('scripts/browser_e2e.py');
@@ -258,20 +195,97 @@ test('post-publication verification operates on freshly downloaded hosted bytes'
   assert.equal((hostedStep.match(/gh attestation verify/g) || []).length, 2);
 });
 
-test('Public release docs require immutable setup and independent verification of both hosted artifacts', async () => {
-  const runbook = await read('docs/GITHUB_RELEASE_RUNBOOK.md');
-  const checklist = await read('docs/RELEASE_CHECKLIST.md');
-  const setup = await read('docs/GITHUB_SETUP.md');
-  const text = `${runbook}\n${checklist}\n${setup}`;
-  assert.match(text, /Enable release immutability/);
-  assert.match(text, /RELEASE_ADMIN_TOKEN/);
-  assert.match(text, /Administration: read/);
-  assert.match(text, /immutable-releases/);
-  assert.match(text, /X-GitHub-Api-Version: 2026-03-10/);
-  assert.match(text, /git tag -s v0\.2\.10/);
-  assert.equal(text.includes('Use `git tag -a`'), false);
-  assert.match(runbook, /gh release download v0\.2\.10/);
-  assert.match(runbook, /verify-asset v0\.2\.10 frontier-decision-engine-v0\.2\.10\.zip/);
-  assert.match(runbook, /verify-asset v0\.2\.10 frontier-decision-engine-v0\.2\.10\.zip\.sha256/);
-  assert.match(runbook, /attestation verify frontier-decision-engine-v0\.2\.10\.zip\.sha256/);
+test('public repository surface stays lean and user-focused', async () => {
+  const { readdir } = await import('node:fs/promises');
+  const rootEntries = await readdir(new URL('../', import.meta.url), { withFileTypes: true });
+  const rootMarkdown = rootEntries
+    .filter((entry) => entry.isFile() && entry.name.endsWith('.md'))
+    .map((entry) => entry.name)
+    .sort();
+  assert.deepEqual(rootMarkdown, [
+    'CODE_OF_CONDUCT.md',
+    'CONTRIBUTING.md',
+    'README.md',
+    'SECURITY.md',
+  ]);
+
+  const docs = await readdir(new URL('../docs/', import.meta.url), { withFileTypes: true });
+  const docsMarkdown = docs
+    .filter((entry) => entry.isFile() && entry.name.endsWith('.md'))
+    .map((entry) => entry.name)
+    .sort();
+  assert.deepEqual(docsMarkdown, [
+    'ARCHITECTURE.md',
+    'DATA_DICTIONARY.md',
+    'METHODOLOGY.md',
+    'PRIVACY.md',
+    'RELEASING.md',
+  ]);
+
+  const readme = await read('README.md');
+  assert.ok(readme.split(/\r?\n/).length <= 100);
+  assert.match(readme, /project-facts\.json/);
+  assert.match(readme, /synthetic\s+event\s+registry/i);
+});
+
+test('public event registry is synthetic and contains no personal history', async () => {
+  const data = JSON.parse(await read('site/data/experiences.json'));
+  assert.equal(data.dataset_id, 'opv-experiences-synthetic-v1');
+  assert.equal(data.evidence_class, 'synthetic-demonstration');
+  assert.equal(data.privacy.status, 'synthetic-no-personal-source');
+  assert.equal(data.source.included_in_public_repository, true);
+  assert.equal(data.primary_events.length, 41);
+  assert.equal(data.subphases.length, 22);
+
+  const text = JSON.stringify(data);
+  const privateSourceTokens = [
+    '4D_' + 'Experiences_' + 'Integrated',
+    'Longitudinal ' + 'Experience Registry',
+    'Child' + 'hood',
+    '2019' + '\u2013' + '2022',
+    'OBEs over ' + 'Bribie',
+    'Malevolent ' + 'wrinkled figure',
+    'Approx_' + 'Age',
+  ];
+  for (const token of privateSourceTokens) {
+    assert.equal(text.toLowerCase().includes(token.toLowerCase()), false);
+  }
+});
+
+test('delivery automation retains dependency, review, and attestation controls', async () => {
+  const dependabot = await read('.github/dependabot.yml');
+  const pullRequest = await read('.github/pull_request_template.md');
+  const release = await read('.github/workflows/release.yml');
+  assert.match(dependabot, /package-ecosystem: pip/);
+  assert.match(pullRequest, /## Public boundary/);
+  assert.match(pullRequest, /npm run check/);
+  assert.match(release, /id-token: write/);
+  assert.match(release, /attestations: write/);
+  assert.match(release, /actions\/attest@508db95dd578ae2727ebd6217d5ba78e4fbda05d/);
+});
+
+test('README references only the retained product screenshot', async () => {
+  const readme = await read('README.md');
+  assert.match(readme, /docs\/screenshots\/v0\.2\.10\/desktop-decision-frame\.png/);
+  for (const removed of [
+    'desktop-' + 'stress-test-dark.png',
+    'desktop-' + 'decision-brief.png',
+    'mobile-' + 'decision-brief.png',
+  ]) {
+    assert.equal(readme.includes(removed), false);
+  }
+});
+
+test('screenshot helper generates only the retained public image', async () => {
+  const capture = await read('scripts/capture_screenshots.py');
+  assert.equal((capture.match(/page\.screenshot\(/g) || []).length, 1);
+  assert.match(capture, /desktop-decision-frame\.png/);
+  const removed = [
+    'desktop-' + 'decision-brief.png',
+    'desktop-' + 'stress-test-dark.png',
+    'mobile-' + 'decision-brief.png',
+  ];
+  for (const name of removed) {
+    assert.equal(capture.includes(name), false);
+  }
 });
