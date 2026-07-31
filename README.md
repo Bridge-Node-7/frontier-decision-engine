@@ -4,7 +4,7 @@
 
 Frontier Decision Engine helps people and institutions make robust, adaptive, accountable decisions when evidence is incomplete, probabilities are disputed, models are uncertain, futures are unstable, and action is still required.
 
-Its flagship profile is **Open Phenomenon Verification**, which preserves the local-first workflow for ambiguous sensor observations, UAP, UFO, anomalous experiences, and frontier phenomena.
+Its flagship application profile, **Open Phenomenon Verification**, applies the same evidence discipline to ambiguous observations and reported experiences without defining the product’s broader category.
 
 > **Preserve the evidence. Expose assumptions. Explore many futures. Reveal vulnerabilities. Choose accountable action. Adapt as reality unfolds.**
 
@@ -18,7 +18,7 @@ Additional verified component renders:
 - [Desktop Robust Decision Brief](docs/screenshots/v0.2.10/desktop-decision-brief.png)
 - [Mobile Robust Decision Brief](docs/screenshots/v0.2.10/mobile-decision-brief.png)
 
-These images were produced from the exact v0.2.10 source in Chromium after the end-to-end release gate. A live GitHub Pages capture remains a publication gate.
+These images were produced from the exact v0.2.10 source in Chromium as isolated-browser evidence. They do not establish that v0.2.10 was published through the production Release workflow.
 
 ## What is real in v0.2.10
 
@@ -58,13 +58,13 @@ These images were produced from the exact v0.2.10 source in Chromium after the e
 - No backend, accounts, cookies, analytics, or default upload endpoint
 - No external runtime dependencies
 - JSON Schemas published with the site
-- 49 automated Node tests
+- Automated Node test suite; the current discovered count is generated in `project-facts.json`
 - Automated desktop-light, 390-pixel mobile-light, desktop-dark, 200%-equivalent reflow, 400%-equivalent reflow, and forced-colors browser end-to-end tests
 - Public-boundary validation
 - Deterministic release archive and SHA-256 checksum
 - Semantic accessibility smoke, table captions, keyboard focus, reflow, forced-colors, and PDF print checks
 - Live GitHub Pages end-to-end gate against the deployed HTTPS URL
-- Verified signed-tag, immutable-release, deterministic artifact, and attestation gates
+- Production workflow implementation for signed tags, immutable releases, deterministic artifacts, attestations, and hosted verification; public workflow history shows it was not exercised for v0.2.10
 - Pinned GitHub Actions
 - Release packaging excludes workbooks, private inputs, Python caches, and generated build directories
 
@@ -136,7 +136,7 @@ Open `http://localhost:8000`.
 ## Verify
 
 Requires Node.js 22 or newer, Python 3.11 or newer, and Chromium or Google Chrome for the browser end-to-end gate.
-The browser gate prefers a native localhost origin and native Web Crypto. In managed sandboxes that block localhost navigation, it reports `sandbox-fallback` and runs the exact static modules with a test-only SHA-256 bridge; live GitHub Pages remains the final native-origin gate.
+The browser gate prefers a native localhost origin and native Web Crypto. In managed sandboxes that block localhost navigation, it reports `sandbox-fallback` and runs the static modules with a test-only SHA-256 bridge. Hosted Pages verification remains separate native-origin evidence.
 
 ```bash
 python3 -m pip install -r requirements-dev.txt
@@ -147,7 +147,7 @@ npm run check
 Expected current result:
 
 ```text
-48 tests pass
+NODE TEST SUITE PASS (count recorded in project-facts.json)
 REPOSITORY VALIDATION PASS
 desktop-light: PASS
 mobile-light: PASS
@@ -216,7 +216,7 @@ AI may not independently define stakeholder values, publish a consequential verd
 
 ## Current maturity
 
-**v0.2.10 is a working, principle-faithful reference implementation. It is not yet a validated world-leading institutional platform.**
+**v0.2.10 is a public, inspectable, principle-faithful reference implementation. It is not yet a dependable general-purpose tool, validated institutional platform, or predictive authority.**
 
 Leadership must be demonstrated through independent review, known-object controls, benchmark cases, accessibility and security audits, real pilots, and measurable improvement in decision quality.
 

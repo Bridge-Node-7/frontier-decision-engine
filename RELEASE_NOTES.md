@@ -1,27 +1,19 @@
 # Release Notes
 
-## v0.2.10 · Hosted delivery closure
+## v0.2.10 · Historical initial public release
 
-- **Windows manifest-path correction:** `build-manifest.mjs` now converts file URLs with Node's cross-platform `fileURLToPath()` API instead of reading URL `.pathname`, preventing duplicated drive prefixes such as `C:\\C:\\...` in Git Bash and Windows Node.
+- **Windows manifest-path correction:** `build-manifest.mjs` converts file URLs with Node's cross-platform `fileURLToPath()` API instead of reading URL `.pathname`, preventing duplicated drive prefixes such as `C:\C:\...` in Git Bash and Windows Node.
 
-This is the final pre-publication release candidate. Application behavior, decision results, datasets, and evidence boundaries remain unchanged from the verified baseline.
+v0.2.10 is the immutable historical initial public release. Application behavior, decision results, datasets, and evidence boundaries remain those of the verified reference implementation.
+### Included
+- Browser workflow and public-safe data validation.
+- Decision Lab and Open Phenomenon Verification reference workflows.
+- Deterministic packaging implementation and adjacent SHA-256 checksum.
+- Production workflow implementation for signed tags, release immutability, attestations, and hosted verification.
+- Repository, browser, accessibility, export, print, security, and public-boundary checks.
+### Evidence boundary
 
-### Added
+Public workflow history shows that the production Release workflow was not exercised for v0.2.10. Do not cite signed-tag enforcement, attestations, immutable-release precheck, or hosted-asset verification as completed delivery evidence for this release.
+### Next release rule
 
-- Automatic end-to-end UX verification against the live GitHub Pages HTTPS URL after deployment.
-- External-origin browser mode through `FDE_BASE_URL`; it fails closed and does not use the sandbox fallback.
-- GitHub API enforcement that the annotated release tag is cryptographically signed and marked `verified: true` with reason `valid`.
-- A release-workflow precondition that repository release immutability is enabled before publishing.
-- Post-publication verification of release attestations and both hosted assets.
-- Explicit immutable-release setup and verification in the GitHub runbook, setup guide, and release checklist.
-- Five delivery-specific release-integrity tests covering the live Pages gate, protected immutable-release precheck, signed release gate, clean hosted-asset download, and hosted delivery documentation.
-
-### Retained
-
-- 49 automated Node tests and the complete repository, browser, accessibility, export, print, security, and deterministic packaging gates.
-- Immutable GitHub Action pins, lockfile installation, disabled package-manager caching, cross-platform line-ending normalization, Python and Actions Dependabot coverage, PR review template, and artifact attestations.
-- Strategy-specific scenario effects, critical-objective gating, mandatory human rationale, critical-gap disclosure, complete exports, and public-safe evidence boundaries.
-
-### Release rule
-
-Do not publish the tag until hosted CI, the live Pages UX gate, repository security settings, signed-tag preflight, and immutable releases are all green. Do not create another local version unless the hosted gate reveals a real defect.
+v0.3.0 will be the first stable release required to pass the complete signed, automated, attested, and hosted-verified production pipeline. A public release candidate must be explicitly marked prerelease and non-Latest before publication.

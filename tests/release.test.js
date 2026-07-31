@@ -4,21 +4,24 @@ import { readFile } from 'node:fs/promises';
 
 const read = (path) => readFile(new URL(`../${path}`, import.meta.url), 'utf8');
 
-test('release identity is synchronized at v0.2.10', async () => {
+test('release identity and generated project facts are synchronized at v0.2.10', async () => {
   const packageData = JSON.parse(await read('package.json'));
   const citation = await read('CITATION.cff');
   const schema = JSON.parse(await read('schemas/decision.schema.json'));
   const example = JSON.parse(await read('examples/phenomena-second-station/decision.fde.json'));
+  const facts = JSON.parse(await read('project-facts.json'));
   assert.equal(packageData.version, '0.2.10');
   assert.match(citation, /^version:\s*0\.2\.10\s*$/m);
   assert.equal(schema.properties.schema_version.const, '0.2.10');
   assert.equal(example.schema_version, '0.2.10');
+  assert.equal(facts.applicationVersion, packageData.version);
+  assert.equal(facts.schemaVersions.decision, schema.properties.schema_version.const);
+  assert.ok(Number.isInteger(facts.testCount) && facts.testCount > 0);
   const readme = await read('README.md');
-  assert.match(readme, /49 automated Node tests/);
-  assert.equal(readme.includes('48 automated Node tests'), false);
-  assert.equal(readme.includes('46 automated Node tests'), false);
-  assert.equal(readme.includes('41 automated Node tests'), false);
-  assert.equal(readme.includes('39 automated Node tests'), false);
+  assert.match(readme, /project-facts\.json/);
+  for (const stale of ['49 automated Node tests', '48 automated Node tests', '46 automated Node tests']) {
+    assert.equal(readme.includes(stale), false);
+  }
 });
 
 test('affordability is modeled as an at-least desirability objective', async () => {
