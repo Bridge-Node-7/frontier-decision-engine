@@ -341,7 +341,7 @@ def route_suite(page: Page, base: str) -> None:
         ("/", "h1", "Decide well when prediction fails"),
         ("/datasets", "h1", "Explore before you build"),
         ("/dataset/morphology", "h1", "Karijini morphology and motion"),
-        ("/dataset/experiences", "h1", "Longitudinal experience registry"),
+        ("/dataset/experiences", "h1", "Synthetic Event Registry"),
         ("/dataset/references", "h1", "Thematic research map"),
         ("/method", "h1", "A trustworthy encounter with ambiguity"),
     ]

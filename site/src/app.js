@@ -109,10 +109,10 @@ function renderHome() {
     </section>
 
     <section class="stack" style="margin-top:3rem" aria-labelledby="datasets-title">
-      <div class="section-head"><div><span class="eyebrow">Real source data</span><h2 id="datasets-title">Three datasets, three evidence classes</h2></div><a href="#/datasets">View all datasets</a></div>
+      <div class="section-head"><div><span class="eyebrow">Sample data</span><h2 id="datasets-title">Three datasets, three evidence classes</h2></div><a href="#/datasets">View all datasets</a></div>
       <div class="grid-3">
         ${datasetCard('morphology', 'Karijini morphology and motion', '41 objects · 40 sequences', 'Measured and derived single-camera analysis.', 'Measured / derived', 'measured')}
-        ${datasetCard('experiences', 'Longitudinal experience registry', '41 primary · 22 subphases', 'Public-safe reported and analyst-coded structure.', 'Reported / coded', 'reported')}
+        ${datasetCard('experiences', 'Synthetic event registry', '41 primary · 22 subphases', 'Generated records for hierarchy and classification testing.', 'Synthetic', 'reported')}
         ${datasetCard('references', 'Thematic research map', '53 reference clusters', 'Analyst-mapped candidate research relationships.', 'Referenced / interpreted', 'interpreted')}
       </div>
     </section>`;
@@ -132,13 +132,13 @@ function renderDatasets() {
   main.innerHTML = `
     ${breadcrumbs([{ label: 'Home', href: '#/' }, { label: 'Datasets' }])}
     <section class="stack">
-      <div class="section-head"><div><span class="eyebrow">Public-safe sample collections</span><h1 style="font-size:clamp(2rem,5vw,3.8rem)">Explore before you build.</h1></div><p>Each collection was normalized from a source workbook, hashed, structurally validated, and assigned a distinct evidence class.</p></div>
+      <div class="section-head"><div><span class="eyebrow">Sample collections</span><h1 style="font-size:clamp(2rem,5vw,3.8rem)">Explore before you build.</h1></div><p>Each collection is published as stable JSON with an explicit evidence class and limitations.</p></div>
       <div class="grid-3">
         ${datasetCard('morphology', 'Karijini morphology and motion', '41 objects · 169 valid intervals', 'Angular morphology and image-plane motion. No true range or physical identity is established.', 'Measured / derived', 'measured')}
-        ${datasetCard('experiences', 'Longitudinal experience registry', '63 analytic units, not 63 encounters', 'A privacy-reduced chronology preserving parent and subphase structure.', 'Reported / coded', 'reported')}
+        ${datasetCard('experiences', 'Synthetic event registry', '63 analytic units', 'Generated parent and subphase records for interface testing.', 'Synthetic', 'reported')}
         ${datasetCard('references', 'Thematic research map', '9 themes · 59 signature associations', 'Research navigation and analyst relevance mapping, not scientific confirmation.', 'Referenced / interpreted', 'interpreted')}
       </div>
-      <div class="soft-panel stack"><h3>Why normalize the workbooks?</h3><p class="muted">The website reads stable JSON rather than trusting spreadsheet formula portability, chart objects, hidden formatting, or stale cached summaries. The original workbook hash remains recorded, but the original file is not published by default.</p></div>
+      <div class="soft-panel stack"><h3>Why stable JSON?</h3><p class="muted">The website reads validated JSON so structures and limitations remain explicit and portable.</p></div>
     </section>`;
 }
 
@@ -162,7 +162,7 @@ function datasetHeader(data, className) {
       <div class="actions">${badge(evidenceBadge(data.dataset_type), className)}${badge(`Schema ${data.schema_version}`)}</div>
       <h1 style="font-size:clamp(2rem,5vw,3.8rem)">${escapeHtml(data.title)}</h1>
       <p class="lede">${escapeHtml(data.evidence_class.replaceAll('-', ' '))}</p>
-      <div class="soft-panel"><strong>Source workbook SHA-256</strong><div class="hash">${escapeHtml(data.source.sha256)}</div><p class="help">The source workbook is not included in the public repository.</p></div>
+      <div class="soft-panel"><strong>Source fingerprint</strong><div class="hash">${escapeHtml(data.source.sha256)}</div><p class="help">${escapeHtml(data.source.note || (data.source.included_in_public_repository ? "The source is included in this repository." : "The source file is not included in this repository."))}</p></div>
     </section>`;
 }
 
@@ -203,19 +203,19 @@ function renderExperiences(data, filter = {}) {
   main.innerHTML = `
     ${datasetHeader(data, 'reported')}
     <section class="metrics">
-      ${metric('Primary encounters', data.summary.primary_encounters)}${metric('Nested subphases', data.summary.nested_subphases)}${metric('Analytic units', data.summary.analytic_units)}${metric('Independent encounters', '41', 'Subphases are not independent')}
+      ${metric('Primary events', data.summary.primary_encounters)}${metric('Nested subphases', data.summary.nested_subphases)}${metric('Analytic units', data.summary.analytic_units)}${metric('Synthetic source', 'Yes', 'No personal history')}
     </section>
     <section class="grid-2" style="margin-top:1rem">
       <div class="panel stack"><h2>Primary stage counts</h2>${barList(sortedEntries(data.summary.stage_counts_primary))}</div>
-      <div class="panel stack"><h2>Subphase coding effect</h2><p class="muted">All 22 subphases share one four-code template.</p>${barList(sortedEntries(categoryDelta).filter(([, value]) => value > 0))}<p class="help">The exact +22 increases reflect the coding template, not 22 independent confirmations.</p></div>
+      <div class="panel stack"><h2>Subphase coding effect</h2><p class="muted">The synthetic subphases share one deterministic four-code template.</p>${barList(sortedEntries(categoryDelta).filter(([, value]) => value > 0))}<p class="help">The exact +22 increases reflect the coding template, not 22 independent confirmations.</p></div>
     </section>
     <section class="panel stack" style="margin-top:1rem">
-      <div class="section-head"><div><h2>Public-safe event structure</h2><p>Exact dates, ages, locations, and narrative descriptions are omitted.</p></div><a class="button" href="./data/experiences.json" download>Download JSON</a></div>
+      <div class="section-head"><div><h2>Synthetic event structure</h2><p>No personal source data is used.</p></div><a class="button" href="./data/experiences.json" download>Download JSON</a></div>
       <div class="toolbar">
         <label class="field">Search label<input id="exp-search" type="search" value="${escapeHtml(filter.search || '')}"></label>
-        <label class="field">Event type<select id="exp-type"><option value="primary" ${type === 'primary' ? 'selected' : ''}>Primary encounters</option><option value="subphase" ${type === 'subphase' ? 'selected' : ''}>Nested subphases</option></select></label>
+        <label class="field">Event type<select id="exp-type"><option value="primary" ${type === 'primary' ? 'selected' : ''}>Primary events</option><option value="subphase" ${type === 'subphase' ? 'selected' : ''}>Nested subphases</option></select></label>
       </div>
-      <div class="table-wrap"><table><caption>Public-safe experience records</caption><thead><tr><th scope="col">ID</th><th scope="col">Label</th><th scope="col">Parent</th><th scope="col">Life period</th><th scope="col">Stage</th><th scope="col">Categories</th></tr></thead><tbody>
+      <div class="table-wrap"><table><caption>Synthetic event records</caption><thead><tr><th scope="col">ID</th><th scope="col">Label</th><th scope="col">Parent</th><th scope="col">Life period</th><th scope="col">Stage</th><th scope="col">Categories</th></tr></thead><tbody>
         ${rows.map((item) => `<tr><td>${item.event_id}</td><td>${escapeHtml(item.label)}</td><td>${item.parent_event_id ?? '—'}</td><td>${escapeHtml(item.life_period)}</td><td>${escapeHtml(item.stage_code)}</td><td>${item.category_codes.map((code) => badge(code)).join(' ')}</td></tr>`).join('') || '<tr><td colspan="6" class="empty">No matching events.</td></tr>'}
       </tbody></table></div>
     </section>

@@ -1,23 +1,19 @@
 {
-  "dataset_id": "opv-experiences-public-safe-v1",
+  "dataset_id": "opv-experiences-synthetic-v1",
   "dataset_type": "experience",
-  "title": "Longitudinal Experience Registry — Public-Safe Edition",
+  "title": "Synthetic Event Registry",
   "schema_version": "0.1.0",
-  "evidence_class": "reported-and-analyst-coded",
+  "evidence_class": "synthetic-demonstration",
   "source": {
-    "filename": "4D_Experiences_Integrated_41_63_with_charts.xlsx",
-    "sha256": "e78d23615c456bc7068d6e80c59d70a4e726e358581fa8b48c791fca1a798f03",
-    "included_in_public_repository": false
+    "filename": "synthetic-event-registry-v1",
+    "sha256": "8318ea358849a8b0fa71ec3238cc698d542473c09f3af1859aa3e98917a4a735",
+    "included_in_public_repository": true,
+    "note": "Generated demonstration data with no personal source history."
   },
   "privacy": {
-    "status": "public-safe-derived-edition",
-    "omitted_fields": [
-      "year_or_date",
-      "age_or_range",
-      "location",
-      "brief_description"
-    ],
-    "reason": "Minimize re-identification and sensitive personal disclosure while preserving analytic structure."
+    "status": "synthetic-no-personal-source",
+    "omitted_fields": [],
+    "reason": "The dataset is generated solely to exercise the public interface."
   },
   "summary": {
     "primary_encounters": 41,
@@ -72,201 +68,190 @@
     ]
   },
   "limitations": [
-    "The records document reported experiences and analyst coding, not independently verified external events.",
-    "Twenty-two subphases are nested within eight primary encounters and are not independent encounters.",
-    "All imported subphases share the same four-category assignment, which inflates those expanded totals.",
-    "Life periods are unequal exposure windows and counts are not duration-normalized incidence rates.",
-    "The public-safe edition omits source narratives and therefore cannot support independent recoding."
+    "All records are synthetic and must not be treated as observations or reports.",
+    "Counts and hierarchy exist only to exercise filtering, summaries, and parent-child relationships.",
+    "Category assignments are deterministic sample values, not empirical findings."
   ],
   "categories": [
     {
       "Category_Code": "ENT",
-      "Category_Name": "Entities / NHI",
-      "Definition": "Presence of non-human or non-ordinary intelligences, visual or non-visual."
+      "Category_Name": "Sample Category ENT",
+      "Definition": "Synthetic classification used only for interface demonstration."
     },
     {
       "Category_Code": "CNS",
-      "Category_Name": "Consciousness State Alteration",
-      "Definition": "OBE, lucidity, bilocation, hypnagogic transitions, altered awareness."
+      "Category_Name": "Sample Category CNS",
+      "Definition": "Synthetic classification used only for interface demonstration."
     },
     {
       "Category_Code": "DIS",
-      "Category_Name": "Spatial Displacement",
-      "Definition": "Movement through structures, relocation, teleportation-like transitions."
+      "Category_Name": "Sample Category DIS",
+      "Definition": "Synthetic classification used only for interface demonstration."
     },
     {
       "Category_Code": "GEO",
-      "Category_Name": "Geometric / Energetic Phenomena",
-      "Definition": "Rings, toroids, fields, membranes, structured light or energy."
+      "Category_Name": "Sample Category GEO",
+      "Definition": "Synthetic classification used only for interface demonstration."
     },
     {
       "Category_Code": "STK",
-      "Category_Name": "Stacked Rooms / Layered Environment",
-      "Definition": "Multiple overlapping or nested perceptual environments."
+      "Category_Name": "Sample Category STK",
+      "Definition": "Synthetic classification used only for interface demonstration."
     },
     {
       "Category_Code": "TMP",
-      "Category_Name": "Temporal / Precognitive Effects",
-      "Definition": "Time distortion, foresight, non-linear temporal experience."
+      "Category_Name": "Sample Category TMP",
+      "Definition": "Synthetic classification used only for interface demonstration."
     },
     {
       "Category_Code": "SOM",
-      "Category_Name": "Somatic Traces",
-      "Definition": "Physical marks, energetic impacts, or physiological resonance from encounters."
+      "Category_Name": "Sample Category SOM",
+      "Definition": "Synthetic classification used only for interface demonstration."
     },
     {
       "Category_Code": "SYM",
-      "Category_Name": "Symbolic Gestures",
-      "Definition": "Non-linguistic communicative actions with clear semantic content."
+      "Category_Name": "Sample Category SYM",
+      "Definition": "Synthetic classification used only for interface demonstration."
     },
     {
       "Category_Code": "ENV",
-      "Category_Name": "Environmental Reconstruction",
-      "Definition": "Synthetic, constructed, or altered spatial environments."
+      "Category_Name": "Sample Category ENV",
+      "Definition": "Synthetic classification used only for interface demonstration."
     },
     {
       "Category_Code": "ORI",
-      "Category_Name": "4D Orientation Events",
-      "Definition": "Fully coherent transitions into structured non-3D spaces or 'orientation' scenes."
+      "Category_Name": "Sample Category ORI",
+      "Definition": "Synthetic classification used only for interface demonstration."
     }
   ],
   "stages": [
     {
       "Stage_Code": "S1",
-      "Stage_Name": "Stage 1 – Raw Exposure",
-      "Description": "Childhood liminal experiences, silhouettes, fear, and basic presence phenomena."
+      "Stage_Name": "Sample Stage S1",
+      "Description": "Synthetic workflow stage used only for interface demonstration."
     },
     {
       "Stage_Code": "S2",
-      "Stage_Name": "Stage 2 – Threshold Disturbance",
-      "Description": "Adolescent presence states, dread, and boundary-testing encounters."
+      "Stage_Name": "Sample Stage S2",
+      "Description": "Synthetic workflow stage used only for interface demonstration."
     },
     {
       "Stage_Code": "S3",
-      "Stage_Name": "Stage 3 – 4D Interference",
-      "Description": "Early-adult OBEs, tethering, and layered-room or interference experiences."
+      "Stage_Name": "Sample Stage S3",
+      "Description": "Synthetic workflow stage used only for interface demonstration."
     },
     {
       "Stage_Code": "S4",
-      "Stage_Name": "Stage 4 – Symbolic Integration",
-      "Description": "Mid-life symbolic gestures, geometric motifs, and meaning-rich episodes."
+      "Stage_Name": "Sample Stage S4",
+      "Description": "Synthetic workflow stage used only for interface demonstration."
     },
     {
       "Stage_Code": "S5",
-      "Stage_Name": "Stage 5 – Technical Demonstration",
-      "Description": "Post-2019 guided transitions, technical or craft-related demonstrations."
+      "Stage_Name": "Sample Stage S5",
+      "Description": "Synthetic workflow stage used only for interface demonstration."
     },
     {
       "Stage_Code": "S6",
-      "Stage_Name": "Stage 6 – Orientation",
-      "Description": "High-coherence 4D orientation events and structured reception spaces."
+      "Stage_Name": "Sample Stage S6",
+      "Description": "Synthetic workflow stage used only for interface demonstration."
     }
   ],
   "life_periods": [
     {
-      "Life_Period": "Childhood",
-      "Approx_Age": "6–15",
-      "Description": "Early-life exposure and liminal states."
+      "Life_Period": "Phase A",
+      "Description": "Synthetic sequence phase with no age or date meaning."
     },
     {
-      "Life_Period": "Teens",
-      "Approx_Age": "16–19",
-      "Description": "Adolescent threshold and early visions."
+      "Life_Period": "Phase B",
+      "Description": "Synthetic sequence phase with no age or date meaning."
     },
     {
-      "Life_Period": "20s",
-      "Approx_Age": "20–29",
-      "Description": "Early adulthood OBEs and flight experiences."
+      "Life_Period": "Phase C",
+      "Description": "Synthetic sequence phase with no age or date meaning."
     },
     {
-      "Life_Period": "30s",
-      "Approx_Age": "30–39",
-      "Description": "Intense OBEs, layered rooms, emergent interference."
+      "Life_Period": "Phase D",
+      "Description": "Synthetic sequence phase with no age or date meaning."
     },
     {
-      "Life_Period": "40s",
-      "Approx_Age": "40–47",
-      "Description": "Symbolic, communicative, and conflict-oriented encounters."
+      "Life_Period": "Phase E",
+      "Description": "Synthetic sequence phase with no age or date meaning."
     },
     {
-      "Life_Period": "2019–2022",
-      "Approx_Age": "48–51",
-      "Description": "High density of structured encounters and physical effects."
+      "Life_Period": "Phase F",
+      "Description": "Synthetic sequence phase with no age or date meaning."
     },
     {
-      "Life_Period": "2023",
-      "Approx_Age": "48–51",
-      "Description": "Transitional high-strangeness metallic-room events."
+      "Life_Period": "Phase G",
+      "Description": "Synthetic sequence phase with no age or date meaning."
     },
     {
-      "Life_Period": "2024",
-      "Approx_Age": "51–52",
-      "Description": "Bilocation, visitations, and training-like scenarios."
+      "Life_Period": "Phase H",
+      "Description": "Synthetic sequence phase with no age or date meaning."
     },
     {
-      "Life_Period": "2025",
-      "Approx_Age": "52–53",
-      "Description": "High-coherence 4D orientation, training, and craft-linked scenes."
+      "Life_Period": "Phase I",
+      "Description": "Synthetic sequence phase with no age or date meaning."
     }
   ],
   "primary_events": [
     {
       "event_id": 1,
       "parent_event_id": null,
-      "label": "Shadows on curtains",
-      "life_period": "Childhood",
+      "label": "Synthetic event 01",
+      "life_period": "Phase A",
       "stage_code": "S1",
       "category_codes": [
         "ENT",
         "CNS"
       ],
       "event_type": "primary",
-      "privacy_transform": "exact dates, ages, locations, and narrative descriptions omitted"
+      "privacy_transform": "synthetic record; no personal source"
     },
     {
       "event_id": 2,
       "parent_event_id": null,
-      "label": "Short figures around bed",
-      "life_period": "Childhood",
+      "label": "Synthetic event 02",
+      "life_period": "Phase B",
       "stage_code": "S1",
       "category_codes": [
         "ENT",
         "CNS"
       ],
       "event_type": "primary",
-      "privacy_transform": "exact dates, ages, locations, and narrative descriptions omitted"
+      "privacy_transform": "synthetic record; no personal source"
     },
     {
       "event_id": 3,
       "parent_event_id": null,
-      "label": "Malevolent wrinkled figure",
-      "life_period": "Childhood",
+      "label": "Synthetic event 03",
+      "life_period": "Phase C",
       "stage_code": "S1",
       "category_codes": [
         "ENT",
         "CNS"
       ],
       "event_type": "primary",
-      "privacy_transform": "exact dates, ages, locations, and narrative descriptions omitted"
+      "privacy_transform": "synthetic record; no personal source"
     },
     {
       "event_id": 4,
       "parent_event_id": null,
-      "label": "Void with dread",
-      "life_period": "Teens",
+      "label": "Synthetic event 04",
+      "life_period": "Phase D",
       "stage_code": "S2",
       "category_codes": [
         "CNS",
         "ENV"
       ],
       "event_type": "primary",
-      "privacy_transform": "exact dates, ages, locations, and narrative descriptions omitted"
+      "privacy_transform": "synthetic record; no personal source"
     },
     {
       "event_id": 5,
       "parent_event_id": null,
-      "label": "Guided flight",
-      "life_period": "Teens",
+      "label": "Synthetic event 05",
+      "life_period": "Phase E",
       "stage_code": "S2",
       "category_codes": [
         "ENT",
@@ -274,26 +259,26 @@
         "ENV"
       ],
       "event_type": "primary",
-      "privacy_transform": "exact dates, ages, locations, and narrative descriptions omitted"
+      "privacy_transform": "synthetic record; no personal source"
     },
     {
       "event_id": 6,
       "parent_event_id": null,
-      "label": "High-altitude floating",
-      "life_period": "20s",
+      "label": "Synthetic event 06",
+      "life_period": "Phase F",
       "stage_code": "S3",
       "category_codes": [
         "CNS",
         "DIS"
       ],
       "event_type": "primary",
-      "privacy_transform": "exact dates, ages, locations, and narrative descriptions omitted"
+      "privacy_transform": "synthetic record; no personal source"
     },
     {
       "event_id": 7,
       "parent_event_id": null,
-      "label": "OBEs over Bribie",
-      "life_period": "20s",
+      "label": "Synthetic event 07",
+      "life_period": "Phase G",
       "stage_code": "S3",
       "category_codes": [
         "CNS",
@@ -301,13 +286,13 @@
         "ENV"
       ],
       "event_type": "primary",
-      "privacy_transform": "exact dates, ages, locations, and narrative descriptions omitted"
+      "privacy_transform": "synthetic record; no personal source"
     },
     {
       "event_id": 8,
       "parent_event_id": null,
-      "label": "Falling then flying",
-      "life_period": "20s",
+      "label": "Synthetic event 08",
+      "life_period": "Phase H",
       "stage_code": "S3",
       "category_codes": [
         "CNS",
@@ -315,39 +300,39 @@
         "TMP"
       ],
       "event_type": "primary",
-      "privacy_transform": "exact dates, ages, locations, and narrative descriptions omitted"
+      "privacy_transform": "synthetic record; no personal source"
     },
     {
       "event_id": 9,
       "parent_event_id": null,
-      "label": "Ceiling tether OBE",
-      "life_period": "30s",
+      "label": "Synthetic event 09",
+      "life_period": "Phase I",
       "stage_code": "S3",
       "category_codes": [
         "CNS",
         "DIS"
       ],
       "event_type": "primary",
-      "privacy_transform": "exact dates, ages, locations, and narrative descriptions omitted"
+      "privacy_transform": "synthetic record; no personal source"
     },
     {
       "event_id": 10,
       "parent_event_id": null,
-      "label": "Pitch-black room",
-      "life_period": "30s",
+      "label": "Synthetic event 10",
+      "life_period": "Phase A",
       "stage_code": "S3",
       "category_codes": [
         "ENV",
         "CNS"
       ],
       "event_type": "primary",
-      "privacy_transform": "exact dates, ages, locations, and narrative descriptions omitted"
+      "privacy_transform": "synthetic record; no personal source"
     },
     {
       "event_id": 11,
       "parent_event_id": null,
-      "label": "Emerald figure",
-      "life_period": "30s",
+      "label": "Synthetic event 11",
+      "life_period": "Phase B",
       "stage_code": "S3",
       "category_codes": [
         "ENT",
@@ -355,13 +340,13 @@
         "CNS"
       ],
       "event_type": "primary",
-      "privacy_transform": "exact dates, ages, locations, and narrative descriptions omitted"
+      "privacy_transform": "synthetic record; no personal source"
     },
     {
       "event_id": 12,
       "parent_event_id": null,
-      "label": "Navy pendant vision",
-      "life_period": "30s",
+      "label": "Synthetic event 12",
+      "life_period": "Phase C",
       "stage_code": "S3",
       "category_codes": [
         "ENT",
@@ -369,13 +354,13 @@
         "CNS"
       ],
       "event_type": "primary",
-      "privacy_transform": "exact dates, ages, locations, and narrative descriptions omitted"
+      "privacy_transform": "synthetic record; no personal source"
     },
     {
       "event_id": 13,
       "parent_event_id": null,
-      "label": "Children from void",
-      "life_period": "30s",
+      "label": "Synthetic event 13",
+      "life_period": "Phase D",
       "stage_code": "S3",
       "category_codes": [
         "ENT",
@@ -383,52 +368,52 @@
         "ENV"
       ],
       "event_type": "primary",
-      "privacy_transform": "exact dates, ages, locations, and narrative descriptions omitted"
+      "privacy_transform": "synthetic record; no personal source"
     },
     {
       "event_id": 14,
       "parent_event_id": null,
-      "label": "Grandparents vision",
-      "life_period": "30s",
+      "label": "Synthetic event 14",
+      "life_period": "Phase E",
       "stage_code": "S3",
       "category_codes": [
         "ENT",
         "SYM"
       ],
       "event_type": "primary",
-      "privacy_transform": "exact dates, ages, locations, and narrative descriptions omitted"
+      "privacy_transform": "synthetic record; no personal source"
     },
     {
       "event_id": 15,
       "parent_event_id": null,
-      "label": "Large descending figure",
-      "life_period": "30s",
+      "label": "Synthetic event 15",
+      "life_period": "Phase F",
       "stage_code": "S3",
       "category_codes": [
         "ENT",
         "CNS"
       ],
       "event_type": "primary",
-      "privacy_transform": "exact dates, ages, locations, and narrative descriptions omitted"
+      "privacy_transform": "synthetic record; no personal source"
     },
     {
       "event_id": 16,
       "parent_event_id": null,
-      "label": "Sheets pulled",
-      "life_period": "30s",
+      "label": "Synthetic event 16",
+      "life_period": "Phase G",
       "stage_code": "S3",
       "category_codes": [
         "ENT",
         "SOM"
       ],
       "event_type": "primary",
-      "privacy_transform": "exact dates, ages, locations, and narrative descriptions omitted"
+      "privacy_transform": "synthetic record; no personal source"
     },
     {
       "event_id": 17,
       "parent_event_id": null,
-      "label": "Night talking entity",
-      "life_period": "40s",
+      "label": "Synthetic event 17",
+      "life_period": "Phase H",
       "stage_code": "S4",
       "category_codes": [
         "ENT",
@@ -436,13 +421,13 @@
         "SYM"
       ],
       "event_type": "primary",
-      "privacy_transform": "exact dates, ages, locations, and narrative descriptions omitted"
+      "privacy_transform": "synthetic record; no personal source"
     },
     {
       "event_id": 18,
       "parent_event_id": null,
-      "label": "Spine energy strike",
-      "life_period": "2019–2022",
+      "label": "Synthetic event 18",
+      "life_period": "Phase I",
       "stage_code": "S5",
       "category_codes": [
         "SOM",
@@ -450,26 +435,26 @@
         "CNS"
       ],
       "event_type": "primary",
-      "privacy_transform": "exact dates, ages, locations, and narrative descriptions omitted"
+      "privacy_transform": "synthetic record; no personal source"
     },
     {
       "event_id": 19,
       "parent_event_id": null,
-      "label": "EM anomalies",
-      "life_period": "2019–2022",
+      "label": "Synthetic event 19",
+      "life_period": "Phase A",
       "stage_code": "S5",
       "category_codes": [
         "TMP",
         "ENV"
       ],
       "event_type": "primary",
-      "privacy_transform": "exact dates, ages, locations, and narrative descriptions omitted"
+      "privacy_transform": "synthetic record; no personal source"
     },
     {
       "event_id": 20,
       "parent_event_id": null,
-      "label": "Sampling device",
-      "life_period": "2019–2022",
+      "label": "Synthetic event 20",
+      "life_period": "Phase B",
       "stage_code": "S5",
       "category_codes": [
         "ENT",
@@ -477,26 +462,26 @@
         "CNS"
       ],
       "event_type": "primary",
-      "privacy_transform": "exact dates, ages, locations, and narrative descriptions omitted"
+      "privacy_transform": "synthetic record; no personal source"
     },
     {
       "event_id": 21,
       "parent_event_id": null,
-      "label": "Short pale being",
-      "life_period": "2019–2022",
+      "label": "Synthetic event 21",
+      "life_period": "Phase C",
       "stage_code": "S5",
       "category_codes": [
         "ENT",
         "CNS"
       ],
       "event_type": "primary",
-      "privacy_transform": "exact dates, ages, locations, and narrative descriptions omitted"
+      "privacy_transform": "synthetic record; no personal source"
     },
     {
       "event_id": 22,
       "parent_event_id": null,
-      "label": "Craft dais entry",
-      "life_period": "2019–2022",
+      "label": "Synthetic event 22",
+      "life_period": "Phase D",
       "stage_code": "S5",
       "category_codes": [
         "ENT",
@@ -505,39 +490,39 @@
         "CNS"
       ],
       "event_type": "primary",
-      "privacy_transform": "exact dates, ages, locations, and narrative descriptions omitted"
+      "privacy_transform": "synthetic record; no personal source"
     },
     {
       "event_id": 23,
       "parent_event_id": null,
-      "label": "Portal figure",
-      "life_period": "2019–2022",
+      "label": "Synthetic event 23",
+      "life_period": "Phase E",
       "stage_code": "S5",
       "category_codes": [
         "ENT",
         "ENV"
       ],
       "event_type": "primary",
-      "privacy_transform": "exact dates, ages, locations, and narrative descriptions omitted"
+      "privacy_transform": "synthetic record; no personal source"
     },
     {
       "event_id": 24,
       "parent_event_id": null,
-      "label": "Squat craft",
-      "life_period": "2019–2022",
+      "label": "Synthetic event 24",
+      "life_period": "Phase F",
       "stage_code": "S5",
       "category_codes": [
         "GEO",
         "ENV"
       ],
       "event_type": "primary",
-      "privacy_transform": "exact dates, ages, locations, and narrative descriptions omitted"
+      "privacy_transform": "synthetic record; no personal source"
     },
     {
       "event_id": 25,
       "parent_event_id": null,
-      "label": "Stationary lights",
-      "life_period": "2019–2022",
+      "label": "Synthetic event 25",
+      "life_period": "Phase G",
       "stage_code": "S5",
       "category_codes": [
         "GEO",
@@ -545,13 +530,13 @@
         "TMP"
       ],
       "event_type": "primary",
-      "privacy_transform": "exact dates, ages, locations, and narrative descriptions omitted"
+      "privacy_transform": "synthetic record; no personal source"
     },
     {
       "event_id": 26,
       "parent_event_id": null,
-      "label": "Feet-first pull",
-      "life_period": "2019–2022",
+      "label": "Synthetic event 26",
+      "life_period": "Phase H",
       "stage_code": "S5",
       "category_codes": [
         "CNS",
@@ -559,26 +544,26 @@
         "ENT"
       ],
       "event_type": "primary",
-      "privacy_transform": "exact dates, ages, locations, and narrative descriptions omitted"
+      "privacy_transform": "synthetic record; no personal source"
     },
     {
       "event_id": 27,
       "parent_event_id": null,
-      "label": "Hollow dome",
-      "life_period": "2019–2022",
+      "label": "Synthetic event 27",
+      "life_period": "Phase I",
       "stage_code": "S5",
       "category_codes": [
         "ENV",
         "CNS"
       ],
       "event_type": "primary",
-      "privacy_transform": "exact dates, ages, locations, and narrative descriptions omitted"
+      "privacy_transform": "synthetic record; no personal source"
     },
     {
       "event_id": 28,
       "parent_event_id": null,
-      "label": "Campus flyover",
-      "life_period": "2019–2022",
+      "label": "Synthetic event 28",
+      "life_period": "Phase A",
       "stage_code": "S5",
       "category_codes": [
         "CNS",
@@ -586,52 +571,52 @@
         "ENV"
       ],
       "event_type": "primary",
-      "privacy_transform": "exact dates, ages, locations, and narrative descriptions omitted"
+      "privacy_transform": "synthetic record; no personal source"
     },
     {
       "event_id": 29,
       "parent_event_id": null,
-      "label": "Carrier vessels flip",
-      "life_period": "2019–2022",
+      "label": "Synthetic event 29",
+      "life_period": "Phase B",
       "stage_code": "S5",
       "category_codes": [
         "GEO",
         "ENV"
       ],
       "event_type": "primary",
-      "privacy_transform": "exact dates, ages, locations, and narrative descriptions omitted"
+      "privacy_transform": "synthetic record; no personal source"
     },
     {
       "event_id": 30,
       "parent_event_id": null,
-      "label": "Terminal building",
-      "life_period": "2019–2022",
+      "label": "Synthetic event 30",
+      "life_period": "Phase C",
       "stage_code": "S5",
       "category_codes": [
         "ENV",
         "ENT"
       ],
       "event_type": "primary",
-      "privacy_transform": "exact dates, ages, locations, and narrative descriptions omitted"
+      "privacy_transform": "synthetic record; no personal source"
     },
     {
       "event_id": 31,
       "parent_event_id": null,
-      "label": "Dual-vision",
-      "life_period": "2019–2022",
+      "label": "Synthetic event 31",
+      "life_period": "Phase D",
       "stage_code": "S5",
       "category_codes": [
         "CNS",
         "ENV"
       ],
       "event_type": "primary",
-      "privacy_transform": "exact dates, ages, locations, and narrative descriptions omitted"
+      "privacy_transform": "synthetic record; no personal source"
     },
     {
       "event_id": 32,
       "parent_event_id": null,
-      "label": "Metallic restraint room",
-      "life_period": "2023",
+      "label": "Synthetic event 32",
+      "life_period": "Phase E",
       "stage_code": "S5",
       "category_codes": [
         "ENT",
@@ -639,13 +624,13 @@
         "CNS"
       ],
       "event_type": "primary",
-      "privacy_transform": "exact dates, ages, locations, and narrative descriptions omitted"
+      "privacy_transform": "synthetic record; no personal source"
     },
     {
       "event_id": 33,
       "parent_event_id": null,
-      "label": "Violet bilocation",
-      "life_period": "2024",
+      "label": "Synthetic event 33",
+      "life_period": "Phase F",
       "stage_code": "S5",
       "category_codes": [
         "CNS",
@@ -656,13 +641,13 @@
         "ENV"
       ],
       "event_type": "primary",
-      "privacy_transform": "exact dates, ages, locations, and narrative descriptions omitted"
+      "privacy_transform": "synthetic record; no personal source"
     },
     {
       "event_id": 34,
       "parent_event_id": null,
-      "label": "Diamond/orb tent",
-      "life_period": "2025",
+      "label": "Synthetic event 34",
+      "life_period": "Phase G",
       "stage_code": "S5",
       "category_codes": [
         "GEO",
@@ -670,13 +655,13 @@
         "ENV"
       ],
       "event_type": "primary",
-      "privacy_transform": "exact dates, ages, locations, and narrative descriptions omitted"
+      "privacy_transform": "synthetic record; no personal source"
     },
     {
       "event_id": 35,
       "parent_event_id": null,
-      "label": "Sentinel vessel",
-      "life_period": "2025",
+      "label": "Synthetic event 35",
+      "life_period": "Phase H",
       "stage_code": "S5",
       "category_codes": [
         "CNS",
@@ -687,13 +672,13 @@
         "SYM"
       ],
       "event_type": "primary",
-      "privacy_transform": "exact dates, ages, locations, and narrative descriptions omitted"
+      "privacy_transform": "synthetic record; no personal source"
     },
     {
       "event_id": 36,
       "parent_event_id": null,
-      "label": "Ring facility+craft",
-      "life_period": "2025",
+      "label": "Synthetic event 36",
+      "life_period": "Phase I",
       "stage_code": "S6",
       "category_codes": [
         "GEO",
@@ -703,13 +688,13 @@
         "TMP"
       ],
       "event_type": "primary",
-      "privacy_transform": "exact dates, ages, locations, and narrative descriptions omitted"
+      "privacy_transform": "synthetic record; no personal source"
     },
     {
       "event_id": 37,
       "parent_event_id": null,
-      "label": "Sandy Cape",
-      "life_period": "2025",
+      "label": "Synthetic event 37",
+      "life_period": "Phase A",
       "stage_code": "S5",
       "category_codes": [
         "GEO",
@@ -717,13 +702,13 @@
         "ENV"
       ],
       "event_type": "primary",
-      "privacy_transform": "exact dates, ages, locations, and narrative descriptions omitted"
+      "privacy_transform": "synthetic record; no personal source"
     },
     {
       "event_id": 38,
       "parent_event_id": null,
-      "label": "Learning centre",
-      "life_period": "2025",
+      "label": "Synthetic event 38",
+      "life_period": "Phase B",
       "stage_code": "S5",
       "category_codes": [
         "CNS",
@@ -732,13 +717,13 @@
         "ENT"
       ],
       "event_type": "primary",
-      "privacy_transform": "exact dates, ages, locations, and narrative descriptions omitted"
+      "privacy_transform": "synthetic record; no personal source"
     },
     {
       "event_id": 39,
       "parent_event_id": null,
-      "label": "Pine sequence",
-      "life_period": "2025",
+      "label": "Synthetic event 39",
+      "life_period": "Phase C",
       "stage_code": "S5",
       "category_codes": [
         "CNS",
@@ -749,13 +734,13 @@
         "SYM"
       ],
       "event_type": "primary",
-      "privacy_transform": "exact dates, ages, locations, and narrative descriptions omitted"
+      "privacy_transform": "synthetic record; no personal source"
     },
     {
       "event_id": 40,
       "parent_event_id": null,
-      "label": "Telekinesis + boy",
-      "life_period": "2025",
+      "label": "Synthetic event 40",
+      "life_period": "Phase D",
       "stage_code": "S5",
       "category_codes": [
         "CNS",
@@ -764,13 +749,13 @@
         "ENV"
       ],
       "event_type": "primary",
-      "privacy_transform": "exact dates, ages, locations, and narrative descriptions omitted"
+      "privacy_transform": "synthetic record; no personal source"
     },
     {
       "event_id": 41,
       "parent_event_id": null,
-      "label": "Teleport to UK",
-      "life_period": "2025",
+      "label": "Synthetic event 41",
+      "life_period": "Phase E",
       "stage_code": "S6",
       "category_codes": [
         "CNS",
@@ -780,15 +765,15 @@
         "ENT"
       ],
       "event_type": "primary",
-      "privacy_transform": "exact dates, ages, locations, and narrative descriptions omitted"
+      "privacy_transform": "synthetic record; no personal source"
     }
   ],
   "subphases": [
     {
       "event_id": 42,
       "parent_event_id": 39,
-      "label": "Sub-phase: Pine→Teleportation jump",
-      "life_period": "2025",
+      "label": "Synthetic subphase 01",
+      "life_period": "Phase C",
       "stage_code": "S5",
       "category_codes": [
         "CNS",
@@ -797,13 +782,13 @@
         "SYM"
       ],
       "event_type": "subphase",
-      "privacy_transform": "exact dates, ages, locations, and narrative descriptions omitted"
+      "privacy_transform": "synthetic record; no personal source"
     },
     {
       "event_id": 43,
       "parent_event_id": 39,
-      "label": "Sub-phase: Door unlock attempt",
-      "life_period": "2025",
+      "label": "Synthetic subphase 02",
+      "life_period": "Phase C",
       "stage_code": "S5",
       "category_codes": [
         "CNS",
@@ -812,13 +797,13 @@
         "SYM"
       ],
       "event_type": "subphase",
-      "privacy_transform": "exact dates, ages, locations, and narrative descriptions omitted"
+      "privacy_transform": "synthetic record; no personal source"
     },
     {
       "event_id": 44,
       "parent_event_id": 39,
-      "label": "Sub-phase: Car-layer scene",
-      "life_period": "2025",
+      "label": "Synthetic subphase 03",
+      "life_period": "Phase C",
       "stage_code": "S5",
       "category_codes": [
         "CNS",
@@ -827,13 +812,13 @@
         "SYM"
       ],
       "event_type": "subphase",
-      "privacy_transform": "exact dates, ages, locations, and narrative descriptions omitted"
+      "privacy_transform": "synthetic record; no personal source"
     },
     {
       "event_id": 45,
       "parent_event_id": 39,
-      "label": "Sub-phase: Wave-layer scene",
-      "life_period": "2025",
+      "label": "Synthetic subphase 04",
+      "life_period": "Phase C",
       "stage_code": "S5",
       "category_codes": [
         "CNS",
@@ -842,13 +827,13 @@
         "SYM"
       ],
       "event_type": "subphase",
-      "privacy_transform": "exact dates, ages, locations, and narrative descriptions omitted"
+      "privacy_transform": "synthetic record; no personal source"
     },
     {
       "event_id": 46,
       "parent_event_id": 39,
-      "label": "Sub-phase: Tram-layer scene",
-      "life_period": "2025",
+      "label": "Synthetic subphase 05",
+      "life_period": "Phase C",
       "stage_code": "S5",
       "category_codes": [
         "CNS",
@@ -857,13 +842,13 @@
         "SYM"
       ],
       "event_type": "subphase",
-      "privacy_transform": "exact dates, ages, locations, and narrative descriptions omitted"
+      "privacy_transform": "synthetic record; no personal source"
     },
     {
       "event_id": 47,
       "parent_event_id": 39,
-      "label": "Sub-phase: Jelly tube descent",
-      "life_period": "2025",
+      "label": "Synthetic subphase 06",
+      "life_period": "Phase C",
       "stage_code": "S5",
       "category_codes": [
         "CNS",
@@ -872,13 +857,13 @@
         "SYM"
       ],
       "event_type": "subphase",
-      "privacy_transform": "exact dates, ages, locations, and narrative descriptions omitted"
+      "privacy_transform": "synthetic record; no personal source"
     },
     {
       "event_id": 48,
       "parent_event_id": 40,
-      "label": "Sub-phase: Telekinesis micro-attempt",
-      "life_period": "2025",
+      "label": "Synthetic subphase 07",
+      "life_period": "Phase D",
       "stage_code": "S5",
       "category_codes": [
         "CNS",
@@ -887,13 +872,13 @@
         "SYM"
       ],
       "event_type": "subphase",
-      "privacy_transform": "exact dates, ages, locations, and narrative descriptions omitted"
+      "privacy_transform": "synthetic record; no personal source"
     },
     {
       "event_id": 49,
       "parent_event_id": 40,
-      "label": "Sub-phase: Object inversion moment",
-      "life_period": "2025",
+      "label": "Synthetic subphase 08",
+      "life_period": "Phase D",
       "stage_code": "S5",
       "category_codes": [
         "CNS",
@@ -902,13 +887,13 @@
         "SYM"
       ],
       "event_type": "subphase",
-      "privacy_transform": "exact dates, ages, locations, and narrative descriptions omitted"
+      "privacy_transform": "synthetic record; no personal source"
     },
     {
       "event_id": 50,
       "parent_event_id": 40,
-      "label": "Sub-phase: Boy's paper handover",
-      "life_period": "2025",
+      "label": "Synthetic subphase 09",
+      "life_period": "Phase D",
       "stage_code": "S5",
       "category_codes": [
         "CNS",
@@ -917,13 +902,13 @@
         "SYM"
       ],
       "event_type": "subphase",
-      "privacy_transform": "exact dates, ages, locations, and narrative descriptions omitted"
+      "privacy_transform": "synthetic record; no personal source"
     },
     {
       "event_id": 51,
       "parent_event_id": 36,
-      "label": "Sub-phase: Facility rooftop sequence",
-      "life_period": "2025",
+      "label": "Synthetic subphase 10",
+      "life_period": "Phase I",
       "stage_code": "S6",
       "category_codes": [
         "CNS",
@@ -932,13 +917,13 @@
         "SYM"
       ],
       "event_type": "subphase",
-      "privacy_transform": "exact dates, ages, locations, and narrative descriptions omitted"
+      "privacy_transform": "synthetic record; no personal source"
     },
     {
       "event_id": 52,
       "parent_event_id": 36,
-      "label": "Sub-phase: Ring machine close-up",
-      "life_period": "2025",
+      "label": "Synthetic subphase 11",
+      "life_period": "Phase I",
       "stage_code": "S6",
       "category_codes": [
         "CNS",
@@ -947,13 +932,13 @@
         "SYM"
       ],
       "event_type": "subphase",
-      "privacy_transform": "exact dates, ages, locations, and narrative descriptions omitted"
+      "privacy_transform": "synthetic record; no personal source"
     },
     {
       "event_id": 53,
       "parent_event_id": 36,
-      "label": "Sub-phase: Craft approach phase",
-      "life_period": "2025",
+      "label": "Synthetic subphase 12",
+      "life_period": "Phase I",
       "stage_code": "S6",
       "category_codes": [
         "CNS",
@@ -962,13 +947,13 @@
         "SYM"
       ],
       "event_type": "subphase",
-      "privacy_transform": "exact dates, ages, locations, and narrative descriptions omitted"
+      "privacy_transform": "synthetic record; no personal source"
     },
     {
       "event_id": 54,
       "parent_event_id": 41,
-      "label": "Sub-phase: Escort causeway walk",
-      "life_period": "2025",
+      "label": "Synthetic subphase 13",
+      "life_period": "Phase E",
       "stage_code": "S6",
       "category_codes": [
         "CNS",
@@ -977,13 +962,13 @@
         "SYM"
       ],
       "event_type": "subphase",
-      "privacy_transform": "exact dates, ages, locations, and narrative descriptions omitted"
+      "privacy_transform": "synthetic record; no personal source"
     },
     {
       "event_id": 55,
       "parent_event_id": 41,
-      "label": "Sub-phase: Dog-room orientation",
-      "life_period": "2025",
+      "label": "Synthetic subphase 14",
+      "life_period": "Phase E",
       "stage_code": "S6",
       "category_codes": [
         "CNS",
@@ -992,13 +977,13 @@
         "SYM"
       ],
       "event_type": "subphase",
-      "privacy_transform": "exact dates, ages, locations, and narrative descriptions omitted"
+      "privacy_transform": "synthetic record; no personal source"
     },
     {
       "event_id": 56,
       "parent_event_id": 41,
-      "label": "Sub-phase: Corridor entry",
-      "life_period": "2025",
+      "label": "Synthetic subphase 15",
+      "life_period": "Phase E",
       "stage_code": "S6",
       "category_codes": [
         "CNS",
@@ -1007,13 +992,13 @@
         "SYM"
       ],
       "event_type": "subphase",
-      "privacy_transform": "exact dates, ages, locations, and narrative descriptions omitted"
+      "privacy_transform": "synthetic record; no personal source"
     },
     {
       "event_id": 57,
       "parent_event_id": 34,
-      "label": "Sub-phase: Orb interior observation",
-      "life_period": "2025",
+      "label": "Synthetic subphase 16",
+      "life_period": "Phase G",
       "stage_code": "S5",
       "category_codes": [
         "CNS",
@@ -1022,13 +1007,13 @@
         "SYM"
       ],
       "event_type": "subphase",
-      "privacy_transform": "exact dates, ages, locations, and narrative descriptions omitted"
+      "privacy_transform": "synthetic record; no personal source"
     },
     {
       "event_id": 58,
       "parent_event_id": 34,
-      "label": "Sub-phase: Second orb collapse",
-      "life_period": "2025",
+      "label": "Synthetic subphase 17",
+      "life_period": "Phase G",
       "stage_code": "S5",
       "category_codes": [
         "CNS",
@@ -1037,13 +1022,13 @@
         "SYM"
       ],
       "event_type": "subphase",
-      "privacy_transform": "exact dates, ages, locations, and narrative descriptions omitted"
+      "privacy_transform": "synthetic record; no personal source"
     },
     {
       "event_id": 59,
       "parent_event_id": 35,
-      "label": "Sub-phase: Shuttle landing moment",
-      "life_period": "2025",
+      "label": "Synthetic subphase 18",
+      "life_period": "Phase H",
       "stage_code": "S5",
       "category_codes": [
         "CNS",
@@ -1052,13 +1037,13 @@
         "SYM"
       ],
       "event_type": "subphase",
-      "privacy_transform": "exact dates, ages, locations, and narrative descriptions omitted"
+      "privacy_transform": "synthetic record; no personal source"
     },
     {
       "event_id": 60,
       "parent_event_id": 35,
-      "label": "Sub-phase: Sentinel ankle-ring fitting",
-      "life_period": "2025",
+      "label": "Synthetic subphase 19",
+      "life_period": "Phase H",
       "stage_code": "S5",
       "category_codes": [
         "CNS",
@@ -1067,13 +1052,13 @@
         "SYM"
       ],
       "event_type": "subphase",
-      "privacy_transform": "exact dates, ages, locations, and narrative descriptions omitted"
+      "privacy_transform": "synthetic record; no personal source"
     },
     {
       "event_id": 61,
       "parent_event_id": 33,
-      "label": "Sub-phase: Starfield clearing",
-      "life_period": "2024",
+      "label": "Synthetic subphase 20",
+      "life_period": "Phase F",
       "stage_code": "S5",
       "category_codes": [
         "CNS",
@@ -1082,13 +1067,13 @@
         "SYM"
       ],
       "event_type": "subphase",
-      "privacy_transform": "exact dates, ages, locations, and narrative descriptions omitted"
+      "privacy_transform": "synthetic record; no personal source"
     },
     {
       "event_id": 62,
       "parent_event_id": 38,
-      "label": "Sub-phase: Tissue overlay vision",
-      "life_period": "2025",
+      "label": "Synthetic subphase 21",
+      "life_period": "Phase B",
       "stage_code": "S5",
       "category_codes": [
         "CNS",
@@ -1097,13 +1082,13 @@
         "SYM"
       ],
       "event_type": "subphase",
-      "privacy_transform": "exact dates, ages, locations, and narrative descriptions omitted"
+      "privacy_transform": "synthetic record; no personal source"
     },
     {
       "event_id": 63,
       "parent_event_id": 38,
-      "label": "Sub-phase: Library mezzanine flight",
-      "life_period": "2025",
+      "label": "Synthetic subphase 22",
+      "life_period": "Phase B",
       "stage_code": "S5",
       "category_codes": [
         "CNS",
@@ -1112,7 +1097,7 @@
         "SYM"
       ],
       "event_type": "subphase",
-      "privacy_transform": "exact dates, ages, locations, and narrative descriptions omitted"
+      "privacy_transform": "synthetic record; no personal source"
     }
   ]
 }
