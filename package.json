@@ -3,13 +3,15 @@
   "version": "0.2.10",
   "private": true,
   "type": "module",
-  "description": "Local-first open decision infrastructure for deep uncertainty, with Open Phenomenon Verification as the flagship profile.",
+  "description": "Browser-local open decision infrastructure for deep uncertainty, with Open Phenomenon Verification as the flagship profile.",
   "scripts": {
     "test": "node --test",
+    "facts": "node scripts/generate-project-facts.mjs",
+    "facts:check": "node scripts/validate-project-facts.mjs",
     "validate": "python3 scripts/validate_repository.py",
     "manifest": "node scripts/build-manifest.mjs",
     "test:e2e": "python3 scripts/browser_e2e.py",
-    "check": "npm test && npm run validate && npm run manifest && npm run test:e2e",
+    "check": "npm run facts:check && npm test && npm run validate && npm run manifest && npm run test:e2e",
     "package:release": "python3 scripts/package_release.py",
     "capture:screenshots": "python3 scripts/capture_screenshots.py"
   },

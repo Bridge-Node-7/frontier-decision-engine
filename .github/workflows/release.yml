@@ -10,6 +10,10 @@ permissions:
   id-token: write
   attestations: write
 
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
 jobs:
   publish:
     environment:
@@ -22,6 +26,11 @@ jobs:
         with:
           fetch-depth: 0
           persist-credentials: false
+      - name: Verify release identity
+        id: identity
+        run: python3 scripts/verify_release_tag.py "$GITHUB_REF_NAME"
+      - name: Verify required release notes
+        run: test -s "${{ steps.identity.outputs.notes_file }}"
       - name: Set up Node
         uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
         with:
@@ -33,12 +42,11 @@ jobs:
         run: |
           python3 -m pip install --disable-pip-version-check -r requirements-dev.txt
           python3 -m playwright install --with-deps chromium
-      - name: Verify signed annotated tag and release identity
+      - name: Verify signed annotated tag
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
           test "$(git cat-file -t "$GITHUB_REF_NAME")" = "tag"
-          python3 scripts/verify_release_tag.py "$GITHUB_REF_NAME"
           TAG_OBJECT_TYPE="$(gh api "repos/$GITHUB_REPOSITORY/git/ref/tags/$GITHUB_REF_NAME" --jq '.object.type')"
           TAG_OBJECT_SHA="$(gh api "repos/$GITHUB_REPOSITORY/git/ref/tags/$GITHUB_REF_NAME" --jq '.object.sha')"
           test "$TAG_OBJECT_TYPE" = "tag"
@@ -75,13 +83,20 @@ jobs:
       - name: Publish GitHub Release
         env:
           GH_TOKEN: ${{ github.token }}
+          RELEASE_KIND: ${{ steps.identity.outputs.release_kind }}
         run: |
+          release_flags=(--verify-tag)
+          if [ "$RELEASE_KIND" = "prerelease" ]; then
+            release_flags+=(--prerelease --latest=false)
+          else
+            release_flags+=(--latest)
+          fi
           gh release create "$GITHUB_REF_NAME" \
             "dist/frontier-decision-engine-${GITHUB_REF_NAME}.zip" \
             "dist/frontier-decision-engine-${GITHUB_REF_NAME}.zip.sha256" \
-            --verify-tag \
+            "${release_flags[@]}" \
             --title "Frontier Decision Engine ${GITHUB_REF_NAME}" \
-            --notes-file "docs/releases/${GITHUB_REF_NAME}.md"
+            --notes-file "${{ steps.identity.outputs.notes_file }}"
       - name: Download and verify hosted release assets
         env:
           GH_TOKEN: ${{ github.token }}

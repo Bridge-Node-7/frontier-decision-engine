@@ -6,14 +6,14 @@
 **Checksum:** distributed externally beside the deterministic archive
 
 ## Executive verdict
-> v0.2.10 delivery note: GitHub Pages tests the deployed HTTPS site end to end. The Release workflow uses a protected least-privilege administration-read secret to confirm release immutability, requires a GitHub-verified signed tag, creates artifact attestations, downloads both published assets into a clean directory, and verifies the hosted bytes. Application behavior and reference-case results are unchanged.
+> v0.2.10 is an immutable historical public reference release. The repository implements a protected signed-tag, release-immutability, attestation, and hosted-verification workflow, but public workflow history shows that the Release workflow was not exercised for v0.2.10. Application behavior and reference-case results are unchanged.
 
 
 | Scope | Verdict |
 |---|---|
-| Controlled public GitHub source and Pages release | GREEN after hosted GitHub gate |
+| Controlled public GitHub source and methodology demonstration | GREEN |
 | Education, methodology demonstration, and partner review | GREEN |
-| Expert-supported pilot design | AMBER |
+| General-purpose external-user pilot | RED until preservation, import, and dynamic modeling are complete |
 | Sole basis for irreversible or safety-critical decisions | RED |
 | Predictive system, full RDM/MoRDM ensemble, or phenomenon-origin proof | RED |
 
@@ -37,10 +37,10 @@ v0.2.10 is a working reference implementation for framing decisions under deep u
 - semantic accessibility-tree smoke
 - 200% and 400% reflow-equivalent checks
 - forced-colors and PDF print verification
-- tag-to-version verification and automated GitHub Release workflow
-- deployed HTTPS Pages end-to-end verification
-- GitHub-verified signed-tag enforcement
-- release immutability precondition and hosted asset verification
+- tag-to-version verification and production Release workflow implementation
+- deployed HTTPS Pages workflow implementation
+- signed-tag enforcement design
+- release-immutability and hosted-asset-verification design
 
 ## Automated verification
 
@@ -52,7 +52,7 @@ npm run check
 
 Expected v0.2.10 results:
 
-- 46 Node tests pass
+- Node test count is generated in `project-facts.json`; all discovered tests must pass
 - repository validation passes
 - 18-entry site manifest is current
 - desktop-light browser mode passes
@@ -122,9 +122,9 @@ These are baseline checks, not external accessibility certification.
 - official GitHub Actions pinned to full commit SHAs
 - read-only CI permissions and scoped Pages permissions
 - deterministic timestamps, ordering, compression, and permissions
-- GitHub-verified signed annotated tag enforcement
-- release immutability required before publication
-- tag-driven release workflow that runs the full gate, builds and attests artifacts, verifies SHA-256, creates the GitHub Release, and verifies both hosted assets
+- production workflow implementation for GitHub-verified signed annotated tags
+- release-immutability precheck implementation
+- tag-driven workflow implementation for the full gate, deterministic artifacts, SHA-256, attestations, publication, and hosted verification; not exercised for v0.2.10
 - live Pages workflow that tests the deployed HTTPS origin
 
 ## Remaining external gates
@@ -136,7 +136,7 @@ The following require the public repository or independent reviewers:
 - repository rules and branch protection
 - private vulnerability reporting
 - secret scanning and push protection
-- signed-tag verification in the user’s GitHub environment
+- first end-to-end signed-tag and immutable-release execution for v0.3.0
 - NVDA and VoiceOver walkthroughs
 - physical 200%/400% zoom and Windows High Contrast review
 - external DMDU, accessibility, and security review
@@ -144,7 +144,7 @@ The following require the public repository or independent reviewers:
 
 ## Final decision
 
-Proceed with the controlled GitHub gate using only the deterministic v0.2.10 source and adjacent checksum. Do not market the product as predictive, institutionally validated, or proof of any phenomenon’s origin or mechanism.
+Preserve v0.2.10 as the historical reference release and complete v0.3.0 through the genuine signed, automated, attested, and hosted-verified release path. Do not market the product as predictive, institutionally validated, or proof of any phenomenon’s origin or mechanism.
 
 
 The conflicting prior audit result involving Playwright `wait_for_function` and the strict CSP is closed in v0.2.10. The release tooling contains no `wait_for_function` calls.

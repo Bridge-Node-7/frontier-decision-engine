@@ -1,0 +1,51 @@
+name: Release Preflight
+
+on:
+  workflow_dispatch:
+  pull_request:
+    branches:
+      - main
+    paths:
+      - '.github/workflows/release.yml'
+      - '.github/workflows/release-preflight.yml'
+      - 'docs/releases/**'
+      - 'scripts/package_release.py'
+      - 'scripts/verify_release_tag.py'
+      - 'scripts/*project-facts.mjs'
+      - 'project-facts.json'
+      - 'package.json'
+      - 'tests/**'
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Set up Node
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: 22
+          package-manager-cache: false
+      - name: Verify npm lockfile
+        run: npm ci --ignore-scripts --no-audit --no-fund
+      - name: Install browser test tooling
+        run: |
+          python3 -m pip install --disable-pip-version-check -r requirements-dev.txt
+          python3 -m playwright install --with-deps chromium
+      - name: Verify project facts and repository gates
+        run: |
+          npm run facts:check
+          npm run check
+          git diff --exit-code
+      - name: Build and verify candidate artifacts
+        run: |
+          npm run package:release
+          cd dist
+          sha256sum --check frontier-decision-engine-*.zip.sha256
