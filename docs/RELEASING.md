@@ -13,3 +13,12 @@
 7. Verify the published release and deployed Pages site independently.
 
 Release workflows and Actions remain pinned and minimally privileged.
+
+## Release credential boundary
+
+Immediately before a future tag-driven release, provision `RELEASE_ADMIN_TOKEN`
+in the protected `release` environment using a dedicated fine-grained token
+scoped only to this repository with **Administration: read**. Do not use an
+operator's general GitHub CLI token. Remove or rotate the dedicated token after
+release closeout. If the secret is absent, the release workflow must fail
+closed before publication.
