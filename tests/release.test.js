@@ -4,14 +4,15 @@ import { readFile } from 'node:fs/promises';
 
 const read = (path) => readFile(new URL(`../${path}`, import.meta.url), 'utf8');
 
-test('release identity and generated project facts are synchronized at v0.2.10', async () => {
+test('application v0.2.11 retains the compatible v0.2.10 decision schema', async () => {
   const packageData = JSON.parse(await read('package.json'));
   const citation = await read('CITATION.cff');
   const schema = JSON.parse(await read('schemas/decision.schema.json'));
   const example = JSON.parse(await read('examples/phenomena-second-station/decision.fde.json'));
   const facts = JSON.parse(await read('project-facts.json'));
-  assert.equal(packageData.version, '0.2.10');
-  assert.match(citation, /^version:\s*0\.2\.10\s*$/m);
+  assert.equal(packageData.version, '0.2.11');
+  assert.match(citation, /^version:\s*0\.2\.11\s*$/m);
+  assert.match(citation, /^date-released:\s*2026-08-06\s*$/m);
   assert.equal(schema.properties.schema_version.const, '0.2.10');
   assert.equal(example.schema_version, '0.2.10');
   assert.equal(facts.applicationVersion, packageData.version);
@@ -23,6 +24,21 @@ test('release identity and generated project facts are synchronized at v0.2.10',
     assert.equal(readme.includes(stale), false);
   }
 });
+test('release identity supports a compatible schema and complete v0.2.11 notes', async () => {
+  const verifier = await read('scripts/verify_release_tag.py');
+  const notes = await read('docs/releases/v0.2.11.md');
+  const releasing = await read('docs/RELEASING.md');
+  const packager = await read('scripts/package_release.py');
+  assert.match(verifier, /project-facts\.json/);
+  assert.match(verifier, /release notes file is missing or empty/);
+  assert.match(verifier, /reference decision example schema version/);
+  assert.equal(verifier.includes('decision schema version must match the release base version'), false);
+  assert.match(notes, /^# v0\.2\.11$/m);
+  assert.match(notes, /application version is 0\.2\.11/i);
+  assert.match(notes, /compatible decision schema[\s\S]*0\.2\.10/i);
+  assert.match(releasing, /compatible schema may[\s\S]*earlier version/i);
+  assert.match(packager, /FIXED_TIME = \(2026, 8, 6, 0, 0, 0\)/);
+});
 
 test('affordability is modeled as an at-least desirability objective', async () => {
   const example = JSON.parse(await read('examples/phenomena-second-station/decision.fde.json'));
@@ -31,13 +47,13 @@ test('affordability is modeled as an at-least desirability objective', async () 
   assert.equal(objective.direction, 'at-least');
   assert.equal(objective.unit, 'desirability score');
 });
-test('browser end-to-end harness is wired into the application and package scripts', async () => {
+test('browser end-to-end harness covers the retained Decision Lab surface', async () => {
   const runner = await read('scripts/browser_e2e.py');
   const requirements = await read('requirements-dev.txt');
   const capture = await read('scripts/capture_screenshots.py');
   const packageData = JSON.parse(await read('package.json'));
   assert.match(runner, /def decision_flow/);
-  assert.match(runner, /def phenomena_flow/);
+  assert.equal(runner.includes('def phenomena_flow'), false);
   assert.match(runner, /desktop-light/);
   assert.match(runner, /mobile-light/);
   assert.match(runner, /desktop-dark/);
@@ -56,26 +72,22 @@ test('browser end-to-end harness is wired into the application and package scrip
   assert.equal(runner.includes('wait_for_function'), false);
   assert.equal(capture.includes('wait_for_function'), false);
   assert.match(runner, /#decision-step-heading:focus/);
-  assert.match(runner, /#case-step-heading:focus/);
+  assert.equal(runner.includes('#case-step-heading:focus'), false);
   assert.match(packageData.scripts.check, /test:e2e/);
 });
-
 test('cross-platform manifest generation uses file URL conversion rather than URL pathname', async () => {
   const manifest = await read('scripts/build-manifest.mjs');
   assert.match(manifest, /fileURLToPath/);
   assert.equal(manifest.includes('.pathname'), false);
 });
 
-test('both decision and phenomena wizards provide focusable step headings', async () => {
+test('Decision Lab steps and incomplete-analysis state provide focusable headings', async () => {
   const decision = await read('site/src/decision-ui.js');
   const app = await read('site/src/app.js');
-  assert.equal((decision.match(/id="decision-step-heading" tabindex="-1"/g) || []).length, 6);
-  assert.equal((app.match(/id="case-step-heading" tabindex="-1"/g) || []).length, 5);
-  assert.match(app, /renderCase\(\{ focusStep: true \}\)/);
+  assert.equal((decision.match(/id="decision-step-heading" tabindex="-1"/g) || []).length, 7);
+  assert.equal(app.includes('case-step-heading'), false);
   assert.match(decision, /scrollIntoView\(\{ block: 'start', behavior: 'auto' \}\)/);
-  assert.match(app, /scrollIntoView\(\{ block: 'start', behavior: 'auto' \}\)/);
 });
-
 test('release packager excludes private inputs, source workbooks, caches, and dist', async () => {
   const packager = await read('scripts/package_release.py');
   for (const token of ['.private-input', 'node_modules', 'dist', 'hosted-verification', '__pycache__', '.xlsx', '.pyc']) {
@@ -83,17 +95,23 @@ test('release packager excludes private inputs, source workbooks, caches, and di
   }
 });
 
-test('public data tables have captions and scoped headers', async () => {
+test('retained Decision Lab tables have captions and scoped headers', async () => {
   const decision = await read('site/src/decision-ui.js');
   const app = await read('site/src/app.js');
   const combined = `${decision}\n${app}`;
-  assert.ok((combined.match(/<table/g) || []).length >= 6);
-  assert.equal((combined.match(/<caption>/g) || []).length, (combined.match(/<table/g) || []).length);
+  const tables = (combined.match(/<table/g) || []).length;
+  assert.ok(tables >= 2);
+  assert.equal((combined.match(/<caption>/g) || []).length, tables);
   assert.match(combined, /scope="col"/);
   assert.match(combined, /scope="row"/);
   assert.match(decision, /matrix-details/);
+  const publicSource = `${app}\n${decision}`;
+  const hiddenFileInputs = publicSource.match(/<input\b(?=[^>]*\btype=["']file["'])(?=[^>]*\bhidden\b)[^>]*>/gi) || [];
+  assert.ok(hiddenFileInputs.length >= 1);
+  for (const input of hiddenFileInputs) {
+    assert.match(input, /aria-(?:label|labelledby)=["'][^"']+["']/i);
+  }
 });
-
 test('browser gate includes semantic accessibility, reflow, forced-colors, and PDF print checks', async () => {
   const runner = await read('scripts/browser_e2e.py');
   assert.match(runner, /tablesMissingCaption/);
@@ -208,7 +226,6 @@ test('public repository surface stays lean and user-focused', async () => {
     'README.md',
     'SECURITY.md',
   ]);
-
   const docs = await readdir(new URL('../docs/', import.meta.url), { withFileTypes: true });
   const docsMarkdown = docs
     .filter((entry) => entry.isFile() && entry.name.endsWith('.md'))
@@ -221,13 +238,12 @@ test('public repository surface stays lean and user-focused', async () => {
     'PRIVACY.md',
     'RELEASING.md',
   ]);
-
   const readme = await read('README.md');
   assert.ok(readme.split(/\r?\n/).length <= 100);
   assert.match(readme, /project-facts\.json/);
-  assert.match(readme, /synthetic\s+event\s+registry/i);
+  assert.match(readme, /synthetic critical-material source-qualification case/i);
+  assert.doesNotMatch(readme, /synthetic\s+event\s+registry/i);
 });
-
 test('public event registry is synthetic and contains no personal history', async () => {
   const data = JSON.parse(await read('site/data/experiences.json'));
   assert.equal(data.dataset_id, 'opv-experiences-synthetic-v1');

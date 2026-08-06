@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Verify stable and prerelease identities without coupling app and schema versions."""
+# Verify release identity while allowing compatible schema versions.
 from __future__ import annotations
 
 import argparse
@@ -22,7 +22,7 @@ def classify_tag(tag: str) -> dict[str, str]:
     if not match:
         raise ValueError(f"invalid release tag: {tag!r}")
     base_version = f"{match.group('major')}.{match.group('minor')}.{match.group('patch')}"
-    prerelease = match.group('prerelease') or ""
+    prerelease = match.group("prerelease") or ""
     return {
         "tag": tag.strip(),
         "version": f"{base_version}{prerelease}",
@@ -47,13 +47,35 @@ def verify_repository_identity(identity: dict[str, str]) -> None:
     ):
         raise ValueError(f"CITATION.cff does not declare version {identity['version']}")
 
-    schema = json.loads((ROOT / "schemas" / "decision.schema.json").read_text(encoding="utf-8"))
-    schema_version = schema["properties"]["schema_version"]["const"]
-    if schema_version != identity["base_version"]:
+    facts = json.loads((ROOT / "project-facts.json").read_text(encoding="utf-8"))
+    if facts.get("applicationVersion") != package_version:
         raise ValueError(
-            "decision schema version must match the release base version "
-            f"{identity['base_version']}, found {schema_version}"
+            "project-facts applicationVersion does not match package version "
+            f"{package_version}"
         )
+
+    schema = json.loads((ROOT / "schemas/decision.schema.json").read_text(encoding="utf-8"))
+    schema_version = schema["properties"]["schema_version"]["const"]
+    if facts.get("schemaVersions", {}).get("decision") != schema_version:
+        raise ValueError(
+            "project-facts decision schema version does not match the decision schema "
+            f"{schema_version}"
+        )
+
+    example = json.loads(
+        (ROOT / "examples/phenomena-second-station/decision.fde.json").read_text(
+            encoding="utf-8"
+        )
+    )
+    if example.get("schema_version") != schema_version:
+        raise ValueError(
+            "reference decision example schema version does not match the decision schema "
+            f"{schema_version}"
+        )
+
+    notes_path = ROOT / identity["notes_file"]
+    if not notes_path.is_file() or not notes_path.read_text(encoding="utf-8").strip():
+        raise ValueError(f"release notes file is missing or empty: {identity['notes_file']}")
 
 
 def write_github_outputs(identity: dict[str, str]) -> None:
@@ -83,9 +105,10 @@ def main() -> None:
     if args.json:
         print(json.dumps(identity, sort_keys=True))
     else:
+        facts = json.loads((ROOT / "project-facts.json").read_text(encoding="utf-8"))
         print(
             f"release tag verified: {identity['tag']} "
-            f"({identity['release_kind']}, schema {identity['base_version']})"
+            f"({identity['release_kind']}, schema {facts['schemaVersions']['decision']})"
         )
 
 

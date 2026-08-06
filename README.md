@@ -1,6 +1,6 @@
 # Frontier Decision Engine
 
-Browser-local decision support for deep uncertainty.
+Browser-local, human-governed decision support for choices under deep uncertainty.
 
 [Open the live application](https://bridgenode7.com/frontier-decision-engine/)
 
@@ -9,24 +9,18 @@ Browser-local decision support for deep uncertainty.
 ## What it does
 
 - Frames decisions, objectives, uncertainties, strategies, and plausible futures.
-- Stress-tests strategies against explicit thresholds.
-- Exposes critical failures and strategy vulnerabilities.
+- Evaluates choices across explicit goals and named future conditions.
+- Shows unmet goals, ties, incomplete outcomes, and conditions to watch.
 - Keeps final selection, rationale, and next action human-owned.
 - Exports portable decision and evidence records.
-- Includes an Open Phenomenon Verification profile for local evidence handling.
-
 The application is static and browser-local. It has no backend, account system,
 analytics, cookies, or default upload endpoint.
 
-## Sample data
+## Ready reference case
 
-The public site includes measured or derived morphology data, a synthetic event
-registry, and an analyst-mapped reference dataset. These samples demonstrate the
-interfaces and evidence boundaries. They are not proof of object identity,
-external origin, or scientific confirmation.
+The default public workflow uses a clearly labeled synthetic critical-material source-qualification case. It demonstrates the interface and does not certify a supplier, qualify a material, confirm production capacity, guarantee compliance, recommend an investment, or predict commodity prices.
 
-No personal chronology, private narrative, exact private location, medical
-information, credentials, client data, or source workbook is included.
+The Decision Lab saves work in the local browser and supports decision-file download, reopen, and readable-summary export without an account or default upload endpoint.
 
 ## Run locally
 

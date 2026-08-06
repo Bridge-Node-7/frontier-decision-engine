@@ -65,9 +65,9 @@ references = load_json("site/data/references.json")
 
 if package.get("name") != "frontier-decision-engine":
     errors.append("package name mismatch")
-if package.get("version") != "0.2.10":
+if package.get("version") != "0.2.11":
     errors.append("package version mismatch")
-if decision.get("schema_version") != package.get("version"):
+if decision.get("schema_version") != "0.2.10":
     errors.append("decision example schema version mismatch")
 if profile.get("profile_id") != "phenomena":
     errors.append("phenomena profile identity mismatch")
@@ -207,6 +207,7 @@ allowed_docs = {
     "docs/PRIVACY.md",
     "docs/RELEASING.md",
     "docs/releases/v0.2.10.md",
+    "docs/releases/v0.2.11.md",
 }
 if docs_markdown != allowed_docs:
     errors.append(
@@ -220,8 +221,9 @@ if len(readme.splitlines()) > 100:
 readme_normalized = re.sub(r"\s+", " ", readme)
 for required_text in [
     "project-facts.json",
-    "Synthetic event registry",
-    "No personal chronology",
+    "synthetic critical-material source-qualification case",
+    "browser-local",
+    "no backend",
 ]:
     if required_text.lower() not in readme_normalized.lower():
         errors.append(f"README missing required boundary: {required_text}")
@@ -240,8 +242,11 @@ for path in (SITE / "src").rglob("*.js"):
         errors.append(f"prohibited decision authority: {path.relative_to(ROOT)}")
 
 app_text = (SITE / "src/app.js").read_text(encoding="utf-8")
-if app_text.count('id="case-step-heading" tabindex="-1"') != 5:
-    errors.append("case wizard must expose five focusable headings")
+decision_text = (SITE / "src/decision-ui.js").read_text(encoding="utf-8")
+if decision_text.count('id="decision-step-heading" tabindex="-1"') != 7:
+    errors.append("Decision Lab must expose six focusable steps and one incomplete-analysis heading")
+if 'id="case-step-heading"' in app_text:
+    errors.append("removed case-wizard heading remains in the public application")
 for stale in [
     "Real source data",
     "Longitudinal " + "experience registry",
@@ -252,13 +257,16 @@ for stale in [
 
 runner = (ROOT / "scripts/browser_e2e.py").read_text(encoding="utf-8")
 requirements = (ROOT / "requirements-dev.txt").read_text(encoding="utf-8")
-if "decision_flow" not in runner or "phenomena_flow" not in runner:
-    errors.append("browser end-to-end flows are not wired")
+for required_flow in ("decision_flow", "route_suite", "print_flow"):
+    if required_flow not in runner:
+        errors.append(f"browser end-to-end flow is not wired: {required_flow}")
+if "phenomena_flow" in runner:
+    errors.append("removed Phenomena browser flow remains wired")
 if "playwright==1.57.0" not in requirements:
     errors.append("expected browser tool pin is missing")
 
 citation = (ROOT / "CITATION.cff").read_text(encoding="utf-8")
-if not re.search(r"(?m)^version:\s*0\.2\.10\s*$", citation):
+if not re.search(r"(?m)^version:\s*0\.2\.11\s*$", citation):
     errors.append("citation version mismatch")
 
 contributing = (ROOT / "CONTRIBUTING.md").read_text(encoding="utf-8")
@@ -273,6 +281,6 @@ if errors:
 
 print("REPOSITORY VALIDATION PASS")
 print("- lean public documentation surface")
-print("- synthetic event registry contains no personal source history")
-print("- application, schema, data, privacy, and browser boundaries preserved")
+print("- single Decision Lab public workflow with browser-local persistence")
+print("- application, compatible schema, privacy, and browser boundaries preserved")
 print("- static site has no external runtime dependencies")

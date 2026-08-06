@@ -1,9 +1,9 @@
 {
   "name": "frontier-decision-engine",
-  "version": "0.2.10",
+  "version": "0.2.11",
   "private": true,
   "type": "module",
-  "description": "Browser-local open decision infrastructure for deep uncertainty, with Open Phenomenon Verification as the flagship profile.",
+  "description": "Browser-local, human-governed decision support for choices under deep uncertainty.",
   "scripts": {
     "test": "node --test",
     "facts": "node scripts/generate-project-facts.mjs",
