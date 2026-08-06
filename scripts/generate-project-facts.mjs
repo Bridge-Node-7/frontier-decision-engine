@@ -70,7 +70,7 @@ export async function collectProjectFacts() {
   const routes = new Set();
   for (const path of siteFiles) {
     const text = await readFile(path, 'utf8');
-    for (const match of text.matchAll(/#\/[a-z0-9-]*/gi)) routes.add(match[0]);
+    for (const match of text.matchAll(/#\/[a-z0-9/-]*/gi)) routes.add(match[0]);
   }
 
   let manifestEntryCount = null;

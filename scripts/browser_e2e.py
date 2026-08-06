@@ -237,29 +237,38 @@ def route(page: Page, base: str, path: str, selector: str, expected: str) -> Non
 
 
 def decision_flow(page: Page, base: str) -> None:
-    route(page, base, "/decision", "#decision-step-heading", "Frame the real decision")
+    route(page, base, "/decision", "#decision-step-heading", "What are you trying to choose?")
+
     headings = [
-        "Frame the real decision",
-        "Make uncertainty and values visible",
-        "Compare meaningful strategies",
-        "Describe plausible conditions, not one forecast",
-        "Stress-test every strategy",
-        "Robust Decision Brief",
+        "What are you trying to choose?",
+        "What matters, and what may change?",
+        "What could you actually do?",
+        "Explore more than one possible future",
+        "How do the choices perform across changing conditions?",
+        "What advances next?",
     ]
+
     for index, expected in enumerate(headings[1:]):
         if index == 0:
             page.locator("#decision-next").focus()
             page.keyboard.press("Enter")
         else:
             page.locator("#decision-next").click()
+
         page.locator("#decision-step-heading").wait_for(state="visible")
         page.locator("#decision-step-heading:focus").wait_for(state="attached")
-        assert expected in page.locator("#decision-step-heading").inner_text()
-        heading_top = page.locator("#decision-step-heading").bounding_box()["y"]
+        actual = page.locator("#decision-step-heading").inner_text()
+        assert expected in actual, f"expected {expected!r}; found {actual!r}"
+
+        heading_box = page.locator("#decision-step-heading").bounding_box()
+        assert heading_box is not None, "decision step heading has no layout box"
         viewport_height = page.evaluate("window.innerHeight")
-        assert 0 <= heading_top <= viewport_height - 100, f"decision step heading is not visible: {heading_top}"
-        if expected == "Stress-test every strategy":
-            assert "Leading candidate · critical gaps remain" in page.locator("body").inner_text()
+        assert 0 <= heading_box["y"] <= viewport_height - 100, (
+            f"decision step heading is not visible: {heading_box['y']}"
+        )
+
+        if expected == "How do the choices perform across changing conditions?":
+            assert "Strongest alignment in this comparison" in page.locator("body").inner_text()
 
     page.locator("#human-rationale").fill("")
     page.locator("#human-next-action").fill("")
@@ -268,87 +277,31 @@ def decision_flow(page: Page, base: str) -> None:
     assert page.locator("#human-rationale").get_attribute("aria-invalid") == "true"
 
     page.locator("#human-rationale").fill(
-        "The staged strategy preserves learning, privacy, reversibility, and explicit trigger conditions."
+        "The second-source pathway provides the strongest tested alignment while preserving flexibility."
     )
     page.locator("#human-next-action").fill(
-        "Complete known-target controls and approve the deployment trigger checklist."
+        "Confirm the qualification evidence plan, owner, milestones, and review date."
     )
+
     with page.expect_download() as json_download:
         page.locator("#export-decision-json").click()
     assert json_download.value.suggested_filename.endswith(".fde.json")
+
     with page.expect_download() as html_download:
         page.locator("#export-decision-html").click()
     assert html_download.value.suggested_filename.endswith(".decision.html")
-    assert_page_clean(page)
 
-
-def phenomena_flow(page: Page, base: str) -> None:
-    route(page, base, "/case", "h1", "Create a reproducible case")
-    page.locator("#case-title").fill("Synthetic local hashing and measurement control")
-    page.locator("#case-summary").fill(
-        "A synthetic text source used only to verify the local evidence workflow."
-    )
-    page.locator("#case-next").click()
-    page.locator("#case-file").wait_for(state="attached")
-    page.locator("#case-step-heading:focus").wait_for(state="attached")
-    heading_top = page.locator("#case-step-heading").bounding_box()["y"]
-    viewport_height = page.evaluate("window.innerHeight")
-    assert 0 <= heading_top <= viewport_height - 100, f"phenomena step heading is not visible: {heading_top}"
-    page.locator("#case-file").set_input_files(
-        files=[
-            {
-                "name": "synthetic-control.txt",
-                "mimeType": "text/plain",
-                "buffer": b"frontier-decision-engine-e2e-control",
-            }
-        ]
-    )
-    page.locator(".file-summary").wait_for(state="visible")
-    digest = page.locator(".hash").inner_text().strip()
-    assert len(digest) == 64 and all(character in "0123456789abcdef" for character in digest)
-
-    page.locator("#case-next").click()
-    page.locator("#hfov").fill("40")
-    page.locator("#hpixels").fill("1920")
-    page.locator("#vpixels").fill("1080")
-    page.locator("#fps").fill("30")
-    page.locator("#cal-status").select_option("calibrated")
-
-    page.locator("#case-next").click()
-    page.locator("details.soft-panel summary").click()
-    page.locator("#point-1-x").fill("100")
-    page.locator("#point-1-y").fill("100")
-    page.locator("#point-2-x").fill("220")
-    page.locator("#point-2-y").fill("100")
-    page.locator("#apply-coordinates").click()
-    assert "2.5°" in page.locator(".result-grid").inner_text()
-
-    page.locator("#case-next").click()
-    page.locator("#export-json").wait_for(state="visible")
-    assert "2 / 7" in page.locator("body").inner_text()
-    page.locator("#verdict").select_option("insufficient-evidence")
-    with page.expect_download() as json_download:
-        page.locator("#export-json").click()
-    assert json_download.value.suggested_filename.endswith(".opv.json")
-    with page.expect_download() as html_download:
-        page.locator("#export-html").click()
-    assert html_download.value.suggested_filename.endswith(".opv.html")
     assert_page_clean(page)
 
 
 def route_suite(page: Page, base: str) -> None:
     checks = [
-        ("/", "h1", "Decide well when prediction fails"),
-        ("/datasets", "h1", "Explore before you build"),
-        ("/dataset/morphology", "h1", "Karijini morphology and motion"),
-        ("/dataset/experiences", "h1", "Synthetic Event Registry"),
-        ("/dataset/references", "h1", "Thematic research map"),
-        ("/method", "h1", "A trustworthy encounter with ambiguity"),
+        ("/", "h1", "Compare choices"),
+        ("/method", "h1", "Decision-making under deep uncertainty"),
+        ("/decision", "#decision-step-heading", "What are you trying to choose?"),
     ]
-    for path, selector, expected in checks:
-        route(page, base, path, selector, expected)
-
-
+    for route_path, selector, expected in checks:
+        route(page, base, route_path, selector, expected)
 
 
 def print_flow(page: Page) -> None:
@@ -416,9 +369,8 @@ def run_mode(
     if full:
         decision_flow(page, base)
         print_flow(page)
-        phenomena_flow(page, base)
     else:
-        route(page, base, "/decision", "#decision-step-heading", "Frame the real decision")
+        route(page, base, "/decision", "#decision-step-heading", "What are you trying to choose?")
     assert not console_errors, f"console errors in {label}: {console_errors}"
     assert not page_errors, f"page errors in {label}: {page_errors}"
     assert_page_clean(page)

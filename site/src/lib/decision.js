@@ -5,171 +5,80 @@ export function createDecisionCase() {
   return {
     schema_version: '0.2.10',
     decision_id: `FDE-${createdAt.replace(/[-:TZ.]/g, '').slice(0, 14)}`,
-    title: 'Synchronized observation-station decision',
-    profile: 'phenomena',
-    question: 'Should a synchronized second observation station be deployed, and under what trigger conditions?',
-    decision_owner: 'Research lead',
-    time_horizon: '90 days',
+    title: 'Critical-material source qualification decision',
+    profile: 'critical-minerals-readiness',
+    question: 'Which source-qualification pathway creates the strongest readiness across changing conditions?',
+    decision_owner: 'Program decision owner',
+    time_horizon: '36 months',
     urgency: 'planned',
     reversibility: 'partially-reversible',
     status: 'draft',
     stakeholders: [
-      { stakeholder_id: 'STK-001', name: 'Research team', role: 'decision-maker', objectives: ['OBJ-001', 'OBJ-002'] },
-      { stakeholder_id: 'STK-002', name: 'Public and nearby community', role: 'affected-party', objectives: ['OBJ-003'] },
-      { stakeholder_id: 'STK-003', name: 'Independent reviewers', role: 'reviewer', objectives: ['OBJ-001', 'OBJ-004'] },
+      { stakeholder_id: 'STK-001', name: 'Program leadership', role: 'decision-maker', objectives: ['OBJ-001', 'OBJ-002', 'OBJ-003'] },
+      { stakeholder_id: 'STK-002', name: 'Engineering and qualification', role: 'reviewer', objectives: ['OBJ-001', 'OBJ-004'] },
+      { stakeholder_id: 'STK-003', name: 'Supply-chain partners', role: 'implementation-partner', objectives: ['OBJ-002', 'OBJ-003'] },
     ],
     evidence_summary: {
       known: [
-        'Source workbooks and normalized public-safe datasets are preserved with SHA-256 provenance.',
-        'The morphology collection contains reproducible angular and image-plane motion measurements.',
-        'True range, physical size, altitude, and full three-dimensional velocity remain unresolved.',
+        'This example uses synthetic values and does not represent an actual supplier, material, capacity, or investment.',
+        'Readiness, continuity, affordability, and flexibility remain visible as separate goals.',
+        'Every pathway is evaluated across the same four named future conditions.',
       ],
       assumed: [
-        'Future recurrence may be sufficient to justify additional collection.',
-        'A synchronized second station would materially improve range and corroboration potential.',
+        'A qualified second source may improve continuity and program flexibility.',
+        'A bounded reserve may support readiness while qualification proceeds.',
       ],
       unknown: [
-        'Whether the observed morphology can be reproduced fully by near-field controls.',
-        'Whether the phenomenon will recur during a planned collection period.',
+        'Actual supplier capacity, quality, schedule, provenance, and compliance evidence.',
+        'Actual qualification cost, production yield, and program demand.',
       ],
     },
     uncertainties: [
-      {
-        uncertainty_id: 'UNC-001',
-        label: 'Recurrence rate',
-        description: 'How often a decision-relevant observation will recur during the collection window.',
-        states: ['low', 'moderate', 'high'],
-        source_status: 'unknown',
-        reducibility: 'partially-reducible',
-      },
-      {
-        uncertainty_id: 'UNC-002',
-        label: 'Conventional-control outcome',
-        description: 'Whether controlled insect, aircraft, optical, and sensor-artifact tests reproduce the signatures.',
-        states: ['explained', 'partially-unresolved', 'unresolved'],
-        source_status: 'not-yet-tested',
-        reducibility: 'reducible',
-      },
-      {
-        uncertainty_id: 'UNC-003',
-        label: 'Available deployment budget',
-        description: 'Resources available for calibration, hardware, operations, and independent review.',
-        states: ['constrained', 'adequate'],
-        source_status: 'decision-dependent',
-        reducibility: 'partially-reducible',
-      },
+      { uncertainty_id: 'UNC-001', label: 'Demand conditions', description: 'How program demand may change.', states: ['stable', 'higher'], source_status: 'synthetic-example', reducibility: 'partially-reducible' },
+      { uncertainty_id: 'UNC-002', label: 'Qualification timing', description: 'How long qualification may require.', states: ['planned', 'extended'], source_status: 'synthetic-example', reducibility: 'partially-reducible' },
+      { uncertainty_id: 'UNC-003', label: 'Primary-source continuity', description: 'Whether the current source remains available.', states: ['stable', 'disrupted'], source_status: 'synthetic-example', reducibility: 'partially-reducible' },
     ],
     objectives: [
-      { objective_id: 'OBJ-001', label: 'Evidence gain', description: 'Expected ability to increase decision-relevant evidence quality.', threshold: 60, unit: 'desirability score', direction: 'at-least', critical: true },
-      { objective_id: 'OBJ-002', label: 'Affordability', description: 'Ability to remain within realistic financial and operating limits.', threshold: 60, unit: 'desirability score', direction: 'at-least', critical: true },
-      { objective_id: 'OBJ-003', label: 'Privacy protection', description: 'Ability to reduce unnecessary collection or exposure of sensitive information.', threshold: 70, unit: 'desirability score', direction: 'at-least', critical: true },
-      { objective_id: 'OBJ-004', label: 'Reversibility', description: 'Ability to stop, revise, or redirect the strategy without disproportionate loss.', threshold: 60, unit: 'desirability score', direction: 'at-least', critical: false },
+      { objective_id: 'OBJ-001', label: 'Readiness', description: 'Ability to support program needs.', threshold: 70, unit: 'synthetic desirability score', direction: 'at-least', critical: true },
+      { objective_id: 'OBJ-002', label: 'Supply continuity', description: 'Ability to maintain material availability.', threshold: 70, unit: 'synthetic desirability score', direction: 'at-least', critical: true },
+      { objective_id: 'OBJ-003', label: 'Affordability', description: 'Ability to remain within the example cost boundary.', threshold: 60, unit: 'synthetic desirability score', direction: 'at-least', critical: true },
+      { objective_id: 'OBJ-004', label: 'Flexibility', description: 'Ability to revise the pathway as evidence changes.', threshold: 60, unit: 'synthetic desirability score', direction: 'at-least', critical: false },
     ],
     relationships: [
-      { relationship_id: 'REL-001', statement: 'Additional synchronized viewpoints can improve corroboration and enable geometric reconstruction when timing and calibration are sufficient.', evidence_class: 'modeled', confidence: 'medium' },
-      { relationship_id: 'REL-002', statement: 'Controlled known-target testing can reduce false-positive risk before larger deployment.', evidence_class: 'methodological', confidence: 'high' },
-      { relationship_id: 'REL-003', statement: 'A staged strategy preserves the option to scale after defined evidence and recurrence triggers are met.', evidence_class: 'decision-model', confidence: 'medium' },
+      { relationship_id: 'REL-001', statement: 'Second-source qualification may increase continuity after requirements are met.', evidence_class: 'synthetic-decision-model', confidence: 'demonstration-only' },
+      { relationship_id: 'REL-002', statement: 'A bounded reserve may support readiness while qualification proceeds.', evidence_class: 'synthetic-decision-model', confidence: 'demonstration-only' },
+      { relationship_id: 'REL-003', statement: 'Affordability and readiness may require an explicit trade-off.', evidence_class: 'synthetic-decision-model', confidence: 'demonstration-only' },
     ],
     strategies: [
-      {
-        strategy_id: 'STR-001',
-        label: 'Reanalyze existing evidence only',
-        description: 'Complete calibration review, metadata recovery, and controlled comparison without new field infrastructure.',
-        baseline: { 'OBJ-001': 40, 'OBJ-002': 95, 'OBJ-003': 95, 'OBJ-004': 95 },
-        action_now: 'Complete source, calibration, and known-target review.',
-        monitor: 'Residual unexplained signatures and recurrence reports.',
-        trigger: 'Escalate if controls remain unresolved and recurrence is moderate or high.',
-        contingency: 'Close or archive the case if controls explain the observation adequately.',
-      },
-      {
-        strategy_id: 'STR-002',
-        label: 'Deploy two stations immediately',
-        description: 'Purchase, calibrate, and operate a synchronized two-station collection system now.',
-        baseline: { 'OBJ-001': 90, 'OBJ-002': 35, 'OBJ-003': 80, 'OBJ-004': 45 },
-        action_now: 'Acquire and deploy two synchronized stations.',
-        monitor: 'Capture quality, recurrence, operating cost, and community impact.',
-        trigger: 'Continue while evidence gain remains material and operating limits are met.',
-        contingency: 'Suspend deployment if cost or privacy thresholds are exceeded.',
-      },
-      {
-        strategy_id: 'STR-003',
-        label: 'Stage a conditional second-station deployment',
-        description: 'Finish controls and calibration, prepare the second station, and deploy only after explicit recurrence and quality triggers are met.',
-        baseline: { 'OBJ-001': 80, 'OBJ-002': 70, 'OBJ-003': 90, 'OBJ-004': 85 },
-        action_now: 'Complete controls, calibrate the first station, and prepare a second synchronized unit.',
-        monitor: 'Recurrence frequency, control similarity, source quality, and budget readiness.',
-        trigger: 'Deploy when calibrated observations recur and remain unresolved after controls.',
-        contingency: 'Remain in low-cost monitoring mode if the trigger is not met.',
-      },
+      { strategy_id: 'STR-001', label: 'Maintain current source', description: 'Continue without a reserve or second-source qualification.', baseline: { 'OBJ-001': 55, 'OBJ-002': 45, 'OBJ-003': 90, 'OBJ-004': 75 }, action_now: 'Continue current sourcing and evidence collection.', monitor: 'Availability, quality, demand, and lead time.', trigger: 'Reconsider when continuity or readiness falls below the selected goal.', contingency: 'Begin second-source qualification if the trigger is met.' },
+      { strategy_id: 'STR-002', label: 'Qualify a second source', description: 'Fund a bounded second-source qualification pathway.', baseline: { 'OBJ-001': 75, 'OBJ-002': 80, 'OBJ-003': 65, 'OBJ-004': 80 }, action_now: 'Begin evidence review and qualification planning.', monitor: 'Technical fit, quality, schedule, capacity, and cost.', trigger: 'Advance after the required qualification evidence is complete.', contingency: 'Adjust scope or timing when a goal is not yet met.' },
+      { strategy_id: 'STR-003', label: 'Build a reserve and qualify', description: 'Hold a temporary reserve while qualifying a second source.', baseline: { 'OBJ-001': 85, 'OBJ-002': 90, 'OBJ-003': 50, 'OBJ-004': 75 }, action_now: 'Define a bounded reserve and begin qualification.', monitor: 'Inventory, demand, qualification progress, and cost.', trigger: 'Reduce the reserve after qualified capacity becomes available.', contingency: 'Resize the reserve when demand or qualification timing changes.' },
     ],
     scenarios: [
-      {
-        scenario_id: 'SCN-001',
-        label: 'Low recurrence and controls explain most signatures',
-        description: 'Observations are rare and known-target tests reproduce the principal morphology or motion patterns.',
-        states: { 'UNC-001': 'low', 'UNC-002': 'explained', 'UNC-003': 'adequate' },
-        strategy_modifiers: {
-          'STR-001': { 'OBJ-001': -10, 'OBJ-002': 0, 'OBJ-003': 0, 'OBJ-004': 0 },
-          'STR-002': { 'OBJ-001': -50, 'OBJ-002': -10, 'OBJ-003': -10, 'OBJ-004': -10 },
-          'STR-003': { 'OBJ-001': -35, 'OBJ-002': 5, 'OBJ-003': 0, 'OBJ-004': 0 },
-        },
-      },
-      {
-        scenario_id: 'SCN-002',
-        label: 'Moderate recurrence with residual uncertainty',
-        description: 'Some conventional controls fit, but a repeatable residual remains unresolved.',
-        states: { 'UNC-001': 'moderate', 'UNC-002': 'partially-unresolved', 'UNC-003': 'adequate' },
-        strategy_modifiers: {
-          'STR-001': { 'OBJ-001': 5, 'OBJ-002': 0, 'OBJ-003': 0, 'OBJ-004': 0 },
-          'STR-002': { 'OBJ-001': 0, 'OBJ-002': 0, 'OBJ-003': 0, 'OBJ-004': 0 },
-          'STR-003': { 'OBJ-001': 0, 'OBJ-002': 0, 'OBJ-003': 0, 'OBJ-004': 0 },
-        },
-      },
-      {
-        scenario_id: 'SCN-003',
-        label: 'High recurrence and controls remain unresolved',
-        description: 'Calibrated observations recur and conventional controls do not reproduce the relevant signatures.',
-        states: { 'UNC-001': 'high', 'UNC-002': 'unresolved', 'UNC-003': 'adequate' },
-        strategy_modifiers: {
-          'STR-001': { 'OBJ-001': 10, 'OBJ-002': -5, 'OBJ-003': 0, 'OBJ-004': 0 },
-          'STR-002': { 'OBJ-001': 5, 'OBJ-002': -5, 'OBJ-003': -5, 'OBJ-004': -5 },
-          'STR-003': { 'OBJ-001': 10, 'OBJ-002': -5, 'OBJ-003': 0, 'OBJ-004': 0 },
-        },
-      },
-      {
-        scenario_id: 'SCN-004',
-        label: 'Useful recurrence but constrained funding',
-        description: 'Collection remains potentially valuable, but available deployment resources are limited.',
-        states: { 'UNC-001': 'moderate', 'UNC-002': 'partially-unresolved', 'UNC-003': 'constrained' },
-        strategy_modifiers: {
-          'STR-001': { 'OBJ-001': 0, 'OBJ-002': 0, 'OBJ-003': 0, 'OBJ-004': 0 },
-          'STR-002': { 'OBJ-001': 0, 'OBJ-002': -25, 'OBJ-003': -5, 'OBJ-004': -10 },
-          'STR-003': { 'OBJ-001': -5, 'OBJ-002': -25, 'OBJ-003': 0, 'OBJ-004': -5 },
-        },
-      },
+      { scenario_id: 'SCN-001', label: 'Stable demand and source performance', description: 'Demand remains stable and the current source continues to perform.', states: { 'UNC-001': 'stable', 'UNC-002': 'planned', 'UNC-003': 'stable' }, strategy_modifiers: { 'STR-001': { 'OBJ-001': 10, 'OBJ-002': 10, 'OBJ-003': 0, 'OBJ-004': 0 }, 'STR-002': { 'OBJ-001': 0, 'OBJ-002': 0, 'OBJ-003': 0, 'OBJ-004': 0 }, 'STR-003': { 'OBJ-001': -5, 'OBJ-002': 0, 'OBJ-003': -10, 'OBJ-004': 0 } } },
+      { scenario_id: 'SCN-002', label: 'Qualification takes longer', description: 'Second-source qualification requires more time than planned.', states: { 'UNC-001': 'stable', 'UNC-002': 'extended', 'UNC-003': 'stable' }, strategy_modifiers: { 'STR-001': { 'OBJ-001': 0, 'OBJ-002': -10, 'OBJ-003': 0, 'OBJ-004': 0 }, 'STR-002': { 'OBJ-001': -20, 'OBJ-002': -15, 'OBJ-003': -5, 'OBJ-004': -5 }, 'STR-003': { 'OBJ-001': -10, 'OBJ-002': 0, 'OBJ-003': -10, 'OBJ-004': 0 } } },
+      { scenario_id: 'SCN-003', label: 'Primary-source disruption', description: 'The current source becomes temporarily unavailable.', states: { 'UNC-001': 'higher', 'UNC-002': 'planned', 'UNC-003': 'disrupted' }, strategy_modifiers: { 'STR-001': { 'OBJ-001': -35, 'OBJ-002': -45, 'OBJ-003': -5, 'OBJ-004': -15 }, 'STR-002': { 'OBJ-001': 5, 'OBJ-002': 10, 'OBJ-003': -5, 'OBJ-004': 0 }, 'STR-003': { 'OBJ-001': 10, 'OBJ-002': 15, 'OBJ-003': -15, 'OBJ-004': 0 } } },
+      { scenario_id: 'SCN-004', label: 'Budget remains constrained', description: 'The program must advance within a tighter cost boundary.', states: { 'UNC-001': 'higher', 'UNC-002': 'extended', 'UNC-003': 'stable' }, strategy_modifiers: { 'STR-001': { 'OBJ-001': 0, 'OBJ-002': 0, 'OBJ-003': 5, 'OBJ-004': 0 }, 'STR-002': { 'OBJ-001': -5, 'OBJ-002': 0, 'OBJ-003': -20, 'OBJ-004': -5 }, 'STR-003': { 'OBJ-001': -5, 'OBJ-002': 5, 'OBJ-003': -30, 'OBJ-004': -10 } } },
     ],
-    human_decision: {
-      selected_strategy_id: 'STR-003',
-      rationale: 'The staged strategy preserves immediate learning while avoiding unconditional infrastructure cost before recurrence and control-test triggers are met.',
-      next_action: 'Complete known-target controls and publish the second-station deployment trigger checklist.',
-      approved_by: '',
-      approved_at: null,
-    },
-    adaptive_pathway: {
-      act_now: ['Preserve and validate source evidence.', 'Complete camera calibration and known-target controls.', 'Prepare the second station without activating full deployment.'],
-      monitor: ['Recurrence rate', 'Control-object similarity', 'Calibration quality', 'Budget availability'],
-      triggers: ['At least two calibrated residual observations within the defined review window.', 'Known-target tests fail to reproduce the decision-relevant signature.', 'Second-station timing and calibration readiness pass validation.'],
-      contingencies: ['Remain in single-station monitoring if recurrence is low.', 'Close or reclassify the case if controls explain the observation.', 'Seek independent review after synchronized corroboration.'],
-      reassessment: 'Review after 90 days or immediately after a trigger event.',
-    },
-    provenance: {
-      model_type: 'transparent scenario matrix',
-      probability_model_used: false,
-      values_are_analyst_assigned: true,
-      generated_at: createdAt,
-    },
+    human_decision: { selected_strategy_id: 'STR-002', rationale: 'The second-source pathway provides the strongest tested alignment while preserving flexibility.', next_action: 'Confirm the qualification evidence plan, owner, milestones, and review date.', approved_by: '', approved_at: null },
+    adaptive_pathway: { act_now: ['Confirm the decision owner and evidence plan.', 'Define qualification milestones and review dates.'], monitor: ['Supplier evidence', 'Qualification progress', 'Capacity', 'Cost', 'Program demand'], triggers: ['Required qualification evidence is complete.', 'Continuity or readiness falls below the selected goal.'], contingencies: ['Adjust the qualification sequence.', 'Use a bounded reserve when near-term readiness requires support.'], reassessment: 'Review at each qualification milestone or when a declared trigger occurs.' },
+    provenance: { model_type: 'transparent four-future comparison', probability_model_used: false, values_are_analyst_assigned: true, generated_at: createdAt },
   };
 }
+export const OUTCOME_STATE = Object.freeze({
+  VALID_PASS: 'VALID_PASS',
+  VALID_FAIL: 'VALID_FAIL',
+  MODEL_ERROR: 'MODEL_ERROR',
+  MISSING_OUTPUT: 'MISSING_OUTPUT',
+  INVALID_OUTPUT: 'INVALID_OUTPUT',
+  CANCELLED: 'CANCELLED',
+});
+export const CANDIDATE_STATE = Object.freeze({
+  UNIQUE_LEADER: 'UNIQUE_LEADER',
+  TIED_LEADERS: 'TIED_LEADERS',
+  NO_ACCEPTABLE_STRATEGY: 'NO_ACCEPTABLE_STRATEGY',
+  INSUFFICIENT_DATA: 'INSUFFICIENT_DATA',
+});
 
 export function performanceValue(strategy, scenario, objectiveId) {
   const baseline = Number(strategy?.baseline?.[objectiveId]);
@@ -179,17 +88,25 @@ export function performanceValue(strategy, scenario, objectiveId) {
 }
 
 export function objectivePasses(value, objective) {
-  if (!Number.isFinite(Number(value))) return false;
-  if (objective.direction === 'at-most') return Number(value) <= Number(objective.threshold);
-  return Number(value) >= Number(objective.threshold);
+  if (typeof value !== 'number' || !Number.isFinite(value)) return false;
+  if (typeof objective?.threshold !== 'number' || !Number.isFinite(objective.threshold)) return false;
+  if (objective.direction === 'at-most') return value <= objective.threshold;
+  if (objective.direction === 'at-least') return value >= objective.threshold;
+  return false;
 }
-
 export function buildPerformanceMatrix(decisionCase) {
   const rows = [];
   for (const strategy of decisionCase.strategies || []) {
     for (const scenario of decisionCase.scenarios || []) {
       for (const objective of decisionCase.objectives || []) {
         const value = performanceValue(strategy, scenario, objective.objective_id);
+        const passed = objectivePasses(value, objective);
+        const validValue = typeof value === 'number' && Number.isFinite(value);
+        const validThreshold = typeof objective?.threshold === 'number' && Number.isFinite(objective.threshold);
+        const validDirection = ['at-least', 'at-most'].includes(objective?.direction);
+        const state = !validValue || !validThreshold || !validDirection
+          ? OUTCOME_STATE.INVALID_OUTPUT
+          : passed ? OUTCOME_STATE.VALID_PASS : OUTCOME_STATE.VALID_FAIL;
         rows.push({
           strategy_id: strategy.strategy_id,
           scenario_id: scenario.scenario_id,
@@ -197,7 +114,8 @@ export function buildPerformanceMatrix(decisionCase) {
           value,
           threshold: objective.threshold,
           direction: objective.direction,
-          passed: objectivePasses(value, objective),
+          state,
+          passed: state === OUTCOME_STATE.VALID_PASS,
           critical: Boolean(objective.critical),
         });
       }
@@ -205,36 +123,50 @@ export function buildPerformanceMatrix(decisionCase) {
   }
   return rows;
 }
-
 export function summarizeStrategies(decisionCase) {
   const matrix = buildPerformanceMatrix(decisionCase);
   return (decisionCase.strategies || []).map((strategy) => {
     const rows = matrix.filter((row) => row.strategy_id === strategy.strategy_id);
     const scenarios = (decisionCase.scenarios || []).map((scenario) => {
       const scenarioRows = rows.filter((row) => row.scenario_id === scenario.scenario_id);
-      const passed = scenarioRows.filter((row) => row.passed).length;
-      const criticalRows = scenarioRows.filter((row) => row.critical);
-      const criticalFailures = criticalRows.filter((row) => !row.passed);
+      const validRows = scenarioRows.filter((row) => [OUTCOME_STATE.VALID_PASS, OUTCOME_STATE.VALID_FAIL].includes(row.state));
+      const invalidRows = scenarioRows.filter((row) => ![OUTCOME_STATE.VALID_PASS, OUTCOME_STATE.VALID_FAIL].includes(row.state));
+      const passed = validRows.filter((row) => row.state === OUTCOME_STATE.VALID_PASS).length;
+      const criticalRows = validRows.filter((row) => row.critical);
+      const criticalFailures = criticalRows.filter((row) => row.state === OUTCOME_STATE.VALID_FAIL);
+      const criticalInvalids = invalidRows.filter((row) => row.critical);
       return {
         scenario_id: scenario.scenario_id,
         passed,
         total: scenarioRows.length,
-        pass_rate: scenarioRows.length ? passed / scenarioRows.length : 0,
-        critical_pass_rate: criticalRows.length ? (criticalRows.length - criticalFailures.length) / criticalRows.length : 1,
+        valid_total: validRows.length,
+        invalid_outcome_count: invalidRows.length,
+        analysis_valid: invalidRows.length === 0 && scenarioRows.length > 0,
+        pass_rate: invalidRows.length === 0 && validRows.length ? passed / validRows.length : null,
+        critical_pass_rate: criticalInvalids.length === 0 && criticalRows.length
+          ? (criticalRows.length - criticalFailures.length) / criticalRows.length
+          : criticalRows.length ? null : 1,
         critical_failures: criticalFailures.map((row) => row.objective_id),
+        invalid_outcomes: invalidRows.map((row) => row.objective_id),
       };
     });
-    const passed = rows.filter((row) => row.passed).length;
-    const worstCasePassRate = scenarios.length ? Math.min(...scenarios.map((item) => item.pass_rate)) : 0;
-    const worstCaseCriticalPassRate = scenarios.length ? Math.min(...scenarios.map((item) => item.critical_pass_rate)) : 0;
-    const criticalFailureCount = rows.filter((row) => row.critical && !row.passed).length;
+    const invalidRows = rows.filter((row) => ![OUTCOME_STATE.VALID_PASS, OUTCOME_STATE.VALID_FAIL].includes(row.state));
+    const validRows = rows.filter((row) => [OUTCOME_STATE.VALID_PASS, OUTCOME_STATE.VALID_FAIL].includes(row.state));
+    const analysisValid = rows.length > 0 && invalidRows.length === 0 && scenarios.every((item) => item.analysis_valid);
+    const passed = validRows.filter((row) => row.state === OUTCOME_STATE.VALID_PASS).length;
+    const worstCasePassRate = analysisValid ? Math.min(...scenarios.map((item) => item.pass_rate)) : null;
+    const worstCaseCriticalPassRate = analysisValid ? Math.min(...scenarios.map((item) => item.critical_pass_rate)) : null;
+    const criticalFailureCount = validRows.filter((row) => row.critical && row.state === OUTCOME_STATE.VALID_FAIL).length;
     const criticalFailureScenarioCount = scenarios.filter((item) => item.critical_failures.length > 0).length;
     return {
       strategy_id: strategy.strategy_id,
       label: strategy.label,
       passed,
       total: rows.length,
-      overall_pass_rate: rows.length ? passed / rows.length : 0,
+      valid_total: validRows.length,
+      invalid_outcome_count: invalidRows.length,
+      analysis_valid: analysisValid,
+      overall_pass_rate: analysisValid ? passed / validRows.length : null,
       worst_case_pass_rate: worstCasePassRate,
       worst_case_critical_pass_rate: worstCaseCriticalPassRate,
       critical_failure_count: criticalFailureCount,
@@ -243,41 +175,76 @@ export function summarizeStrategies(decisionCase) {
     };
   });
 }
-
 export function robustCandidate(decisionCase) {
+  const result = robustCandidateDecision(decisionCase);
+  return result.status === CANDIDATE_STATE.UNIQUE_LEADER ? result.candidates[0] : null;
+}
+
+export function robustCandidateDecision(decisionCase) {
   const summaries = summarizeStrategies(decisionCase);
-  if (!summaries.length) return null;
+  if (!summaries.length || summaries.some((item) => !item.analysis_valid)) {
+    return { status: CANDIDATE_STATE.INSUFFICIENT_DATA, candidates: [], summaries };
+  }
   const minimumCriticalScenarios = Math.min(...summaries.map((item) => item.critical_failure_scenario_count));
   const eligible = summaries.filter((item) => item.critical_failure_scenario_count === minimumCriticalScenarios);
-  return [...eligible].sort((a, b) => {
+  const compare = (a, b) => {
     if (b.worst_case_critical_pass_rate !== a.worst_case_critical_pass_rate) return b.worst_case_critical_pass_rate - a.worst_case_critical_pass_rate;
     if (b.worst_case_pass_rate !== a.worst_case_pass_rate) return b.worst_case_pass_rate - a.worst_case_pass_rate;
     if (b.overall_pass_rate !== a.overall_pass_rate) return b.overall_pass_rate - a.overall_pass_rate;
     return a.critical_failure_count - b.critical_failure_count;
-  })[0] || null;
+  };
+  const ranked = [...eligible].sort(compare);
+  const top = ranked[0];
+  if (!top) return { status: CANDIDATE_STATE.NO_ACCEPTABLE_STRATEGY, candidates: [], summaries };
+  const candidates = ranked.filter((item) => compare(top, item) === 0);
+  return {
+    status: candidates.length === 1 ? CANDIDATE_STATE.UNIQUE_LEADER : CANDIDATE_STATE.TIED_LEADERS,
+    candidates,
+    summaries,
+  };
 }
-
 export function vulnerabilityMap(decisionCase, strategyId) {
   const matrix = buildPerformanceMatrix(decisionCase);
   const objectives = new Map((decisionCase.objectives || []).map((item) => [item.objective_id, item]));
   return (decisionCase.scenarios || []).map((scenario) => {
-    const failures = matrix
-      .filter((row) => row.strategy_id === strategyId && row.scenario_id === scenario.scenario_id && !row.passed)
+    const scenarioRows = matrix.filter((row) => row.strategy_id === strategyId && row.scenario_id === scenario.scenario_id);
+    const failures = scenarioRows
+      .filter((row) => row.state === OUTCOME_STATE.VALID_FAIL)
+      .map((row) => ({ ...row, objective: objectives.get(row.objective_id) }));
+    const invalids = scenarioRows
+      .filter((row) => ![OUTCOME_STATE.VALID_PASS, OUTCOME_STATE.VALID_FAIL].includes(row.state))
       .map((row) => ({ ...row, objective: objectives.get(row.objective_id) }));
     return {
       scenario_id: scenario.scenario_id,
       label: scenario.label,
       description: scenario.description,
       failures,
+      invalids,
       vulnerable: failures.length > 0,
+      analysis_valid: invalids.length === 0,
     };
   });
 }
 
+export function validateAnalysisReady(decisionCase) {
+  const structural = validateDecisionCase(decisionCase);
+  const matrix = buildPerformanceMatrix(decisionCase);
+  const expected = (decisionCase?.strategies?.length || 0)
+    * (decisionCase?.scenarios?.length || 0)
+    * (decisionCase?.objectives?.length || 0);
+  const errors = [...structural.errors];
+  if (matrix.length !== expected) errors.push(`Expected ${expected} performance rows; received ${matrix.length}.`);
+  for (const row of matrix) {
+    if (![OUTCOME_STATE.VALID_PASS, OUTCOME_STATE.VALID_FAIL].includes(row.state)) {
+      errors.push(`Invalid outcome for ${row.strategy_id}/${row.scenario_id}/${row.objective_id}.`);
+    }
+  }
+  return { valid: errors.length === 0, errors: [...new Set(errors)] };
+}
 export function validateDecisionCase(decisionCase) {
   const errors = [];
   const nonEmpty = (value) => Boolean(String(value ?? '').trim());
-  const inRange = (value, minimum, maximum) => Number.isFinite(Number(value)) && Number(value) >= minimum && Number(value) <= maximum;
+  const inRange = (value, minimum, maximum) => typeof value === 'number' && Number.isFinite(value) && value >= minimum && value <= maximum;
   const uniqueIds = (items, field, label) => {
     const ids = (items || []).map((item) => item?.[field]).filter(Boolean);
     if (ids.length !== new Set(ids).size) errors.push(`${label} IDs must be unique.`);

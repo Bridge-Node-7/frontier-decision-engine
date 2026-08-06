@@ -1,11 +1,11 @@
 {
-  "applicationVersion": "0.2.10",
+  "applicationVersion": "0.2.11",
   "schemaVersions": {
     "decision": "0.2.10",
     "opvCase": "0.1.0"
   },
-  "testCount": 53,
-  "routeCount": 6,
+  "testCount": 71,
+  "routeCount": 4,
   "browserModes": [
     "desktop-light",
     "mobile-light",
@@ -14,7 +14,7 @@
     "reflow-400-equivalent",
     "forced-colors"
   ],
-  "manifestEntryCount": 18,
+  "manifestEntryCount": 25,
   "datasetCounts": {
     "profiles/phenomena/profile.json": 5,
     "site/data/experiences.json": 41,
