@@ -57,7 +57,7 @@ jobs:
           RELEASE_ADMIN_TOKEN: ${{ secrets.RELEASE_ADMIN_TOKEN }}
         run: |
           if [ -z "$RELEASE_ADMIN_TOKEN" ]; then
-            echo "::error::RELEASE_ADMIN_TOKEN is required with Administration: read access to this repository."
+            echo "::error::RELEASE_ADMIN_TOKEN requires a dedicated fine-grained token with Administration: read access to this repository. Do not use an operator's general GitHub CLI token."
             exit 1
           fi
           IMMUTABLE_RELEASES="$(GH_TOKEN="$RELEASE_ADMIN_TOKEN" gh api \
