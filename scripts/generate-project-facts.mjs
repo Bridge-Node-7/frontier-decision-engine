@@ -96,7 +96,11 @@ export async function collectProjectFacts() {
 async function main() {
   const facts = await collectProjectFacts();
   await writeFile(join(root, 'project-facts.json'), `${JSON.stringify(facts, null, 2)}\n`);
-  console.log(`wrote project-facts.json with ${facts.testCount} discovered tests`);
+  await writeFile(
+    join(root, 'site', 'src', 'version.js'),
+    `export const APPLICATION_VERSION = '${facts.applicationVersion}';\n`,
+  );
+  console.log(`wrote project-facts.json and site/src/version.js with ${facts.testCount} discovered tests`);
 }
 
 if (resolve(process.argv[1] || '') === fileURLToPath(import.meta.url)) await main();

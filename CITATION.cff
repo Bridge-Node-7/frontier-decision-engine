@@ -2,8 +2,8 @@ cff-version: 1.2.0
 title: Frontier Decision Engine
 message: Please cite the software and the specific dataset or case version used.
 type: software
-version: 0.2.12
-date-released: 2026-08-06
+version: 0.2.13
+date-released: 2026-08-07
 authors:
 - name: Bridge Node 7
 license: Apache-2.0
