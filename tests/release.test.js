@@ -4,14 +4,14 @@ import { readFile } from 'node:fs/promises';
 
 const read = (path) => readFile(new URL(`../${path}`, import.meta.url), 'utf8');
 
-test('application v0.2.11 retains the compatible v0.2.10 decision schema', async () => {
+test('application v0.2.12 retains the compatible v0.2.10 decision schema', async () => {
   const packageData = JSON.parse(await read('package.json'));
   const citation = await read('CITATION.cff');
   const schema = JSON.parse(await read('schemas/decision.schema.json'));
   const example = JSON.parse(await read('examples/phenomena-second-station/decision.fde.json'));
   const facts = JSON.parse(await read('project-facts.json'));
-  assert.equal(packageData.version, '0.2.11');
-  assert.match(citation, /^version:\s*0\.2\.11\s*$/m);
+  assert.equal(packageData.version, '0.2.12');
+  assert.match(citation, /^version:\s*0\.2\.12\s*$/m);
   assert.match(citation, /^date-released:\s*2026-08-06\s*$/m);
   assert.equal(schema.properties.schema_version.const, '0.2.10');
   assert.equal(example.schema_version, '0.2.10');
@@ -24,17 +24,17 @@ test('application v0.2.11 retains the compatible v0.2.10 decision schema', async
     assert.equal(readme.includes(stale), false);
   }
 });
-test('release identity supports a compatible schema and complete v0.2.11 notes', async () => {
+test('release identity supports a compatible schema and complete v0.2.12 notes', async () => {
   const verifier = await read('scripts/verify_release_tag.py');
-  const notes = await read('docs/releases/v0.2.11.md');
+  const notes = await read('docs/releases/v0.2.12.md');
   const releasing = await read('docs/RELEASING.md');
   const packager = await read('scripts/package_release.py');
   assert.match(verifier, /project-facts\.json/);
   assert.match(verifier, /release notes file is missing or empty/);
   assert.match(verifier, /reference decision example schema version/);
   assert.equal(verifier.includes('decision schema version must match the release base version'), false);
-  assert.match(notes, /^# v0\.2\.11$/m);
-  assert.match(notes, /application version is 0\.2\.11/i);
+  assert.match(notes, /^# v0\.2\.12$/m);
+  assert.match(notes, /application version is 0\.2\.12/i);
   assert.match(notes, /compatible decision schema[\s\S]*0\.2\.10/i);
   assert.match(releasing, /compatible schema may[\s\S]*earlier version/i);
   assert.match(packager, /FIXED_TIME = \(2026, 8, 6, 0, 0, 0\)/);
@@ -74,6 +74,7 @@ test('browser end-to-end harness covers the retained Decision Lab surface', asyn
   assert.match(runner, /#decision-step-heading:focus/);
   assert.equal(runner.includes('#case-step-heading:focus'), false);
   assert.match(packageData.scripts.check, /test:e2e/);
+  assert.match(packageData.scripts.check, /test:closeout/);
 });
 test('cross-platform manifest generation uses file URL conversion rather than URL pathname', async () => {
   const manifest = await read('scripts/build-manifest.mjs');
@@ -171,6 +172,7 @@ test('Pages workflow runs the complete UX gate against the deployed HTTPS origin
   assert.match(pages, /steps\.deployment\.outputs\.page_url/);
   assert.match(pages, /FDE_BASE_URL:/);
   assert.match(pages, /python3 scripts\/browser_e2e\.py/);
+  assert.match(pages, /python3 scripts\/browser_closeout_regressions\.py/);
   assert.match(runner, /FDE_BASE_URL/);
   assert.match(runner, /Live Pages URL did not become ready/);
   assert.match(runner, /attempts=12/);
@@ -237,6 +239,7 @@ test('public repository surface stays lean and user-focused', async () => {
     'METHODOLOGY.md',
     'PRIVACY.md',
     'RELEASING.md',
+    'STYLE_LAYERS.md',
   ]);
   const readme = await read('README.md');
   assert.ok(readme.split(/\r?\n/).length <= 100);

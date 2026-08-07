@@ -1,6 +1,6 @@
 {
   "name": "frontier-decision-engine",
-  "version": "0.2.11",
+  "version": "0.2.12",
   "private": true,
   "type": "module",
   "description": "Browser-local, human-governed decision support for choices under deep uncertainty.",
@@ -11,9 +11,11 @@
     "validate": "python3 scripts/validate_repository.py",
     "manifest": "node scripts/build-manifest.mjs",
     "test:e2e": "python3 scripts/browser_e2e.py",
-    "check": "npm run facts:check && npm test && npm run validate && npm run manifest && npm run test:e2e",
+    "check": "npm run facts:check && npm test && npm run validate:version && npm run validate && npm run manifest && npm run test:e2e && npm run test:closeout",
     "package:release": "python3 scripts/package_release.py",
-    "capture:screenshots": "python3 scripts/capture_screenshots.py"
+    "capture:screenshots": "python3 scripts/capture_screenshots.py",
+    "validate:version": "python3 scripts/validate_version_integrity.py",
+    "test:closeout": "python3 scripts/browser_closeout_regressions.py"
   },
   "engines": {
     "node": ">=22"
