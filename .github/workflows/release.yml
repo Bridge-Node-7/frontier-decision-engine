@@ -52,19 +52,6 @@ jobs:
           test "$TAG_OBJECT_TYPE" = "tag"
           test "$(gh api "repos/$GITHUB_REPOSITORY/git/tags/$TAG_OBJECT_SHA" --jq '.verification.verified')" = "true"
           test "$(gh api "repos/$GITHUB_REPOSITORY/git/tags/$TAG_OBJECT_SHA" --jq '.verification.reason')" = "valid"
-      - name: Verify immutable releases are enabled
-        env:
-          RELEASE_ADMIN_TOKEN: ${{ secrets.RELEASE_ADMIN_TOKEN }}
-        run: |
-          if [ -z "$RELEASE_ADMIN_TOKEN" ]; then
-            echo "::error::RELEASE_ADMIN_TOKEN requires a dedicated fine-grained token with Administration: read access to this repository. Do not use an operator's general GitHub CLI token."
-            exit 1
-          fi
-          IMMUTABLE_RELEASES="$(GH_TOKEN="$RELEASE_ADMIN_TOKEN" gh api \
-            -H "X-GitHub-Api-Version: 2026-03-10" \
-            "repos/$GITHUB_REPOSITORY/immutable-releases" \
-            --jq '.enabled')"
-          test "$IMMUTABLE_RELEASES" = "true"
       - name: Run complete release gate
         run: |
           npm run check

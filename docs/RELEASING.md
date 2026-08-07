@@ -14,11 +14,15 @@
 
 Release workflows and Actions remain pinned and minimally privileged.
 
-## Release credential boundary
+## Automated immutable-release boundary
 
-Immediately before a future tag-driven release, provision `RELEASE_ADMIN_TOKEN`
-in the protected `release` environment using a dedicated fine-grained token
-scoped only to this repository with **Administration: read**. Do not use an
-operator's general GitHub CLI token. Remove or rotate the dedicated token after
-release closeout. If the secret is absent, the release workflow must fail
-closed before publication.
+Immediately before creating a release tag, the closeout gate must use the
+already-authenticated repository owner session for a read-only API check that
+immutable releases are enabled. The token remains local and is never copied
+into GitHub Actions or stored as an environment secret.
+
+The tag-only workflow then verifies the signed annotated tag, publishes with
+the minimally privileged workflow token, downloads the hosted assets, checks
+their hashes, and runs `gh release verify`, `gh release verify-asset`, and
+attestation verification. A failed immutable-release or hosted-asset check
+fails the release gate and blocks closeout.

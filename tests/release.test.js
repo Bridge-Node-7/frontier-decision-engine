@@ -178,16 +178,13 @@ test('Pages workflow runs the complete UX gate against the deployed HTTPS origin
   assert.match(runner, /attempts=12/);
 });
 
-test('Release workflow requires a verified signature, protected immutable-release precheck, and hosted asset verification', async () => {
+test('Release workflow requires a verified signature and hosted immutable verification', async () => {
   const release = await read('.github/workflows/release.yml');
   assert.match(release, /environment:[\s\S]*name: release/);
   assert.match(release, /verification\.verified/);
   assert.match(release, /verification\.reason/);
   assert.match(release, /test "\$TAG_OBJECT_TYPE" = "tag"/);
-  assert.match(release, /RELEASE_ADMIN_TOKEN: \$\{\{ secrets\.RELEASE_ADMIN_TOKEN \}\}/);
-  assert.match(release, /GH_TOKEN="\$RELEASE_ADMIN_TOKEN" gh api/);
-  assert.match(release, /immutable-releases/);
-  assert.match(release, /test "\$IMMUTABLE_RELEASES" = "true"/);
+  assert.equal(release.includes('RELEASE_ADMIN_TOKEN'), false);
   assert.match(release, /gh release download "\$GITHUB_REF_NAME"/);
   assert.match(release, /hosted-verification/);
   assert.match(release, /sha256sum --check/);
@@ -195,15 +192,12 @@ test('Release workflow requires a verified signature, protected immutable-releas
   assert.equal((release.match(/gh release verify-asset/g) || []).length, 2);
   assert.equal((release.match(/gh attestation verify/g) || []).length, 2);
 });
-
-test('immutable-release API precheck does not rely on the default workflow token', async () => {
+test('release workflow never injects an operator credential', async () => {
   const release = await read('.github/workflows/release.yml');
-  const immutableStep = release.split('- name: Verify immutable releases are enabled')[1].split('- name: Run complete release gate')[0];
-  assert.match(immutableStep, /RELEASE_ADMIN_TOKEN/);
-  assert.match(immutableStep, /Administration: read/);
-  assert.equal(immutableStep.includes('GH_TOKEN: ${{ github.token }}'), false);
+  assert.equal(release.includes('RELEASE_ADMIN_TOKEN'), false);
+  assert.equal(release.includes('secrets.RELEASE_ADMIN_TOKEN'), false);
+  assert.match(release, /GH_TOKEN: \$\{\{ github\.token \}\}/);
 });
-
 test('post-publication verification operates on freshly downloaded hosted bytes', async () => {
   const release = await read('.github/workflows/release.yml');
   const hostedStep = release.split('- name: Download and verify hosted release assets')[1];
