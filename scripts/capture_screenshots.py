@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import hashlib
+import json
 import sys
 
 sys.dont_write_bytecode = True
@@ -17,7 +18,8 @@ from browser_e2e import (
 )
 
 ROOT = Path(__file__).resolve().parents[1]
-OUTPUT = ROOT / "docs" / "screenshots" / "v0.2.10"
+VERSION = json.loads((ROOT / "package.json").read_text(encoding="utf-8"))["version"]
+OUTPUT = ROOT / "docs" / "screenshots" / f"v{VERSION}"
 
 
 def prepare_page(browser, viewport: dict[str, int], color_scheme: str):
@@ -65,7 +67,7 @@ def capture(browser) -> None:
             "http://fde.test",
             "/decision",
             "#decision-step-heading",
-            "Frame the real decision",
+            "What are you trying to choose?",
         )
         page.screenshot(
             path=str(OUTPUT / "desktop-decision-frame.png"),

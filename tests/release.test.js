@@ -4,15 +4,16 @@ import { readFile } from 'node:fs/promises';
 
 const read = (path) => readFile(new URL(`../${path}`, import.meta.url), 'utf8');
 
-test('application v0.2.12 retains the compatible v0.2.10 decision schema', async () => {
+test('application version retains the compatible v0.2.10 decision schema', async () => {
   const packageData = JSON.parse(await read('package.json'));
   const citation = await read('CITATION.cff');
   const schema = JSON.parse(await read('schemas/decision.schema.json'));
   const example = JSON.parse(await read('examples/phenomena-second-station/decision.fde.json'));
   const facts = JSON.parse(await read('project-facts.json'));
-  assert.equal(packageData.version, '0.2.12');
-  assert.match(citation, /^version:\s*0\.2\.12\s*$/m);
-  assert.match(citation, /^date-released:\s*2026-08-06\s*$/m);
+  assert.match(packageData.version, /^\d+\.\d+\.\d+$/);
+  const versionPattern = packageData.version.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  assert.match(citation, new RegExp(`^version:\\s*${versionPattern}\\s*$`, 'm'));
+  assert.match(citation, /^date-released:\s*\d{4}-\d{2}-\d{2}\s*$/m);
   assert.equal(schema.properties.schema_version.const, '0.2.10');
   assert.equal(example.schema_version, '0.2.10');
   assert.equal(facts.applicationVersion, packageData.version);
@@ -24,20 +25,26 @@ test('application v0.2.12 retains the compatible v0.2.10 decision schema', async
     assert.equal(readme.includes(stale), false);
   }
 });
-test('release identity supports a compatible schema and complete v0.2.12 notes', async () => {
+test('release identity supports a compatible schema and complete current notes', async () => {
+  const packageData = JSON.parse(await read('package.json'));
+  const citation = await read('CITATION.cff');
   const verifier = await read('scripts/verify_release_tag.py');
-  const notes = await read('docs/releases/v0.2.12.md');
+  const notes = await read(`docs/releases/v${packageData.version}.md`);
   const releasing = await read('docs/RELEASING.md');
   const packager = await read('scripts/package_release.py');
+  const versionPattern = packageData.version.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
   assert.match(verifier, /project-facts\.json/);
   assert.match(verifier, /release notes file is missing or empty/);
   assert.match(verifier, /reference decision example schema version/);
   assert.equal(verifier.includes('decision schema version must match the release base version'), false);
-  assert.match(notes, /^# v0\.2\.12$/m);
-  assert.match(notes, /application version is 0\.2\.12/i);
+  assert.match(notes, new RegExp(`^# v${versionPattern}$`, 'm'));
+  assert.match(notes, new RegExp(`application version is ${versionPattern}`, 'i'));
   assert.match(notes, /compatible decision schema[\s\S]*0\.2\.10/i);
   assert.match(releasing, /compatible schema may[\s\S]*earlier version/i);
-  assert.match(packager, /FIXED_TIME = \(2026, 8, 6, 0, 0, 0\)/);
+  const releaseDate = citation.match(/^date-released:\s*(\d{4})-(\d{2})-(\d{2})\s*$/m);
+  assert.ok(releaseDate, 'citation release date is required');
+  const fixedTime = `FIXED_TIME = (${Number(releaseDate[1])}, ${Number(releaseDate[2])}, ${Number(releaseDate[3])}, 0, 0, 0)`;
+  assert.equal(packager.includes(fixedTime), true);
 });
 
 test('affordability is modeled as an at-least desirability objective', async () => {
@@ -68,7 +75,8 @@ test('browser end-to-end harness covers the retained Decision Lab surface', asyn
   assert.match(requirements, /playwright==1\.57\.0/);
   assert.equal(packageData.scripts['test:e2e'], 'python3 scripts/browser_e2e.py');
   assert.equal(packageData.scripts['capture:screenshots'], 'python3 scripts/capture_screenshots.py');
-  assert.match(capture, /docs.*screenshots.*v0\.2\.10/s);
+  assert.match(capture, /VERSION = json\.loads\(\(ROOT \/ "package\.json"\)\.read_text\(encoding="utf-8"\)\)\["version"\]/);
+  assert.match(capture, /OUTPUT = ROOT \/ "docs" \/ "screenshots" \/ f"v\{VERSION\}"/);
   assert.equal(runner.includes('wait_for_function'), false);
   assert.equal(capture.includes('wait_for_function'), false);
   assert.match(runner, /#decision-step-heading:focus/);
@@ -277,9 +285,15 @@ test('delivery automation retains dependency, review, and attestation controls',
   assert.match(release, /actions\/attest@508db95dd578ae2727ebd6217d5ba78e4fbda05d/);
 });
 
-test('README references only the retained product screenshot', async () => {
+test('README references only the current retained product screenshot', async () => {
+  const packageData = JSON.parse(await read('package.json'));
   const readme = await read('README.md');
-  assert.match(readme, /docs\/screenshots\/v0\.2\.10\/desktop-decision-frame\.png/);
+  const expectedScreenshot = `docs/screenshots/v${packageData.version}/desktop-decision-frame.png`;
+  assert.equal(readme.includes(expectedScreenshot), true);
+  assert.equal(
+    (readme.match(/docs\/screenshots\/v\d+\.\d+\.\d+\/desktop-decision-frame\.png/g) || []).length,
+    1,
+  );
   for (const removed of [
     'desktop-' + 'stress-test-dark.png',
     'desktop-' + 'decision-brief.png',

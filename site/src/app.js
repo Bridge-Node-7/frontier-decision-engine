@@ -15,6 +15,7 @@ import {
 } from './lib/case.js';
 import { evidenceBadge, loadDataset, sortedEntries } from './lib/datasets.js';
 import { renderDecisionLab } from './decision-ui.js';
+import { APPLICATION_VERSION } from './version.js';
 
 const main = document.querySelector('#main');
 const MAX_BROWSER_HASH_BYTES = 250 * 1024 * 1024;
@@ -157,7 +158,7 @@ function renderMethod() {
       <article class="panel stack">
         <span class="eyebrow">Current calculation</span>
         <h2>Visible and bounded.</h2>
-        <p class="muted">Version 0.2.11 uses three editable choices, four named futures, four separate goals, and 48 visible checks. It does not assign probabilities or combine every goal into one hidden score.</p>
+        <p class="muted">Version ${APPLICATION_VERSION} uses three editable choices, four named futures, four separate goals, and 48 visible checks. It does not assign probabilities or combine every goal into one hidden score.</p>
         <div class="actions">${badge('48 visible checks')}${badge('Incomplete results pause comparison')}${badge('Ties remain visible')}${badge('Human decision')}</div>
       </article>
 
