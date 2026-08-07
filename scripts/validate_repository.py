@@ -33,7 +33,12 @@ required = [
     "docs/DATA_DICTIONARY.md",
     "docs/PRIVACY.md",
     "docs/RELEASING.md",
+    "docs/STYLE_LAYERS.md",
+    "docs/contracts/BN7_TOKEN_CONTRACT_v1.0.0.json",
+    "docs/contracts/BN7_TOKEN_CONTRACT_v1.0.0_SHA256.txt",
+    "docs/contracts/BN7_TOKEN_CONTRACT_SOURCE_COMMIT.txt",
     "site/index.html",
+    "site/404.html",
     "site/assets/styles.css",
     "site/src/app.js",
     "site/src/decision-ui.js",
@@ -42,6 +47,8 @@ required = [
     "site/data/experiences.json",
     "site/data/references.json",
     "scripts/browser_e2e.py",
+    "scripts/browser_closeout_regressions.py",
+    "scripts/validate_version_integrity.py",
     "scripts/package_release.py",
     "requirements-dev.txt",
     "schemas/case.schema.json",
@@ -57,6 +64,8 @@ for item in required:
     require(item)
 
 package = load_json("package.json")
+package_lock = load_json("package-lock.json")
+facts = load_json("project-facts.json")
 decision = load_json("examples/phenomena-second-station/decision.fde.json")
 profile = load_json("profiles/phenomena/profile.json")
 morphology = load_json("site/data/morphology.json")
@@ -65,8 +74,17 @@ references = load_json("site/data/references.json")
 
 if package.get("name") != "frontier-decision-engine":
     errors.append("package name mismatch")
-if package.get("version") != "0.2.11":
-    errors.append("package version mismatch")
+application_version = str(package.get("version", ""))
+if not re.fullmatch(r"\d+\.\d+\.\d+", application_version):
+    errors.append("package version is not semantic")
+if str(package_lock.get("version", "")) != application_version:
+    errors.append("package-lock top-level version mismatch")
+if str(package_lock.get("packages", {}).get("", {}).get("version", "")) != application_version:
+    errors.append("package-lock root package version mismatch")
+if str(facts.get("applicationVersion", "")) != application_version:
+    errors.append("project-facts application version mismatch")
+if not (ROOT / "docs" / "releases" / f"v{application_version}.md").is_file():
+    errors.append("current release notes file is missing")
 if decision.get("schema_version") != "0.2.10":
     errors.append("decision example schema version mismatch")
 if profile.get("profile_id") != "phenomena":
@@ -200,20 +218,26 @@ docs_markdown = {
     str(path.relative_to(ROOT)).replace("\\", "/")
     for path in (ROOT / "docs").rglob("*.md")
 }
-allowed_docs = {
+allowed_static_docs = {
     "docs/ARCHITECTURE.md",
     "docs/METHODOLOGY.md",
     "docs/DATA_DICTIONARY.md",
     "docs/PRIVACY.md",
     "docs/RELEASING.md",
-    "docs/releases/v0.2.10.md",
-    "docs/releases/v0.2.11.md",
+    "docs/STYLE_LAYERS.md",
 }
-if docs_markdown != allowed_docs:
+release_docs = {
+    item for item in docs_markdown
+    if re.fullmatch(r"docs/releases/v\d+\.\d+\.\d+\.md", item)
+}
+unexpected_docs = docs_markdown - allowed_static_docs - release_docs
+if unexpected_docs:
     errors.append(
         "docs Markdown surface mismatch: "
-        + ", ".join(sorted(docs_markdown))
+        + ", ".join(sorted(unexpected_docs))
     )
+if f"docs/releases/v{application_version}.md" not in release_docs:
+    errors.append("current release notes are absent from docs surface")
 
 readme = (ROOT / "README.md").read_text(encoding="utf-8")
 if len(readme.splitlines()) > 100:
@@ -266,8 +290,40 @@ if "playwright==1.57.0" not in requirements:
     errors.append("expected browser tool pin is missing")
 
 citation = (ROOT / "CITATION.cff").read_text(encoding="utf-8")
-if not re.search(r"(?m)^version:\s*0\.2\.11\s*$", citation):
+if not re.search(rf"(?m)^version:\s*{re.escape(application_version)}\s*$", citation):
     errors.append("citation version mismatch")
+
+contract = ROOT / "docs/contracts/BN7_TOKEN_CONTRACT_v1.0.0.json"
+contract_sidecar = ROOT / "docs/contracts/BN7_TOKEN_CONTRACT_v1.0.0_SHA256.txt"
+contract_source = ROOT / "docs/contracts/BN7_TOKEN_CONTRACT_SOURCE_COMMIT.txt"
+if contract.exists() and contract_sidecar.exists():
+    import hashlib
+    digest = hashlib.sha256(contract.read_bytes()).hexdigest()
+    expected_sidecar = f"{digest}  BN7_TOKEN_CONTRACT_v1.0.0.json\n"
+    if contract_sidecar.read_text(encoding="utf-8") != expected_sidecar:
+        errors.append("BN7 token contract checksum mismatch")
+if contract_source.exists() and not re.fullmatch(r"[a-f0-9]{40}\n?", contract_source.read_text(encoding="utf-8")):
+    errors.append("BN7 token contract source commit is invalid")
+
+styles = (SITE / "assets/styles.css").read_text(encoding="utf-8")
+shell = (SITE / "assets/bridge-node-7-shell.css").read_text(encoding="utf-8")
+if "font-family: Inter," in styles:
+    errors.append("unresolved Inter font prefix remains")
+if "--line-strong:" not in shell:
+    errors.append("interactive boundary token is missing")
+if "Bridge Node 7 Home" not in index:
+    errors.append("explicit Bridge Node 7 Home path is missing")
+not_found = (SITE / "404.html").read_text(encoding="utf-8")
+if "Page not found" not in not_found or "/frontier-decision-engine/#/decision" not in not_found:
+    errors.append("branded FDE 404 contract is incomplete")
+expected_stylesheet_order = [
+    "./assets/styles.css",
+    "./assets/bridge-node-7-shell.css",
+    "./assets/beginner-first.css",
+]
+positions = [index.find(item) for item in expected_stylesheet_order]
+if any(position < 0 for position in positions) or positions != sorted(positions):
+    errors.append("stylesheet ownership order is invalid")
 
 contributing = (ROOT / "CONTRIBUTING.md").read_text(encoding="utf-8")
 if not contributing.startswith("# Contributing to Frontier Decision Engine"):

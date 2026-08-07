@@ -1,0 +1,56 @@
+{
+  "fdeExtensions": {
+    "lineStrongDark": "rgba(255,255,255,.38)",
+    "lineStrongLight": "rgba(16,24,39,.47)",
+    "purpose": "interactive boundary contrast; not a marketing-site decorative token"
+  },
+  "name": "Bridge Node 7 released visual token baseline",
+  "releasedPageGeometry": {
+    "maxWidthByPath": {
+      "golden-age/index.html": null,
+      "index.html": "1160px",
+      "materials/index.html": null,
+      "partner/index.html": null,
+      "privacy/index.html": null,
+      "readiness/index.html": null
+    },
+    "shadowByPath": {
+      "golden-age/index.html": "0 24px 80px rgba(0,0,0,.46)",
+      "index.html": "0 24px 80px rgba(0,0,0,.48)",
+      "materials/index.html": "0 24px 80px rgba(0,0,0,.46)",
+      "partner/index.html": "0 24px 80px rgba(0,0,0,.46)",
+      "privacy/index.html": "0 24px 80px rgba(0,0,0,.46)",
+      "readiness/index.html": "0 24px 80px rgba(0,0,0,.46)"
+    }
+  },
+  "source": {
+    "commit": "9fef11822a2db82aef581815414d3da124f1b042",
+    "files": [
+      "index.html",
+      "materials/index.html",
+      "readiness/index.html",
+      "partner/index.html",
+      "golden-age/index.html",
+      "privacy/index.html"
+    ],
+    "mode": "deterministic-source-extraction",
+    "repository": "Bridge-Node-7/bridge-node-7.github.io"
+  },
+  "tokens": {
+    "bg": "#050914",
+    "blue": "#78d7ff",
+    "fontFamily": "ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, \"Segoe UI\", sans-serif",
+    "gold": "#f1c86b",
+    "gold2": "#fff0b3",
+    "line": "rgba(255,255,255,.14)",
+    "muted": "#c4cedd",
+    "onAccent": "#07111f",
+    "panel": "#0a1428",
+    "panelElevated": "#0d192f",
+    "radius": "28px",
+    "soft": "#dfe8f8",
+    "text": "#f7f9ff",
+    "violet": "#c6a7ff"
+  },
+  "version": "1.0.0"
+}
