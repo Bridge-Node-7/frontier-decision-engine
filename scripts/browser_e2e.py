@@ -152,10 +152,25 @@ def assert_page_clean(page: Page) -> None:
             }
             primaryHeight = primary.getBoundingClientRect().height;
           }
-          const uncontainedOverflow = [...document.querySelectorAll('body *')].filter((element) => {
+          const overflowOffenders = [...document.querySelectorAll('body *')].filter((element) => {
             const rect = element.getBoundingClientRect();
             return (rect.right > window.innerWidth + 1 || rect.left < -1) && !element.closest('.table-wrap');
-          }).length;
+          }).slice(0, 8).map((element) => {
+            const rect = element.getBoundingClientRect();
+            const style = getComputedStyle(element);
+            return {
+              tag: element.tagName.toLowerCase(),
+              id: element.id || null,
+              class: [...element.classList].slice(0, 4).join(' ') || null,
+              left: Math.round(rect.left * 10) / 10,
+              right: Math.round(rect.right * 10) / 10,
+              width: Math.round(rect.width * 10) / 10,
+              viewportWidth: window.innerWidth,
+              overflowX: style.overflowX,
+              whiteSpace: style.whiteSpace,
+              display: style.display,
+            };
+          });
           const originalX = window.scrollX;
           const originalY = window.scrollY;
           window.scrollTo({ left: 100000, top: originalY, behavior: 'instant' });
@@ -175,7 +190,10 @@ def assert_page_clean(page: Page) -> None:
             h1Count: document.querySelectorAll('main h1').length,
             mainCount: document.querySelectorAll('main').length,
             overflow: document.documentElement.scrollWidth - window.innerWidth,
-            uncontainedOverflow,
+            uncontainedOverflow: overflowOffenders.length,
+            overflowOffenders,
+            hash: location.hash,
+            dataRoute: document.querySelector('main')?.dataset.route || null,
             horizontalScroll,
             contrast,
             primaryHeight,
@@ -212,12 +230,24 @@ def load_application(page: Page) -> None:
     page.locator("#main").wait_for(state="attached")
 
 
+def wait_for_render_settle(page: Page) -> None:
+    page.evaluate(
+        """async () => {
+          await document.fonts.ready;
+          await new Promise((resolve) => requestAnimationFrame(
+            () => requestAnimationFrame(resolve)
+          ));
+        }"""
+    )
+
+
 def route(page: Page, base: str, path: str, selector: str, expected: str) -> None:
     del base
     load_application(page)
     page.evaluate(
         """
         (path) => {
+          document.querySelector('main').dataset.route = '';
           const next = `#${path}`;
           if (location.hash === next) window.dispatchEvent(new HashChangeEvent('hashchange'));
           else location.hash = path;
@@ -225,6 +255,8 @@ def route(page: Page, base: str, path: str, selector: str, expected: str) -> Non
         """,
         path,
     )
+    page.locator(f'#main[data-route="{path}"]').wait_for(state="attached")
+    wait_for_render_settle(page)
     matched_locator = page.locator(selector).filter(has_text=re.compile(re.escape(expected), re.IGNORECASE)).first
     matched_locator.wait_for(state="visible")
     matched = matched_locator.inner_text()
@@ -245,6 +277,7 @@ def route(page: Page, base: str, path: str, selector: str, expected: str) -> Non
 def set_hash_route(page: Page, path: str) -> None:
     page.evaluate(
         """(path) => {
+          document.querySelector('main').dataset.route = '';
           const next = `#${path}`;
           if (location.hash === next) window.dispatchEvent(new HashChangeEvent('hashchange'));
           else location.hash = path;
@@ -252,6 +285,7 @@ def set_hash_route(page: Page, path: str) -> None:
         path,
     )
     page.locator(f'#main[data-route="{path}"]').wait_for(state="attached")
+    wait_for_render_settle(page)
 
 
 def open_stage(page: Page, index: int) -> None:
@@ -282,7 +316,9 @@ def decision_flow(page: Page, base: str) -> str:
     chooser_info.value.set_files([])
     page.on("dialog", lambda dialog: dialog.accept())
     page.locator("#use-ready-example").click()
-    assert "Synthetic example" in page.locator("#decision-save-status").inner_text()
+    page.locator("#decision-save-status").filter(has_text="Synthetic example").wait_for(state="visible")
+    wait_for_render_settle(page)
+    assert page.locator("#decision-save-status").inner_text() == "Synthetic example"
     page.locator("#decision-step-heading-0").wait_for(state="visible")
 
     headings = [
@@ -455,6 +491,7 @@ def checkpoint_b_semantics_flow(page: Page) -> None:
     page.locator("#decision-semantic-mode").select_option("sustainability-seer")
     page.locator('[data-decision-stage="0"] [data-stage-next]').click()
     page.locator('[data-surface="decision-semantics-criteria"]').wait_for(state="visible")
+    wait_for_render_settle(page)
     body = page.locator("body").inner_text()
     for dimension in ["People", "Planet", "Profits", "Product"]:
         assert dimension in body
@@ -462,7 +499,7 @@ def checkpoint_b_semantics_flow(page: Page) -> None:
         dimension_panel = page.locator(f'[data-dimension="{dimension.lower()}"]')
         if dimension_panel.get_attribute("open") is None:
             dimension_panel.locator("summary").press("Enter")
-        assert dimension_panel.get_attribute("open") is not None
+        page.locator(f'[data-dimension="{dimension.lower()}"][open]').wait_for(state="attached")
         page.locator(f"#semantic-label-{index}").fill(f"{dimension} criterion")
         page.locator(f"#semantic-requirement-{index}").fill(f"Declared {dimension.lower()} requirement")
         if index == 0:
