@@ -247,7 +247,28 @@ def route(page: Page, base: str, path: str, selector: str, expected: str) -> Non
 
 
 def decision_flow(page: Page, base: str) -> str:
-    route(page, base, "/decision", "#decision-step-heading", "What are you trying to choose?")
+    route(page, base, "/decision", '[data-surface="decision-entry-front-door"] h1', "Frontier Decision Engine")
+    assert page.locator("#start-blank-decision").is_visible()
+    assert page.locator("#start-ready-example").is_visible()
+    assert page.locator("#open-decision-file").is_visible()
+    assert page.locator('a[href="./start.html"]').inner_text() == "See how it works →"
+    with page.expect_file_chooser() as chooser_info:
+        page.locator("#open-decision-file").click()
+    chooser_info.value.set_files([])
+    page.locator("#start-ready-example").click()
+    page.locator('[data-surface="working-interface"]').wait_for(state="visible")
+    assert "Synthetic example." in page.locator('[data-surface="working-interface"]').inner_text()
+    assert "Ready example" in page.locator('[data-surface="decision-entry"]').inner_text()
+    page.go_back(wait_until="networkidle")
+    page.locator('[data-surface="decision-entry-front-door"]').wait_for(state="visible")
+    page.locator("#start-blank-decision").click()
+    page.locator("#decision-step-heading").wait_for(state="visible")
+    assert page.locator("#decision-title").input_value() == ""
+    assert "Blank decision" in page.locator('[data-surface="decision-entry"]').inner_text()
+    page.go_back(wait_until="networkidle")
+    page.locator('[data-surface="decision-entry-front-door"]').wait_for(state="visible")
+    page.locator("#start-ready-example").click()
+    page.locator("#decision-step-heading").wait_for(state="visible")
 
     headings = [
         "What are you trying to choose?",
@@ -319,8 +340,8 @@ def route_suite(page: Page, base: str) -> None:
     checks = [
         ("/", "h1", "Compare choices"),
         ("/method", "h1", "Decision-making under deep uncertainty"),
-        ("/decision", "#decision-step-heading", "What are you trying to choose?"),
-        ("/decision/open", "#decision-step-heading", "What are you trying to choose?"),
+        ("/decision", '[data-surface="decision-entry-front-door"] h1', "Frontier Decision Engine"),
+        ("/decision/open", '[data-surface="decision-entry-front-door"] h1', "Frontier Decision Engine"),
     ]
     for route_path, selector, expected in checks:
         route(page, base, route_path, selector, expected)
@@ -336,7 +357,8 @@ def corrective_draft_and_entry_flow(page: Page, completed_file: str) -> None:
     assert page.evaluate("localStorage.getItem('fde.decision.autosave.v0.2.11')") is not None
     page.reload(wait_until="networkidle")
     page.locator("#saved-draft-title").wait_for(state="visible")
-    assert "A decision is saved in this browser" in page.locator("#saved-draft-title").inner_text()
+    assert page.locator("#saved-draft-title").inner_text() == "Resume your decision."
+    assert "A decision is saved in this browser" in page.locator('[data-surface="saved-draft-return"]').inner_text()
     assert "not encrypted confidential storage" in page.locator("body").inner_text()
     assert page.locator("#resume-browser-draft").is_visible()
     assert page.locator("#download-browser-draft").inner_text() == "Download draft backup"
@@ -557,7 +579,7 @@ def run_mode(
         corrective_draft_and_entry_flow(page, completed_file)
         checkpoint_b_semantics_flow(page)
     else:
-        route(page, base, "/decision", "#decision-step-heading", "What are you trying to choose?")
+        route(page, base, "/decision", '[data-surface="decision-entry-front-door"] h1', "Frontier Decision Engine")
     assert not console_errors, f"console errors in {label}: {console_errors}"
     assert not page_errors, f"page errors in {label}: {page_errors}"
     assert_page_clean(page)

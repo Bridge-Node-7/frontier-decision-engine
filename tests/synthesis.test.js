@@ -83,6 +83,17 @@ test('walkthrough has exactly six aligned stages and no-JS progressive enhanceme
   assert.doesNotMatch(source, /\.example-steps/);
 });
 
+test('canonical Decision Lab entry makes real work primary and walkthrough optional', async () => {
+  const source = await readFile(new URL('../site/src/decision-ui.js', import.meta.url), 'utf8');
+  assert.match(source, /data-surface="decision-entry-front-door"/);
+  assert.match(source, /Frontier Decision Engine/);
+  assert.match(source, /What are you deciding\?/);
+  assert.match(source, /id="start-blank-decision" href="#\/decision\/new"/);
+  assert.match(source, /id="start-ready-example" href="#\/decision\/example"/);
+  assert.match(source, /See how it works →/);
+  assert.match(source, /if \(!entryMode\) \{\s*renderDecisionEntry/);
+});
+
 test('0.3.0 score rationale is optional, portable, and does not alter comparison', () => {
   const value = decision();
   const before = deriveDecisionSynthesis(value);

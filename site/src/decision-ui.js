@@ -397,9 +397,9 @@ function renderDraftReturn(main, { openFile = false } = {}) {
   main.innerHTML = `
     <div class="breadcrumbs"><a href="#/">Home</a><span aria-hidden="true">/</span><span>Decision Lab</span></div>
     <section class="panel stack" data-surface="saved-draft-return" aria-labelledby="saved-draft-title">
-      <span class="eyebrow">Decision Lab</span>
-      <h1 id="saved-draft-title">A decision is saved in this browser.</h1>
-      <p>Choose what to do with it. Nothing opens or replaces the saved draft until you choose.</p>
+      <span class="eyebrow">Frontier Decision Engine · Working Decision Lab</span>
+      <h1 id="saved-draft-title">Resume your decision.</h1>
+      <p>A decision is saved in this browser. Nothing opens or replaces it until you choose.</p>
       <div class="callout warning"><strong>Browser privacy boundary</strong><p>Anyone with access to this browser profile may be able to reopen the saved decision. Browser storage is not encrypted confidential storage.</p></div>
       <div class="actions">
         <button id="resume-browser-draft" class="primary" type="button">Resume decision</button>
@@ -435,6 +435,30 @@ function renderDraftReturn(main, { openFile = false } = {}) {
   });
   main.querySelector('#start-blank-decision')?.addEventListener('click', () => replaceDraft(createBlankDecisionCase(), 'blank', 'Fresh blank decision started.'));
   main.querySelector('#start-ready-example')?.addEventListener('click', () => replaceDraft(createDecisionCase(), 'ready-example', 'Ready example loaded.'));
+  main.querySelector('#open-decision-file')?.addEventListener('click', () => main.querySelector('#decision-file-input')?.click());
+  main.querySelector('#decision-file-input')?.addEventListener('change', (event) => openDecisionFile(event.target.files?.[0], main, event.target));
+  if (openFile) requestAnimationFrame(() => main.querySelector('#open-decision-file')?.click());
+}
+
+function renderDecisionEntry(main, { openFile = false } = {}) {
+  main.innerHTML = `
+    <div class="breadcrumbs"><a href="#/">Home</a><span aria-hidden="true">/</span><span>Decision Lab</span></div>
+    <section class="engine-launch decision-direct-entry" data-surface="decision-entry-front-door" aria-labelledby="decision-entry-title">
+      <div class="engine-intro stack">
+        <span class="eyebrow">Working Decision Lab</span>
+        <h1 id="decision-entry-title"><span class="gradient-text">Frontier Decision Engine</span></h1>
+        <p class="lede">What are you deciding?</p>
+      </div>
+      <aside class="launch-panel panel stack" aria-label="Begin a decision">
+        <a class="button primary launch-primary" id="start-blank-decision" href="#/decision/new">Start a decision</a>
+        <a class="button" id="start-ready-example" href="#/decision/example">Try the ready example</a>
+        <button id="open-decision-file" data-action="open-saved-decision" type="button">Open an FDE file</button>
+        <input id="decision-file-input" type="file" accept="application/json,.json,.fde.json,.fde-draft.json" hidden aria-label="Open a completed decision file or in-progress draft backup">
+        <a class="quiet-link" href="./start.html">See how it works →</a>
+        <div class="launch-privacy">No account. No default upload. Changes save in this browser.</div>
+        <div id="decision-entry-status" class="status-line" role="alert" tabindex="-1" aria-live="assertive"></div>
+      </aside>
+    </section>`;
   main.querySelector('#open-decision-file')?.addEventListener('click', () => main.querySelector('#decision-file-input')?.click());
   main.querySelector('#decision-file-input')?.addEventListener('change', (event) => openDecisionFile(event.target.files?.[0], main, event.target));
   if (openFile) requestAnimationFrame(() => main.querySelector('#open-decision-file')?.click());
@@ -552,6 +576,10 @@ export function renderDecisionLab(main, { openFile = false, entryMode = null } =
   if (entryMode === 'ready-example') {
     clearSavedDecision(browserStorage);
     startDecision(createDecisionCase(), 'ready-example', 'Fresh ready example loaded.');
+  }
+  if (!entryMode) {
+    renderDecisionEntry(main, { openFile });
+    return;
   }
   renderInto(main);
   if (openFile) requestAnimationFrame(() => main.querySelector('#open-decision-file')?.click());

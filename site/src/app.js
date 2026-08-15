@@ -40,7 +40,7 @@ function renderHome() {
         <a class="button primary launch-primary" data-action="start-decision" href="#/decision/new">Start a decision</a>
         <a class="button" data-action="open-decision-lab" href="#/decision/example">Try the ready example</a>
         <a class="button" data-action="open-saved-decision" href="#/decision/open">Open an FDE file</a>
-        <a class="quiet-link" data-action="open-walkthrough" href="./start.html">See the walkthrough first →</a>
+        <a class="quiet-link" data-action="open-walkthrough" href="./start.html">See how it works →</a>
         <div class="launch-privacy">No account. No default upload. Changes save in this browser.</div>
       </aside>
     </section>
