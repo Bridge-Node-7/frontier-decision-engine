@@ -295,6 +295,92 @@ def open_stage(page: Page, index: int) -> None:
     page.locator(f"#decision-step-heading-{index}").wait_for(state="visible")
 
 
+def activate_ready_example(page: Page) -> None:
+    expected_message = "Open the ready example? This replaces the decision currently open in this browser."
+    expected_question = "Which source-qualification pathway creates the strongest readiness across changing conditions?"
+    page.evaluate(
+        """() => {
+          window.__fdeReadyExampleConfirmation = {
+            original: window.confirm,
+            invoked: false,
+            message: null,
+            result: null,
+          };
+          window.confirm = (message) => {
+            const state = window.__fdeReadyExampleConfirmation;
+            state.invoked = true;
+            state.message = String(message);
+            state.result = true;
+            return true;
+          };
+        }"""
+    )
+    button = page.locator("#use-ready-example")
+    try:
+        assert button.is_visible(), "ready-example button is not visible"
+        assert button.is_enabled(), "ready-example button is not enabled"
+        button.click()
+        page.wait_for_function(
+            """([expectedMessage, expectedQuestion]) => {
+              const confirmation = window.__fdeReadyExampleConfirmation;
+              const status = document.querySelector('#decision-save-status');
+              const question = document.querySelector('#decision-question');
+              const heading = document.querySelector('#decision-step-heading-0');
+              return confirmation?.invoked === true
+                && confirmation.message === expectedMessage
+                && confirmation.result === true
+                && status?.textContent?.trim() === 'Synthetic example'
+                && question?.value === expectedQuestion
+                && document.querySelectorAll('[data-decision-stage]').length === 6
+                && heading !== null
+                && heading.getClientRects().length > 0;
+            }""",
+            arg=[expected_message, expected_question],
+        )
+        confirmation = page.evaluate(
+            """() => ({
+              invoked: window.__fdeReadyExampleConfirmation?.invoked ?? false,
+              message: window.__fdeReadyExampleConfirmation?.message ?? null,
+              result: window.__fdeReadyExampleConfirmation?.result ?? null,
+            })"""
+        )
+        assert confirmation == {"invoked": True, "message": expected_message, "result": True}
+        assert page.locator("#decision-save-status").inner_text() == "Synthetic example"
+        assert page.locator("#decision-question").input_value() == expected_question
+        assert page.locator('[data-decision-stage]').count() == 6
+        page.locator("#decision-step-heading-0").wait_for(state="visible")
+    except Exception as exc:
+        diagnostics = page.evaluate(
+            """() => {
+              const button = document.querySelector('#use-ready-example');
+              const openStage = document.querySelector('[data-decision-stage][open]');
+              const confirmation = window.__fdeReadyExampleConfirmation;
+              return {
+                url: location.href,
+                hash: location.hash,
+                route: document.querySelector('main')?.dataset.route ?? null,
+                saveStatus: document.querySelector('#decision-save-status')?.textContent?.trim() ?? null,
+                decisionQuestion: document.querySelector('#decision-question')?.value ?? null,
+                openStageIndex: openStage?.dataset.decisionStage ?? null,
+                confirmationInvoked: confirmation?.invoked ?? false,
+                confirmationMessage: confirmation?.message ?? null,
+                confirmationResult: confirmation?.result ?? null,
+                buttonVisible: !!button && button.getClientRects().length > 0,
+                buttonEnabled: !!button && !button.disabled,
+              };
+            }"""
+        )
+        raise AssertionError(f"ready-example transition failed: {diagnostics}") from exc
+    finally:
+        page.evaluate(
+            """() => {
+              const state = window.__fdeReadyExampleConfirmation;
+              if (state?.original) window.confirm = state.original;
+              delete window.__fdeReadyExampleConfirmation;
+            }"""
+        )
+
+
 def decision_flow(page: Page, base: str) -> str:
     route(page, base, "/decision", '[data-surface="fde-hero"] h1', "Frontier Decision Engine")
     assert page.locator('[data-surface="integrated-method"]').is_visible()
@@ -314,12 +400,8 @@ def decision_flow(page: Page, base: str) -> str:
     with page.expect_file_chooser() as chooser_info:
         page.locator("#open-decision-file").click()
     chooser_info.value.set_files([])
-    page.on("dialog", lambda dialog: dialog.accept())
-    page.locator("#use-ready-example").click()
-    page.locator("#decision-save-status").filter(has_text="Synthetic example").wait_for(state="visible")
+    activate_ready_example(page)
     wait_for_render_settle(page)
-    assert page.locator("#decision-save-status").inner_text() == "Synthetic example"
-    page.locator("#decision-step-heading-0").wait_for(state="visible")
 
     headings = [
         "What decision needs to be made?",
