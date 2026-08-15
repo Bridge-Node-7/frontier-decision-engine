@@ -27,7 +27,7 @@ function countTests(text) {
   return (text.match(/(?:^|\s)test\s*\(/gm) || []).length;
 }
 
-async function collectDatasetCounts() {
+async function collectRetainedReferenceArtifactItemCounts() {
   const candidates = [join(root, 'site', 'data'), join(root, 'profiles', 'phenomena')];
   const counts = {};
   for (const directory of candidates) {
@@ -59,6 +59,7 @@ export async function collectProjectFacts() {
   const knownModes = [
     'desktop-light',
     'mobile-light',
+    'mobile-375',
     'desktop-dark',
     'reflow-200-equivalent',
     'reflow-400-equivalent',
@@ -86,10 +87,10 @@ export async function collectProjectFacts() {
       opvCase: schemaVersion(caseSchema),
     },
     testCount,
-    routeCount: routes.size,
+    discoveredHashRouteLiteralCount: routes.size,
     browserModes,
     manifestEntryCount,
-    datasetCounts: await collectDatasetCounts(),
+    retainedReferenceArtifactItemCounts: await collectRetainedReferenceArtifactItemCounts(),
   };
 }
 

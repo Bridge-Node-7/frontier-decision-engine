@@ -4,7 +4,7 @@ Browser-local, human-governed decision support for choices under deep uncertaint
 
 [Open the live application](https://bridgenode7.com/frontier-decision-engine/)
 
-![Frontier Decision Engine](docs/screenshots/v0.2.13/desktop-decision-frame.png)
+![Frontier Decision Engine](docs/screenshots/v0.3.0/desktop-decision-frame.png)
 
 ## What it does
 
@@ -12,7 +12,7 @@ Browser-local, human-governed decision support for choices under deep uncertaint
 - Evaluates choices across explicit goals and named future conditions.
 - Shows unmet goals, ties, incomplete outcomes, and conditions to watch.
 - Keeps final selection, rationale, and next action human-owned.
-- Exports portable decision and evidence records.
+- Exports an editable decision file and a readable decision summary.
 The application is static and browser-local. It has no backend, account system,
 analytics, cookies, or default upload endpoint.
 
@@ -20,7 +20,9 @@ analytics, cookies, or default upload endpoint.
 
 The default public workflow uses a clearly labeled synthetic critical-material source-qualification case. It demonstrates the interface and does not certify a supplier, qualify a material, confirm production capacity, guarantee compliance, recommend an investment, or predict commodity prices.
 
-The Decision Lab saves work in the local browser and supports decision-file download, reopen, and readable-summary export without an account or default upload endpoint.
+The Decision Lab autosaves in-progress work in the local browser and asks before reopening a structurally safe draft on return. Anyone with access to that browser profile may be able to reopen it; browser storage is not encrypted confidential storage. An incomplete draft can be downloaded and reopened as an explicitly labeled draft backup. Completed legacy schema `0.2.10` decisions remain supported. Explicit use of Sustainability · SEER-informed or Decision-posture semantics uses schema `0.3.0`; both contracts require a human selection, rationale, and next action for completed export. The application supports readable-summary export without an account or default upload endpoint.
+
+SEER-informed is an optional lens inside the same six-stage workflow. People, Planet, Profits, and Product remain independent; there is no composite sustainability score. The existing comparison and the separately derived Decision posture are advisory, and a human owns the final decision.
 
 ## Run locally
 
@@ -42,7 +44,9 @@ npm run check
 ```
 
 Current generated counts and versions are recorded in
-[`project-facts.json`](project-facts.json).
+[`project-facts.json`](project-facts.json). Its discovered hash-route count is a
+count of route literals in HTML/JavaScript, and its retained-reference counts
+describe repository artifacts rather than active Decision Lab datasets.
 
 ## Documentation
 

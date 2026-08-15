@@ -233,10 +233,20 @@ def route(page: Page, base: str, path: str, selector: str, expected: str) -> Non
     matched_locator.wait_for(state="visible")
     matched = matched_locator.inner_text()
     assert expected.lower() in matched.lower(), f"{path} did not contain {expected!r}; found {matched!r}"
+    expected_title = {
+        "/": "Overview | Frontier Decision Engine",
+        "/method": "Method | Frontier Decision Engine",
+        "/decision": "Decision Lab | Frontier Decision Engine",
+        "/decision/new": "Decision Lab | Frontier Decision Engine",
+        "/decision/example": "Decision Lab | Frontier Decision Engine",
+        "/decision/open": "Open Decision | Frontier Decision Engine",
+    }.get(path)
+    if expected_title:
+        assert page.title() == expected_title, f"{path} title was {page.title()!r}"
     assert_page_clean(page)
 
 
-def decision_flow(page: Page, base: str) -> None:
+def decision_flow(page: Page, base: str) -> str:
     route(page, base, "/decision", "#decision-step-heading", "What are you trying to choose?")
 
     headings = [
@@ -282,16 +292,20 @@ def decision_flow(page: Page, base: str) -> None:
     page.locator("#human-next-action").fill(
         "Confirm the qualification evidence plan, owner, milestones, and review date."
     )
+    page.locator("#human-strategy").select_option("STR-002")
 
     with page.expect_download() as json_download:
         page.locator("#export-decision-json").click()
     assert json_download.value.suggested_filename.endswith(".fde.json")
+    completed_file = json_download.value.path()
+    assert completed_file is not None
 
     with page.expect_download() as html_download:
         page.locator("#export-decision-html").click()
     assert html_download.value.suggested_filename.endswith(".decision.html")
 
     assert_page_clean(page)
+    return completed_file
 
 
 def route_suite(page: Page, base: str) -> None:
@@ -299,9 +313,169 @@ def route_suite(page: Page, base: str) -> None:
         ("/", "h1", "Compare choices"),
         ("/method", "h1", "Decision-making under deep uncertainty"),
         ("/decision", "#decision-step-heading", "What are you trying to choose?"),
+        ("/decision/open", "#decision-step-heading", "What are you trying to choose?"),
     ]
     for route_path, selector, expected in checks:
         route(page, base, route_path, selector, expected)
+
+
+def corrective_draft_and_entry_flow(page: Page, completed_file: str) -> None:
+    page.evaluate("location.hash = '/decision/new'")
+    page.locator("#decision-title").wait_for(state="visible")
+    assert page.locator("#decision-title").input_value() == ""
+    page.locator("#decision-title").fill("Partial blank recovery")
+    page.locator("#decision-owner").fill("Partial owner")
+    page.wait_for_timeout(350)
+    assert page.evaluate("localStorage.getItem('fde.decision.autosave.v0.2.11')") is not None
+    page.reload(wait_until="networkidle")
+    page.locator("#saved-draft-title").wait_for(state="visible")
+    assert "A decision is saved in this browser" in page.locator("#saved-draft-title").inner_text()
+    assert "not encrypted confidential storage" in page.locator("body").inner_text()
+    assert page.locator("#resume-browser-draft").is_visible()
+    assert page.locator("#download-browser-draft").inner_text() == "Download draft backup"
+    assert page.locator("#clear-browser-draft").is_visible()
+
+    with page.expect_download() as backup_download:
+        page.locator("#download-browser-draft").click()
+    assert backup_download.value.suggested_filename.endswith(".fde-draft.json")
+    backup_file = backup_download.value.path()
+    assert backup_file is not None
+
+    page.locator("#resume-browser-draft").click()
+    page.locator("#decision-step-heading").wait_for(state="visible")
+    assert "Restored browser draft" in page.locator("body").inner_text()
+    assert page.locator("#decision-title").input_value() == "Partial blank recovery"
+    assert page.locator("#decision-owner").input_value() == "Partial owner"
+    assert page.locator("#decision-question").input_value() == ""
+
+    page.locator('[data-decision-step="4"]').click()
+    assert "One update is needed" in page.locator("#decision-step-heading").inner_text()
+    page.locator('[data-decision-step="5"]').click()
+    page.locator("#export-decision-json").click()
+    assert "Decision question is required" in page.locator("#decision-validation").inner_text()
+
+    # Restored -> explicit ready example produces a fresh example and clears the old draft.
+    page.evaluate("location.hash = '/'")
+    page.locator('[href="#/decision/example"]').first.click()
+    assert page.locator("#decision-title").input_value() == "Critical-material source qualification decision"
+    page.locator('[data-decision-step="5"]').click()
+    assert page.locator("#human-strategy").input_value() == ""
+    stored_title = page.evaluate(
+        """() => {
+          const raw = localStorage.getItem('fde.decision.autosave.v0.2.11');
+          return raw ? JSON.parse(raw).title : null;
+        }"""
+    )
+    assert stored_title != "Partial blank recovery"
+
+    # Ready -> explicit blank produces a fresh neutral blank.
+    page.evaluate("location.hash = '/'")
+    page.locator('[href="#/decision/new"]').first.click()
+    assert page.locator("#decision-title").input_value() == ""
+    assert "Blank decision" in page.locator("body").inner_text()
+
+    # Draft backup reopens exactly and remains incomplete.
+    page.locator("#decision-file-input").set_input_files(backup_file)
+    page.locator("#decision-title").wait_for(state="visible")
+    assert "Imported draft backup" in page.locator("body").inner_text()
+    assert page.locator("#decision-title").input_value() == "Partial blank recovery"
+    assert page.locator("#decision-owner").input_value() == "Partial owner"
+    assert page.locator("#decision-question").input_value() == ""
+
+    # Imported draft -> explicit ready example does not retain imported state.
+    page.evaluate("location.hash = '/'")
+    page.locator('[href="#/decision/example"]').first.click()
+    assert page.locator("#decision-title").input_value() == "Critical-material source qualification decision"
+
+    # Existing completed schema 0.2.10 export still opens, then explicit ready resets it.
+    page.locator("#decision-file-input").set_input_files(completed_file)
+    page.locator("#decision-title").wait_for(state="visible")
+    assert "Imported completed decision" in page.locator("body").inner_text()
+    page.evaluate("location.hash = '/'")
+    page.locator('[href="#/decision/example"]').first.click()
+    page.locator("#decision-title").wait_for(state="visible")
+    assert page.locator("#decision-title").input_value() == "Critical-material source qualification decision"
+    assert "Ready example" in page.locator("body").inner_text()
+    page.locator('[data-decision-step="5"]').click()
+    assert page.locator("#human-strategy").input_value() == ""
+    assert_page_clean(page)
+
+
+def checkpoint_b_semantics_flow(page: Page) -> None:
+    page.evaluate("location.hash = '/'")
+    page.locator('[href="#/decision/example"]').first.click()
+    page.locator("#decision-semantic-mode").select_option("sustainability-seer")
+    page.locator("#decision-next").click()
+    page.locator('[data-surface="decision-semantics-criteria"]').wait_for(state="visible")
+    body = page.locator("body").inner_text()
+    for dimension in ["People", "Planet", "Profits", "Product"]:
+        assert dimension in body
+    for index, dimension in enumerate(["People", "Planet", "Profits", "Product"]):
+        dimension_panel = page.locator(f'[data-dimension="{dimension.lower()}"]')
+        if dimension_panel.get_attribute("open") is None:
+            dimension_panel.locator("summary").press("Enter")
+        assert dimension_panel.get_attribute("open") is not None
+        page.locator(f"#semantic-label-{index}").fill(f"{dimension} criterion")
+        page.locator(f"#semantic-requirement-{index}").fill(f"Declared {dimension.lower()} requirement")
+        if index == 0:
+            page.locator(f"#semantic-required-{index}").check()
+            page.locator(f"#semantic-evidence-{index}").select_option("unknown")
+            page.locator(f"#semantic-outcome-{index}").select_option("not-assessable")
+            page.locator(f"#semantic-evidence-need-{index}").fill("Obtain the declared People evidence.")
+        else:
+            page.locator(f"#semantic-evidence-{index}").select_option("supported")
+            page.locator(f"#semantic-outcome-{index}").select_option("meets")
+    page.locator('[data-decision-step="4"]').click()
+    page.locator('[data-surface="decision-posture"]').wait_for(state="visible")
+    results = page.locator("body").inner_text()
+    assert "Strongest alignment in this comparison" in results
+    assert "Decision posture" in results
+    assert "HOLD" in results
+    assert "People" in results and "Needs evidence" in results
+    assert "Planet" in results and "Meets" in results
+    assert "Most decision-relevant next evidence" in results
+    assert "composite sustainability score" not in results.lower()
+    page.locator('[data-decision-step="5"]').click()
+    page.locator('[data-surface="semantic-controls"]').wait_for(state="visible")
+    assert page.locator("#human-strategy").input_value() == ""
+    assert "Your final decision remains below" in page.locator("body").inner_text()
+    assert len(page.locator('[data-decision-step]').all()) == 6
+    page.locator("#semantic-condition-statement").fill("Visible People remediation")
+    page.locator("#semantic-condition-target").select_option("CRT-001")
+    page.locator("#semantic-monitoring-observable").fill("Visible monitoring record")
+    page.locator('[data-decision-step="0"]').click()
+    page.evaluate(
+        """() => {
+          const key = 'fde.decision.autosave.v0.2.11';
+          const saved = JSON.parse(localStorage.getItem(key));
+          saved.decision_semantics.conditions.push({ id: 'CON-002', statement: 'Imported condition', required: false, state: 'satisfied', criterion_refs: ['CRT-002'], strategy_refs: ['STR-003'] });
+          saved.decision_semantics.monitoring.push({ monitoring_id: 'MON-002', observable: 'Imported monitor', trigger: 'Imported trigger', response: 'Imported response', required: false, criterion_refs: ['CRT-002'], strategy_refs: ['STR-003'] });
+          localStorage.setItem(key, JSON.stringify(saved));
+        }"""
+    )
+    page.reload(wait_until="networkidle")
+    page.locator("#resume-browser-draft").click()
+    page.locator('[data-decision-step="5"]').click()
+    page.locator("#semantic-condition-statement").fill("Edited visible People remediation")
+    page.locator("#semantic-monitoring-observable").fill("Edited visible monitoring record")
+    page.locator('[data-decision-step="0"]').click()
+    preserved = page.evaluate("JSON.parse(localStorage.getItem('fde.decision.autosave.v0.2.11')).decision_semantics")
+    assert len(preserved["conditions"]) == 2
+    assert len(preserved["monitoring"]) == 2
+    assert preserved["conditions"][0]["criterion_refs"] == ["CRT-001"]
+    assert preserved["conditions"][1] == {"id": "CON-002", "statement": "Imported condition", "required": False, "state": "satisfied", "criterion_refs": ["CRT-002"], "strategy_refs": ["STR-003"]}
+    assert preserved["monitoring"][1] == {"monitoring_id": "MON-002", "observable": "Imported monitor", "trigger": "Imported trigger", "response": "Imported response", "required": False, "criterion_refs": ["CRT-002"], "strategy_refs": ["STR-003"]}
+    page.locator("#decision-semantic-mode").select_option("general")
+    page.locator("#enable-decision-posture").uncheck()
+    page.locator("#decision-next").click()
+    page.locator('[data-decision-step="4"]').click()
+    assert page.locator('[data-surface="decision-posture"]').count() == 0
+    stored = page.evaluate("JSON.parse(localStorage.getItem('fde.decision.autosave.v0.2.11'))")
+    assert stored["schema_version"] == "0.3.0"
+    assert len(stored["decision_semantics"]["criteria"]) == 4
+    assert stored["decision_semantics"]["mode"] == "general"
+    assert stored["decision_semantics"]["posture_enabled"] is False
+    assert_page_clean(page)
 
 
 def print_flow(page: Page) -> None:
@@ -367,8 +541,10 @@ def run_mode(
     page.on("pageerror", lambda error: page_errors.append(str(error)))
     route_suite(page, base)
     if full:
-        decision_flow(page, base)
+        completed_file = decision_flow(page, base)
         print_flow(page)
+        corrective_draft_and_entry_flow(page, completed_file)
+        checkpoint_b_semantics_flow(page)
     else:
         route(page, base, "/decision", "#decision-step-heading", "What are you trying to choose?")
     assert not console_errors, f"console errors in {label}: {console_errors}"
@@ -412,6 +588,7 @@ def main() -> None:
 
             run_mode(browser, base, "desktop-light", {"width": 1440, "height": 1200}, "light", True, native_http)
             run_mode(browser, base, "mobile-light", {"width": 390, "height": 844}, "light", False, native_http)
+            run_mode(browser, base, "mobile-375", {"width": 375, "height": 812}, "light", False, native_http)
             run_mode(browser, base, "desktop-dark", {"width": 1440, "height": 1200}, "dark", False, native_http)
             run_mode(browser, base, "reflow-200-equivalent", {"width": 640, "height": 900}, "light", False, native_http)
             run_mode(browser, base, "reflow-400-equivalent", {"width": 320, "height": 800}, "light", False, native_http)

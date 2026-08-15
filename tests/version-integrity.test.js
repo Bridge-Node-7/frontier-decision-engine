@@ -10,7 +10,7 @@ async function fixture() {
   const dir = await mkdtemp(path.join(os.tmpdir(), "fde-version-"));
   for (const item of [
     "package.json", "package-lock.json", "CITATION.cff", "project-facts.json",
-    "README.md", "examples", "docs", "site", "scripts",
+    "README.md", "examples", "docs", "site", "schemas", "scripts",
   ]) await cp(path.join(root, item), path.join(dir, item), { recursive: true });
   return dir;
 }
@@ -23,7 +23,7 @@ test("version authorities agree", async () => {
 test("stale citation fails", async () => {
   const dir = await fixture();
   const p = path.join(dir, "CITATION.cff");
-  await writeFile(p, (await readFile(p, "utf8")).replace("version: 0.2.13", "version: 0.2.12"));
+  await writeFile(p, (await readFile(p, "utf8")).replace("version: 0.3.0", "version: 0.2.12"));
   assert.notEqual(run(dir).status, 0);
 });
 test("stale generated facts fail", async () => {
@@ -42,7 +42,7 @@ test("stale package lock fails", async () => {
 });
 test("missing current release notes fail", async () => {
   const dir = await fixture();
-  await rm(path.join(dir, "docs", "releases", "v0.2.13.md"));
+  await rm(path.join(dir, "docs", "releases", "v0.3.0.md"));
   assert.notEqual(run(dir).status, 0);
 });
 test("stale runtime version module fails", async () => {
@@ -65,7 +65,7 @@ test("hard-coded readable-export application version fails", async () => {
 test("stale README screenshot path fails", async () => {
   const dir = await fixture();
   const p = path.join(dir, "README.md");
-  await writeFile(p, (await readFile(p, "utf8")).replace("docs/screenshots/v0.2.13/", "docs/screenshots/v0.2.12/"));
+  await writeFile(p, (await readFile(p, "utf8")).replace("docs/screenshots/v0.3.0/", "docs/screenshots/v0.2.12/"));
   assert.notEqual(run(dir).status, 0);
 });
 test("hard-coded screenshot capture version fails", async () => {

@@ -1,33 +1,7 @@
-import {
-  angularExtentFromPixels,
-  pointDistance,
-  round,
-  scenarioTable,
-} from './lib/calculations.js';
-import {
-  buildHtmlReport,
-  createCase,
-  downloadText,
-  hashFile,
-  refreshEvidenceLevel,
-  safeFilename,
-  validateCase,
-} from './lib/case.js';
-import { evidenceBadge, loadDataset, sortedEntries } from './lib/datasets.js';
 import { renderDecisionLab } from './decision-ui.js';
 import { APPLICATION_VERSION } from './version.js';
 
 const main = document.querySelector('#main');
-const MAX_BROWSER_HASH_BYTES = 250 * 1024 * 1024;
-const state = {
-  caseData: createCase(),
-  caseStep: 0,
-  selectedFile: null,
-  selectedImageUrl: null,
-  image: null,
-  measurementPoints: [],
-  selectedDataset: null,
-};
 
 const escapeHtml = (value) => String(value ?? '')
   .replaceAll('&', '&amp;')
@@ -35,14 +9,6 @@ const escapeHtml = (value) => String(value ?? '')
   .replaceAll('>', '&gt;')
   .replaceAll('"', '&quot;')
   .replaceAll("'", '&#039;');
-
-const formatNumber = (value, digits = 2) => Number.isFinite(Number(value))
-  ? Number(value).toLocaleString(undefined, { maximumFractionDigits: digits })
-  : '—';
-
-function navigate(path) {
-  location.hash = path;
-}
 
 function breadcrumbs(items) {
   return `<div class="breadcrumbs">${items.map((item, index) => {
@@ -53,24 +19,6 @@ function breadcrumbs(items) {
 
 function badge(label, className = '') {
   return `<span class="badge ${className}">${escapeHtml(label)}</span>`;
-}
-
-function metric(label, value, note = '') {
-  return `<div class="metric"><span class="label">${escapeHtml(label)}</span><span class="value">${escapeHtml(value)}</span>${note ? `<span class="help">${escapeHtml(note)}</span>` : ''}</div>`;
-}
-
-function limitationsPanel(items) {
-  return `<div class="callout warning stack"><h3>Evidence boundaries</h3><ul>${items.map((item) => `<li>${escapeHtml(item)}</li>`).join('')}</ul></div>`;
-}
-
-function barList(entries) {
-  const maximum = Math.max(1, ...entries.map(([, value]) => Number(value)));
-  return `<div class="bar-list">${entries.map(([label, value]) => `
-    <div class="bar-row">
-      <span>${escapeHtml(label)}</span>
-      <div class="bar-track" aria-hidden="true"><div class="bar-fill" style="width:${Math.max(2, Number(value) / maximum * 100)}%"></div></div>
-      <strong>${formatNumber(value, 0)}</strong>
-    </div>`).join('')}</div>`;
 }
 
 function renderHome() {
@@ -88,11 +36,13 @@ function renderHome() {
       <aside class="launch-panel panel stack" aria-labelledby="launch-title">
         <span class="interface-label">Working application</span>
         <h2 id="launch-title">Start here.</h2>
-        <p>A synthetic critical-material case is ready. Open it, edit the six steps, and download the final decision record.</p>
-        <a class="button primary launch-primary" data-action="open-decision-lab" href="#/decision">Open the working Decision Lab</a>
-        <span class="launch-note">Opens the real interface with the ready case loaded.</span>
-        <a class="button" data-action="open-saved-decision" href="#/decision/open">Open a saved decision file</a>
-        <span class="launch-note">Opens the same interface and asks you to choose an FDE decision file.</span>
+        <p>Start with an empty bounded decision, or explore a synthetic critical-material example.</p>
+        <a class="button primary launch-primary" data-action="start-decision" href="#/decision/new">Start a decision</a>
+        <span class="launch-note">Opens the six-stage Decision Lab with user content empty.</span>
+        <a class="button" data-action="open-decision-lab" href="#/decision/example">Try the ready example</a>
+        <span class="launch-note">Opens the same Decision Lab with synthetic analysis inputs and no human decision preselected.</span>
+        <a class="button" data-action="open-saved-decision" href="#/decision/open">Open an FDE file</a>
+        <span class="launch-note">Open a completed decision file or an in-progress draft backup.</span>
         <a class="quiet-link" data-action="open-walkthrough" href="./start.html">See the walkthrough first →</a>
         <div class="launch-privacy">No account. No default upload. Changes save in this browser.</div>
       </aside>
@@ -129,7 +79,7 @@ function renderHome() {
         <span class="eyebrow">What you can do now</span>
         <h2>Complete one decision from start to finish.</h2>
         <p class="muted">Edit three choices, four futures, and four goals. Save locally, reopen the decision file, and export a readable summary.</p>
-        <a class="button primary" data-action="open-decision-lab" href="#/decision">Open the Decision Lab</a>
+        <a class="button primary" data-action="start-decision" href="#/decision/new">Start a decision</a>
       </article>
       <article class="panel stack">
         <span class="eyebrow">Clear boundary</span>
@@ -171,14 +121,25 @@ function renderMethod() {
 }
 async function router() {
   const path = location.hash.slice(1) || '/';
-  if (path === '/') renderHome();
-  else if (path === '/decision' || path === '/decision/open') renderDecisionLab(main, { openFile: path === '/decision/open' });
-  else if (path === '/method') renderMethod();
-  else main.innerHTML = `<section class="panel stack"><h1>Page not found</h1><a href="#/">Return home</a></section>`;
+  if (path === '/') {
+    document.title = 'Overview | Frontier Decision Engine';
+    renderHome();
+  } else if (path === '/decision' || path === '/decision/new' || path === '/decision/example' || path === '/decision/open') {
+    document.title = path === '/decision/open' ? 'Open Decision | Frontier Decision Engine' : 'Decision Lab | Frontier Decision Engine';
+    renderDecisionLab(main, {
+      openFile: path === '/decision/open',
+      entryMode: path === '/decision/new' ? 'blank' : path === '/decision/example' ? 'ready-example' : null,
+    });
+  } else if (path === '/method') {
+    document.title = 'Method | Frontier Decision Engine';
+    renderMethod();
+  } else {
+    document.title = 'Page Not Found | Frontier Decision Engine';
+    main.innerHTML = `<section class="panel stack"><h1>Page not found</h1><a href="#/">Return home</a></section>`;
+  }
   main.focus({ preventScroll: true });
   window.scrollTo({ top: 0, behavior: 'auto' });
 }
 
 window.addEventListener('hashchange', router);
 router();
-

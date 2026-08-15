@@ -2,6 +2,8 @@ export const DECISION_STORAGE_KEY = 'fde.decision.autosave.v0.2.11';
 export const MAX_DECISION_FILE_BYTES = 1_000_000;
 export const MAX_DECISION_DEPTH = 40;
 export const MAX_DECISION_NODES = 20_000;
+export const DRAFT_BACKUP_TYPE = 'fde-in-progress-draft-backup';
+export const DRAFT_BACKUP_VERSION = '1';
 
 const BLOCKED_KEYS = new Set(['__proto__', 'constructor', 'prototype']);
 
@@ -43,8 +45,9 @@ export function saveDecision(storage, decision) {
   if (!storage || !decision) return { ok: false, status: 'Autosave unavailable in this browser.' };
   try {
     const serialized = JSON.stringify(decision);
-    if (byteLength(serialized) > MAX_DECISION_FILE_BYTES) {
-      return { ok: false, status: 'This decision is too large for browser autosave. Download a decision file instead.' };
+    const backupSerialized = JSON.stringify(createDraftBackup(decision));
+    if (byteLength(backupSerialized) > MAX_DECISION_FILE_BYTES || !inspectStructure(createDraftBackup(decision)).ok) {
+      return { ok: false, status: 'This decision is too large for browser autosave or draft backup. Remove some content and try again.' };
     }
     storage.setItem(DECISION_STORAGE_KEY, serialized);
     return { ok: true, status: 'Saved in this browser.' };
@@ -71,6 +74,19 @@ export function loadSavedDecision(storage, validateDecision) {
 export function clearSavedDecision(storage) {
   if (!storage) return;
   try { storage.removeItem(DECISION_STORAGE_KEY); } catch { /* no-op */ }
+}
+
+export function createDraftBackup(decision) {
+  return {
+    file_type: DRAFT_BACKUP_TYPE,
+    format_version: DRAFT_BACKUP_VERSION,
+    decision,
+  };
+}
+
+export function canDownloadDraftBackup(decision) {
+  const backup = createDraftBackup(decision);
+  return byteLength(JSON.stringify(backup)) <= MAX_DECISION_FILE_BYTES && inspectStructure(backup).ok;
 }
 
 export function parseDecisionText(text, validateDecision) {
@@ -101,13 +117,37 @@ export function parseDecisionText(text, validateDecision) {
   }
 }
 
-export async function parseDecisionFile(file, validateDecision) {
+export function parseDraftBackupText(text, validateDraftDecision) {
+  const parsed = parseDecisionText(text, (value) => {
+    if (value?.file_type !== DRAFT_BACKUP_TYPE || value?.format_version !== DRAFT_BACKUP_VERSION) {
+      return { valid: false, errors: ['The file is not an FDE in-progress draft backup.'] };
+    }
+    return validateDraftDecision(value.decision);
+  });
+  return parsed.ok
+    ? { ok: true, decision: parsed.decision.decision, kind: 'draft-backup', errors: [] }
+    : { ...parsed, kind: null };
+}
+
+export async function parseDecisionFile(file, validateDecision, validateDraftDecision = null) {
   if (!file) return { ok: false, decision: null, errors: ['Choose an FDE decision file to open.'] };
   if (typeof file.size === 'number' && file.size > MAX_DECISION_FILE_BYTES) {
     return { ok: false, decision: null, errors: ['The decision file is larger than 1 MB. Open a smaller FDE decision file.'] };
   }
   try {
-    return parseDecisionText(await file.text(), validateDecision);
+    const text = await file.text();
+    const portable = parseDecisionText(text, validateDecision);
+    if (portable.ok) return { ...portable, kind: 'completed-decision' };
+    if (validateDraftDecision) {
+      const draft = parseDraftBackupText(text, validateDraftDecision);
+      if (draft.ok) return draft;
+    }
+    return {
+      ok: false,
+      decision: null,
+      kind: null,
+      errors: ['The file is neither a completed FDE decision nor a valid in-progress draft backup.'],
+    };
   } catch {
     return { ok: false, decision: null, errors: ['The selected decision file could not be read.'] };
   }
