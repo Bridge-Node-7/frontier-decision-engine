@@ -17,7 +17,7 @@
 .example-steps{display:flex;gap:.5rem;flex-wrap:wrap;justify-content:center;margin:1.5rem 0}
 .example-step{border:1px solid var(--line);background:rgba(255,255,255,.04);color:var(--muted);border-radius:999px;padding:.75rem 1rem;cursor:pointer;font-weight:850}
 .example-step[aria-current="step"]{background:var(--accent);color:var(--on-accent);border-color:transparent}
-.example-panel{display:none}.example-panel.active{display:block}
+.example-panel{display:block;margin-top:1rem}.js .example-panel{display:none}.js .example-panel.active{display:block}
 .example-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:1rem}
 .example-item{padding:1.2rem;border:1px solid var(--line);border-radius:20px;background:rgba(255,255,255,.035)}
 .future-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:.75rem;margin-top:1rem}
@@ -57,28 +57,29 @@
   </section>
 
   <nav class="example-steps" aria-label="Walkthrough steps">
-    <button class="example-step" aria-current="step" data-example="1">Decision</button>
-    <button class="example-step" data-example="2">Goals</button>
-    <button class="example-step" data-example="3">Choices</button>
-    <button class="example-step" data-example="4">Futures</button>
-    <button class="example-step" data-example="5">Decision record</button>
+    <button class="example-step" aria-current="step" data-example="1">1. Your decision</button>
+    <button class="example-step" data-example="2">2. What matters</button>
+    <button class="example-step" data-example="3">3. Your choices</button>
+    <button class="example-step" data-example="4">4. What may change</button>
+    <button class="example-step" data-example="5">5. What we learned</button>
+    <button class="example-step" data-example="6">6. Choose next step</button>
   </nav>
 
   <section class="panel example-panel active" data-panel="1">
-    <span class="eyebrow">Decision</span>
+    <span class="eyebrow">1 · Your decision</span>
     <h2>Which source-qualification pathway should advance?</h2>
     <p>The decision owner must choose a practical next step while the future remains uncertain.</p>
   </section>
 
   <section class="panel example-panel" data-panel="2">
-    <span class="eyebrow">Goals</span>
+    <span class="eyebrow">2 · What matters</span>
     <h2>Readiness, continuity, affordability, and flexibility.</h2>
     <p>Each goal has a visible good-enough line. The goals remain separate so one favorable number cannot hide a trade-off.</p>
     <details class="word-helper"><summary>Method terms</summary><p>A goal used in the comparison may be called a <strong>measure</strong>. Its good-enough line may be called a <strong>threshold</strong>.</p></details>
   </section>
 
   <section class="panel example-panel" data-panel="3">
-    <span class="eyebrow">Choices</span>
+    <span class="eyebrow">3 · Your choices</span>
     <h2>Three actions the program can take.</h2>
     <div class="example-grid">
       <article class="example-item"><h3>Maintain the current source</h3><p>Lower near-term effort, with continued concentration.</p></article>
@@ -88,7 +89,7 @@
   </section>
 
   <section class="panel example-panel" data-panel="4">
-    <span class="eyebrow">Possible futures</span>
+    <span class="eyebrow">4 · What may change</span>
     <h2>Use several conditions, not one forecast.</h2>
     <div class="future-grid">
       <div class="future"><strong>Stable demand and source performance</strong></div>
@@ -100,9 +101,16 @@
   </section>
 
   <section class="panel example-panel" data-panel="5">
-    <span class="eyebrow">Decision record</span>
-    <h2>Choose what advances and explain why.</h2>
-    <p>The comparison may identify one choice as the strongest alignment under the stated rules. The decision owner still reviews the evidence, accepts or rejects the result, and records the next action.</p>
+    <span class="eyebrow">5 · What we learned</span>
+    <h2>Separate the comparison from the control point.</h2>
+    <div class="example-grid"><div class="example-item"><strong>Strongest tested alternative</strong><p>Qualify a second source</p></div><div class="example-item"><strong>Decision posture</strong><p>HOLD</p></div><div class="example-item"><strong>Controlling issue</strong><p>Independent qualification evidence remains unresolved.</p></div></div>
+    <p><strong>What would change this decision?</strong> Obtain the declared qualification evidence.</p><p>Decision posture is separate from the <strong>Recorded human decision</strong>.</p>
+  </section>
+
+  <section class="panel example-panel" data-panel="6">
+    <span class="eyebrow">6 · Choose next step</span>
+    <h2>A person records the decision.</h2>
+    <p><strong>Choice:</strong> Qualify a second source.</p><p><strong>Why:</strong> The decision owner accepts the bounded trade-off while keeping the evidence condition visible.</p><p><strong>Next action:</strong> Obtain and review the declared qualification evidence.</p>
     <div class="actions"><a class="button primary" data-action="open-decision-lab" href="./#/decision">Open the working Decision Lab</a><a class="button" href="./">Return to Overview</a></div>
   </section>
 </main>
@@ -115,6 +123,7 @@
 </footer>
 
 <script>
+document.documentElement.classList.add('js');
 const buttons=[...document.querySelectorAll('[data-example]')];
 const panels=[...document.querySelectorAll('.example-panel')];
 buttons.forEach(button=>button.addEventListener('click',()=>{

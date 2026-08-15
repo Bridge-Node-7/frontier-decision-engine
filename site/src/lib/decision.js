@@ -351,6 +351,10 @@ export function validateDecisionCase(decisionCase) {
     for (const field of ['action_now', 'monitor', 'trigger', 'contingency']) {
       if (!nonEmpty(strategy?.[field])) errors.push(`${strategy.label || strategy.strategy_id} requires ${field.replaceAll('_', ' ')}.`);
     }
+    if (decisionCase.schema_version === SEMANTIC_SCHEMA_VERSION) for (const [objectiveId, trace] of Object.entries(strategy.score_rationales || {})) {
+      if (!objectiveIds.has(objectiveId)) errors.push(`${strategy.label || strategy.strategy_id} has score rationale for an unavailable objective.`);
+      if (!['analyst-judgment', 'declared-rubric', 'other'].includes(trace?.basis) || !nonEmpty(trace?.rationale)) errors.push(`${strategy.label || strategy.strategy_id} score rationale for ${objectiveId} requires a valid basis and rationale.`);
+    }
   }
 
   for (const scenario of decisionCase?.scenarios || []) {

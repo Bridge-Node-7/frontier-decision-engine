@@ -56,6 +56,7 @@ export function activateDecisionSemantics(decision, mode = 'general') {
     decision.decision_semantics = createDecisionSemantics(mode);
   }
   decision.decision_semantics.mode = SEMANTIC_MODES.includes(mode) ? mode : 'general';
+  for (const strategy of list(decision.strategies)) strategy.score_rationales ||= {};
   if (mode === 'sustainability-seer') {
     decision.decision_semantics.posture_enabled = true;
     const represented = new Set(list(decision.decision_semantics.criteria).map((item) => item.dimension));

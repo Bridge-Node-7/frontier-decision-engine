@@ -311,6 +311,19 @@
             "maximum": 100
           }
         },
+        "score_rationales": {
+          "type": "object",
+          "description": "Optional traceability for analyst-entered normalized baseline values, keyed by objective ID.",
+          "additionalProperties": {
+            "type": "object",
+            "required": ["basis", "rationale"],
+            "properties": {
+              "basis": { "enum": ["analyst-judgment", "declared-rubric", "other"] },
+              "rationale": { "type": "string" }
+            },
+            "additionalProperties": false
+          }
+        },
         "action_now": {
           "type": "string"
         },

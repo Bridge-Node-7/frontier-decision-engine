@@ -62,3 +62,22 @@ test('public source exposes progressive projections and truthful traceability', 
   assert.match(noJs, /Six|Frame the decision/i);
   assert.match(noJs, /not presented as an approved environment/);
 });
+
+test('walkthrough has exactly six aligned stages and no-JS progressive enhancement', async () => {
+  const source = await readFile(new URL('../site/start.html', import.meta.url), 'utf8');
+  assert.equal((source.match(/class="example-step"/g) || []).length, 6);
+  assert.equal((source.match(/class="panel example-panel/g) || []).length, 6);
+  for (const label of ['Your decision', 'What matters', 'Your choices', 'What may change', 'What we learned', 'Choose next step']) assert.ok(source.includes(label));
+  assert.match(source, /\.js \.example-panel\{display:none\}/);
+  assert.match(source, /Strongest tested alternative/);
+  assert.match(source, /Recorded human decision/);
+});
+
+test('0.3.0 score rationale is optional, portable, and does not alter comparison', () => {
+  const value = decision();
+  const before = deriveDecisionSynthesis(value);
+  value.strategies[0].score_rationales['OBJ-001'] = { basis: 'analyst-judgment', rationale: 'Qualification has begun, but acceptance evidence is incomplete.' };
+  const roundTrip = JSON.parse(JSON.stringify(value));
+  assert.deepEqual(roundTrip.strategies[0].score_rationales['OBJ-001'], value.strategies[0].score_rationales['OBJ-001']);
+  assert.deepEqual(deriveDecisionSynthesis(roundTrip), before);
+});

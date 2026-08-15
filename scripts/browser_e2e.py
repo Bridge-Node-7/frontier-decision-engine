@@ -251,7 +251,7 @@ def decision_flow(page: Page, base: str) -> str:
 
     headings = [
         "What are you trying to choose?",
-        "What matters, and what may change?",
+        "What matters?",
         "What could you actually do?",
         "Explore more than one possible future",
         "How do the choices perform across changing conditions?",
@@ -278,7 +278,14 @@ def decision_flow(page: Page, base: str) -> str:
         )
 
         if expected == "How do the choices perform across changing conditions?":
-            assert "Strongest alignment in this comparison" in page.locator("body").inner_text()
+            brief = page.locator("body").inner_text()
+            assert "Strongest tested alternative" in brief
+            assert "81%" not in brief
+            page.locator('[data-projection="review"] > summary').click()
+            page.locator('[data-projection="inspect"] > summary').click()
+            inspected = page.locator("body").inner_text()
+            assert "Strongest alignment in this comparison" in inspected
+            assert "81%" in inspected
 
     page.locator("#human-rationale").fill("")
     page.locator("#human-next-action").fill("")
@@ -428,14 +435,17 @@ def checkpoint_b_semantics_flow(page: Page) -> None:
     page.locator('[data-decision-step="4"]').click()
     page.locator('[data-surface="decision-posture"]').wait_for(state="visible")
     results = page.locator("body").inner_text()
-    assert "Strongest alignment in this comparison" in results
     assert "Decision posture" in results
     assert "HOLD" in results
     assert "People" in results and "Needs evidence" in results
     assert "Planet" in results and "Meets" in results
     assert "Most decision-relevant next evidence" in results
     assert "composite sustainability score" not in results.lower()
+    assert "81%" not in results
+    page.locator('[data-projection="inspect"] > summary').click()
+    assert "Strongest alignment in this comparison" in page.locator("body").inner_text()
     page.locator('[data-decision-step="5"]').click()
+    page.locator('[data-surface="advanced-governance"] summary').click()
     page.locator('[data-surface="semantic-controls"]').wait_for(state="visible")
     assert page.locator("#human-strategy").input_value() == ""
     assert "Your final decision remains below" in page.locator("body").inner_text()
@@ -456,6 +466,7 @@ def checkpoint_b_semantics_flow(page: Page) -> None:
     page.reload(wait_until="networkidle")
     page.locator("#resume-browser-draft").click()
     page.locator('[data-decision-step="5"]').click()
+    page.locator('[data-surface="advanced-governance"] summary').click()
     page.locator("#semantic-condition-statement").fill("Edited visible People remediation")
     page.locator("#semantic-monitoring-observable").fill("Edited visible monitoring record")
     page.locator('[data-decision-step="0"]').click()
@@ -554,6 +565,23 @@ def run_mode(
     print(f"{label}: PASS ({execution_mode})")
 
 
+def no_js_walkthrough(browser) -> None:
+    context = browser.new_context(viewport={"width": 1280, "height": 900}, java_script_enabled=False)
+    install_static_route(context)
+    page = context.new_page()
+    page.goto("http://fde.test/start.html", wait_until="domcontentloaded")
+    panels = page.locator(".example-panel")
+    assert panels.count() == 6
+    for index in range(6):
+        assert panels.nth(index).is_visible(), f"no-JS walkthrough stage {index + 1} is hidden"
+    body = page.locator("body").inner_text()
+    for text in ["Strongest tested alternative", "Decision posture", "Recorded human decision", "What would change this decision?", "Open the working Decision Lab"]:
+        assert text in body
+    assert page.evaluate("document.documentElement.scrollWidth <= window.innerWidth")
+    context.close()
+    print("no-js-six-stage-walkthrough: PASS")
+
+
 def main() -> None:
     executable = browser_executable()
     external_base = os.environ.get("FDE_BASE_URL", "").strip().rstrip("/")
@@ -588,14 +616,15 @@ def main() -> None:
 
             run_mode(browser, base, "desktop-light", {"width": 1440, "height": 1200}, "light", True, native_http)
             run_mode(browser, base, "mobile-light", {"width": 390, "height": 844}, "light", False, native_http)
-            run_mode(browser, base, "mobile-375", {"width": 375, "height": 812}, "light", False, native_http)
+            run_mode(browser, base, "mobile-375", {"width": 375, "height": 812}, "light", True, native_http)
             run_mode(browser, base, "desktop-dark", {"width": 1440, "height": 1200}, "dark", False, native_http)
             run_mode(browser, base, "reflow-200-equivalent", {"width": 640, "height": 900}, "light", False, native_http)
-            run_mode(browser, base, "reflow-400-equivalent", {"width": 320, "height": 800}, "light", False, native_http)
+            run_mode(browser, base, "reflow-400-equivalent", {"width": 320, "height": 800}, "light", True, native_http)
             run_mode(
                 browser, base, "forced-colors", {"width": 1280, "height": 900},
                 "light", False, native_http, forced_colors="active"
             )
+            no_js_walkthrough(browser)
         finally:
             browser.close()
             if server is not None:
