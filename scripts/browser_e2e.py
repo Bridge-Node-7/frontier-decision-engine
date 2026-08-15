@@ -268,9 +268,15 @@ def decision_flow(page: Page, base: str) -> str:
     assert page.locator('[data-decision-stage][open]').count() == 1
     assert page.locator("#decision-question").is_visible()
     assert page.locator("#decision-question").input_value() == ""
-    page.locator('[data-surface="decision-entry"] > summary').click()
     assert page.locator("#use-ready-example").is_visible()
     assert page.locator("#open-decision-file").is_visible()
+    assert page.locator("#toggle-method-words").inner_text() == "Show technical terms"
+    page.locator("#toggle-method-words").click()
+    assert page.locator("#toggle-method-words").inner_text() == "Hide technical terms"
+    assert page.locator("#toggle-method-words").get_attribute("aria-pressed") == "true"
+    assert "shown where relevant" in page.locator("#technical-terms-status").inner_text()
+    page.locator("#toggle-method-words").click()
+    assert page.locator("#toggle-method-words").inner_text() == "Show technical terms"
     with page.expect_file_chooser() as chooser_info:
         page.locator("#open-decision-file").click()
     chooser_info.value.set_files([])
@@ -280,12 +286,12 @@ def decision_flow(page: Page, base: str) -> str:
     page.locator("#decision-step-heading-0").wait_for(state="visible")
 
     headings = [
-        "What are you deciding?",
-        "What must be true?",
-        "What can you actually do?",
+        "What decision needs to be made?",
+        "What needs to be true?",
+        "What can be done?",
         "What could change?",
-        "What did we learn?",
-        "What do you choose?",
+        "What the comparison shows",
+        "Choose a path.",
     ]
 
     for index, expected in enumerate(headings[1:]):
@@ -309,7 +315,7 @@ def decision_flow(page: Page, base: str) -> str:
             f"decision step heading is not visible: {heading_box['y']}"
         )
 
-        if expected == "What did we learn?":
+        if expected == "What the comparison shows":
             brief = page.locator("body").inner_text()
             assert "Strongest tested alternative" in brief
             assert "81%" not in brief
@@ -609,7 +615,7 @@ def no_js_one_page(browser) -> None:
     page = context.new_page()
     page.goto("http://fde.test/index.html", wait_until="domcontentloaded")
     body = page.locator("body").inner_text()
-    for text in ["Frontier Decision Engine", "How it works", "Frame", "Compare", "Decide", "Your decision", "What matters", "Your choices", "What may change", "What we learned", "Choose next step", "Human authority", "stays in this browser"]:
+    for text in ["Frontier Decision Engine", "How it works", "Frame", "Compare", "Decide", "Decision", "What matters", "Choices", "What may change", "What the comparison shows", "Choose next step", "Human authority", "stays in this browser"]:
         assert text in body
     assert page.evaluate("document.documentElement.scrollWidth <= window.innerWidth")
     context.close()

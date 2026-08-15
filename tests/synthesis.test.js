@@ -75,11 +75,13 @@ test('canonical FDE is one progressive page with integrated method and compatibl
   const app = await readFile(new URL('../site/src/app.js', import.meta.url), 'utf8');
   assert.match(source, /data-surface="working-interface"/);
   assert.match(source, /data-surface="integrated-method"/);
-  assert.match(source, /What are you deciding\?/);
+  assert.match(source, /What decision needs to be made\?/);
   assert.match(source, /primary-decision-field/);
   assert.match(source, /id="use-ready-example"/);
   assert.match(source, /data-decision-stage/);
-  assert.match(source, /Other ways to begin/);
+  assert.match(source, /class="entry-utilities"/);
+  assert.match(source, /Show technical terms/);
+  assert.doesNotMatch(source, /Other ways to begin/);
   assert.match(app, /'\/method'/);
   assert.match(app, /focusMethod: path === '\/method'/);
   assert.doesNotMatch(app, /renderMethod|renderHome/);
