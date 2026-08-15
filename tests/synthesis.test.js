@@ -73,9 +73,14 @@ test('walkthrough has exactly six aligned stages and no-JS progressive enhanceme
   assert.match(source, /Recorded human decision/);
   assert.match(source, /Start walkthrough/);
   assert.match(source, /Synthetic example · 6 steps/);
+  assert.match(source, /index\.html#\/decision\/example/);
+  assert.match(source, /1 of 6/);
+  assert.match(source, /data-next="6"/);
+  assert.match(source, /\.js:not\(\.walkthrough-started\) \.walkthrough-experience\{display:none\}/);
   assert.doesNotMatch(source, /Walkthrough · Not the working interface/);
   assert.doesNotMatch(source, /Six-stage method:/);
   assert.doesNotMatch(source, /Your work stays in this browser/);
+  assert.doesNotMatch(source, /\.example-steps/);
 });
 
 test('0.3.0 score rationale is optional, portable, and does not alter comparison', () => {

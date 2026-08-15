@@ -578,6 +578,10 @@ def no_js_walkthrough(browser) -> None:
     for text in ["Synthetic example", "Strongest tested alternative", "Decision posture", "Recorded human decision", "What would change this decision?", "Open Decision Lab"]:
         assert text in body
     assert page.evaluate("document.documentElement.scrollWidth <= window.innerWidth")
+    page.locator('.example-hero [data-action="open-decision-lab"]').click()
+    page.wait_for_url(re.compile(r"/index\.html#/decision/example$"))
+    assert page.title() == "Overview | Frontier Decision Engine"
+    assert "Decision support remains understandable without JavaScript" in page.locator("body").inner_text()
     context.close()
     print("no-js-six-stage-walkthrough: PASS")
 
@@ -601,6 +605,57 @@ def walkthrough_front_door(browser) -> None:
         assert page.evaluate("document.documentElement.scrollWidth <= window.innerWidth")
         context.close()
     print("walkthrough-front-door-desktop-mobile: PASS")
+
+
+def walkthrough_handoff(browser, base: str, native_http: bool) -> None:
+    def open_walkthrough(viewport):
+        context = browser.new_context(viewport=viewport, reduced_motion="reduce")
+        if not native_http:
+            install_static_route(context)
+            url = "http://fde.test/start.html"
+        else:
+            url = f"{base}/start.html"
+        page = context.new_page()
+        page.goto(url, wait_until="networkidle")
+        return context, page
+
+    for viewport in ({"width": 1440, "height": 900}, {"width": 375, "height": 812}):
+        context, page = open_walkthrough(viewport)
+        assert page.locator(".example-hero").is_visible()
+        assert not page.locator(".walkthrough-progress").is_visible()
+        assert not page.locator('[data-panel="1"]').is_visible()
+        page.locator('[data-action="start-walkthrough"]').focus()
+        page.keyboard.press("Enter")
+        assert page.locator('[data-panel="1"]:focus').is_visible()
+        assert page.locator("#progress-count").inner_text() == "1 of 6"
+        for number in range(2, 7):
+            page.locator(f'[data-next="{number}"]').click()
+            assert page.locator(f'[data-panel="{number}"]:focus').is_visible()
+            assert page.locator("#progress-count").inner_text() == f"{number} of 6"
+        page.locator('[data-panel="6"] [data-action="open-decision-lab"]').click()
+        page.locator('[data-surface="working-interface"]').wait_for(state="visible")
+        assert "Synthetic example." in page.locator('[data-surface="working-interface"]').inner_text()
+        assert page.locator("#decision-step-heading").is_visible()
+        assert page.locator("#human-decision").count() == 0 or page.locator("#human-decision").input_value() == ""
+        page.go_back(wait_until="networkidle")
+        assert page.locator('[data-panel="1"]').is_visible()
+        context.close()
+
+    for selector, activation in [
+        ('.example-hero [data-action="open-decision-lab"]', "click"),
+        ('#primary-navigation [data-action="open-decision-lab"]', "keyboard"),
+    ]:
+        context, page = open_walkthrough({"width": 1440, "height": 900})
+        target = page.locator(selector)
+        if activation == "keyboard":
+            target.focus()
+            page.keyboard.press("Enter")
+        else:
+            target.click()
+        page.locator('[data-surface="working-interface"]').wait_for(state="visible")
+        assert "Synthetic example." in page.locator('[data-surface="working-interface"]').inner_text()
+        context.close()
+    print("walkthrough-decision-lab-handoff-desktop-mobile-keyboard: PASS")
 
 
 def main() -> None:
@@ -647,6 +702,7 @@ def main() -> None:
             )
             no_js_walkthrough(browser)
             walkthrough_front_door(browser)
+            walkthrough_handoff(browser, base, native_http)
         finally:
             browser.close()
             if server is not None:
