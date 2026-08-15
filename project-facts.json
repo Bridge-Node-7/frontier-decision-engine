@@ -4,8 +4,8 @@
     "decision": "0.2.10",
     "opvCase": "0.1.0"
   },
-  "testCount": 118,
-  "discoveredHashRouteLiteralCount": 6,
+  "testCount": 117,
+  "discoveredHashRouteLiteralCount": 5,
   "browserModes": [
     "desktop-light",
     "mobile-light",

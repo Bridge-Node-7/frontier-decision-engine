@@ -59,40 +59,30 @@ test('public source exposes progressive projections and truthful traceability', 
   assert.match(source, /data-projection="inspect"/);
   assert.match(source, /not an arithmetic conversion/);
   const noJs = await readFile(new URL('../site/index.html', import.meta.url), 'utf8');
-  assert.match(noJs, /Six|Frame the decision/i);
+  assert.match(noJs, /Six stages/);
   assert.match(noJs, /not presented as an approved environment/);
 });
 
-test('walkthrough has exactly six aligned stages and no-JS progressive enhancement', async () => {
+test('legacy walkthrough is only a compatibility shim into integrated help', async () => {
   const source = await readFile(new URL('../site/start.html', import.meta.url), 'utf8');
-  assert.equal((source.match(/class="example-step"/g) || []).length, 6);
-  assert.equal((source.match(/class="panel example-panel/g) || []).length, 6);
-  for (const label of ['Your decision', 'What matters', 'Your choices', 'What may change', 'What we learned', 'Choose next step']) assert.ok(source.includes(label));
-  assert.match(source, /\.js \.example-panel\{display:none\}/);
-  assert.match(source, /Strongest tested alternative/);
-  assert.match(source, /Recorded human decision/);
-  assert.match(source, /Start walkthrough/);
-  assert.match(source, /Synthetic example · 6 steps/);
-  assert.match(source, /index\.html#\/decision\/example/);
-  assert.match(source, /1 of 6/);
-  assert.match(source, /data-next="6"/);
-  assert.match(source, /\.js:not\(\.walkthrough-started\) \.walkthrough-experience\{display:none\}/);
-  assert.doesNotMatch(source, /Walkthrough · Not the working interface/);
-  assert.doesNotMatch(source, /Six-stage method:/);
-  assert.doesNotMatch(source, /Your work stays in this browser/);
-  assert.doesNotMatch(source, /\.example-steps/);
+  assert.match(source, /location\.replace\('\.\/index\.html#\/method'\)/);
+  assert.match(source, /http-equiv="refresh" content="0; url=\.\/index\.html#\/method"/);
+  assert.doesNotMatch(source, /example-panel|walkthrough-progress|Start walkthrough/);
 });
 
-test('canonical FDE entry opens the editable working experience and keeps help optional', async () => {
+test('canonical FDE is one progressive page with integrated method and compatible routes', async () => {
   const source = await readFile(new URL('../site/src/decision-ui.js', import.meta.url), 'utf8');
   const app = await readFile(new URL('../site/src/app.js', import.meta.url), 'utf8');
   assert.match(source, /data-surface="working-interface"/);
-  assert.match(source, /Frontier Decision Engine/);
+  assert.match(source, /data-surface="integrated-method"/);
   assert.match(source, /What are you deciding\?/);
   assert.match(source, /primary-decision-field/);
   assert.match(source, /id="use-ready-example"/);
-  assert.match(source, /href="\.\/start\.html">How it works/);
-  assert.match(app, /if \(path === '\/'\) \{\s*document\.title = 'Frontier Decision Engine'/);
+  assert.match(source, /data-decision-stage/);
+  assert.match(source, /Other ways to begin/);
+  assert.match(app, /'\/method'/);
+  assert.match(app, /focusMethod: path === '\/method'/);
+  assert.doesNotMatch(app, /renderMethod|renderHome/);
 });
 
 test('0.3.0 score rationale is optional, portable, and does not alter comparison', () => {

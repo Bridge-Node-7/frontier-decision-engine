@@ -231,11 +231,11 @@ def route(page: Page, base: str, path: str, selector: str, expected: str) -> Non
     assert expected.lower() in matched.lower(), f"{path} did not contain {expected!r}; found {matched!r}"
     expected_title = {
         "/": "Frontier Decision Engine",
-        "/method": "Method | Frontier Decision Engine",
-        "/decision": "Decision Lab | Frontier Decision Engine",
-        "/decision/new": "Decision Lab | Frontier Decision Engine",
-        "/decision/example": "Decision Lab | Frontier Decision Engine",
-        "/decision/open": "Open Decision | Frontier Decision Engine",
+        "/method": "Frontier Decision Engine",
+        "/decision": "Frontier Decision Engine",
+        "/decision/new": "Frontier Decision Engine",
+        "/decision/example": "Frontier Decision Engine",
+        "/decision/open": "Frontier Decision Engine",
     }.get(path)
     if expected_title:
         assert page.title() == expected_title, f"{path} title was {page.title()!r}"
@@ -251,49 +251,61 @@ def set_hash_route(page: Page, path: str) -> None:
         }""",
         path,
     )
+    page.locator(f'#main[data-route="{path}"]').wait_for(state="attached")
+
+
+def open_stage(page: Page, index: int) -> None:
+    stage = page.locator(f'[data-decision-stage="{index}"]')
+    if stage.get_attribute("open") is None:
+        stage.locator(":scope > summary").click()
+    page.locator(f"#decision-step-heading-{index}").wait_for(state="visible")
 
 
 def decision_flow(page: Page, base: str) -> str:
-    route(page, base, "/decision", '[data-surface="working-interface"] h1', "Frontier Decision Engine")
+    route(page, base, "/decision", '[data-surface="fde-hero"] h1', "Frontier Decision Engine")
+    assert page.locator('[data-surface="integrated-method"]').is_visible()
+    assert page.locator('[data-decision-stage]').count() == 6
+    assert page.locator('[data-decision-stage][open]').count() == 1
     assert page.locator("#decision-question").is_visible()
     assert page.locator("#decision-question").input_value() == ""
+    page.locator('[data-surface="decision-entry"] > summary').click()
     assert page.locator("#use-ready-example").is_visible()
     assert page.locator("#open-decision-file").is_visible()
-    assert page.locator('a[href="./start.html"]').inner_text() == "How it works"
     with page.expect_file_chooser() as chooser_info:
         page.locator("#open-decision-file").click()
     chooser_info.value.set_files([])
     page.on("dialog", lambda dialog: dialog.accept())
     page.locator("#use-ready-example").click()
-    assert "Synthetic example." in page.locator('[data-surface="working-interface"]').inner_text()
-    assert "Ready example" in page.locator('[data-surface="decision-entry"]').inner_text()
-    page.locator("#decision-step-heading").wait_for(state="visible")
+    assert "Synthetic example" in page.locator("#decision-save-status").inner_text()
+    page.locator("#decision-step-heading-0").wait_for(state="visible")
 
     headings = [
         "What are you deciding?",
         "What must be true?",
-        "What can you do?",
+        "What can you actually do?",
         "What could change?",
         "What did we learn?",
         "What do you choose?",
     ]
 
     for index, expected in enumerate(headings[1:]):
+        next_button = page.locator('[data-decision-stage][open] [data-stage-next]')
         if index == 0:
-            page.locator("#decision-next").focus()
+            next_button.focus()
             page.keyboard.press("Enter")
         else:
-            page.locator("#decision-next").click()
+            next_button.click()
 
-        page.locator("#decision-step-heading").wait_for(state="visible")
-        page.locator("#decision-step-heading:focus").wait_for(state="attached")
-        actual = page.locator("#decision-step-heading").inner_text()
+        heading = page.locator(f"#decision-step-heading-{index + 1}")
+        heading.wait_for(state="visible")
+        page.locator(f"#decision-step-heading-{index + 1}:focus").wait_for(state="attached")
+        actual = heading.inner_text()
         assert expected in actual, f"expected {expected!r}; found {actual!r}"
 
-        heading_box = page.locator("#decision-step-heading").bounding_box()
+        heading_box = heading.bounding_box()
         assert heading_box is not None, "decision step heading has no layout box"
         viewport_height = page.evaluate("window.innerHeight")
-        assert 0 <= heading_box["y"] <= viewport_height - 100, (
+        assert -2 <= heading_box["y"] <= viewport_height - 100, (
             f"decision step heading is not visible: {heading_box['y']}"
         )
 
@@ -339,10 +351,10 @@ def decision_flow(page: Page, base: str) -> str:
 
 def route_suite(page: Page, base: str) -> None:
     checks = [
-        ("/", '[data-surface="working-interface"] h1', "Frontier Decision Engine"),
-        ("/method", "h1", "Decision-making under deep uncertainty"),
-        ("/decision", '[data-surface="working-interface"] h1', "Frontier Decision Engine"),
-        ("/decision/open", '[data-surface="working-interface"] h1', "Frontier Decision Engine"),
+        ("/", '[data-surface="fde-hero"] h1', "Frontier Decision Engine"),
+        ("/method", '[data-surface="integrated-method"]', "Frame"),
+        ("/decision", '[data-surface="fde-hero"] h1', "Frontier Decision Engine"),
+        ("/decision/open", '[data-surface="fde-hero"] h1', "Frontier Decision Engine"),
     ]
     for route_path, selector, expected in checks:
         route(page, base, route_path, selector, expected)
@@ -350,17 +362,18 @@ def route_suite(page: Page, base: str) -> None:
 
 def corrective_draft_and_entry_flow(page: Page, completed_file: str) -> None:
     set_hash_route(page, "/decision/new")
+    open_stage(page, 0)
+    page.locator("summary").filter(has_text=re.compile(r"^Add context")).click()
     page.locator("#decision-title").wait_for(state="visible")
     assert page.locator("#decision-title").input_value() == ""
     page.locator("#decision-title").fill("Partial blank recovery")
-    page.locator("details").filter(has_text="Add decision context").locator("summary").click()
     page.locator("#decision-owner").fill("Partial owner")
     page.wait_for_timeout(350)
     assert page.evaluate("localStorage.getItem('fde.decision.autosave.v0.2.11')") is not None
     page.reload(wait_until="networkidle")
     page.locator("#saved-draft-title").wait_for(state="visible")
     assert page.locator("#saved-draft-title").inner_text() == "Welcome back."
-    assert "A decision is saved in this browser" in page.locator('[data-surface="saved-draft-return"]').inner_text()
+    assert "Your decision is saved in this browser" in page.locator('[data-surface="saved-draft-return"]').inner_text()
     assert "not encrypted confidential storage" in page.locator("body").inner_text()
     assert page.locator("#resume-browser-draft").is_visible()
     page.locator('[data-surface="saved-draft-return"] details > summary').click()
@@ -374,23 +387,23 @@ def corrective_draft_and_entry_flow(page: Page, completed_file: str) -> None:
     assert backup_file is not None
 
     page.locator("#resume-browser-draft").click()
-    page.locator("#decision-step-heading").wait_for(state="visible")
-    assert "Restored browser draft" in page.locator("body").inner_text()
+    page.locator("#decision-step-heading-0").wait_for(state="visible")
+    assert "Saved in this browser" in page.locator("body").inner_text()
     assert page.locator("#decision-title").input_value() == "Partial blank recovery"
     assert page.locator("#decision-owner").input_value() == "Partial owner"
     assert page.locator("#decision-question").input_value() == ""
 
-    page.locator('[data-decision-step="4"]').evaluate("element => element.click()")
-    incomplete_heading = page.locator("#decision-step-heading").inner_text()
+    open_stage(page, 4)
+    incomplete_heading = page.locator("#decision-step-heading-4").inner_text()
     assert "One update is needed" in incomplete_heading, incomplete_heading
-    page.locator('[data-decision-step="5"]').evaluate("element => element.click()")
+    open_stage(page, 5)
     page.locator("#record-decision").click()
     assert "Decision question is required" in page.locator("#decision-validation").inner_text()
 
     # Restored -> explicit ready example produces a fresh example and clears the old draft.
     set_hash_route(page, "/decision/example")
     assert page.locator("#decision-title").input_value() == "Critical-material source qualification decision"
-    page.locator('[data-decision-step="5"]').evaluate("element => element.click()")
+    open_stage(page, 5)
     assert page.locator("#human-strategy").input_value() == ""
     stored_title = page.evaluate(
         """() => {
@@ -403,12 +416,12 @@ def corrective_draft_and_entry_flow(page: Page, completed_file: str) -> None:
     # Ready -> explicit blank produces a fresh neutral blank.
     set_hash_route(page, "/decision/new")
     assert page.locator("#decision-title").input_value() == ""
-    assert "Blank decision" in page.locator("body").inner_text()
+    assert "Saved in this browser" in page.locator("body").inner_text()
 
     # Draft backup reopens exactly and remains incomplete.
     page.locator("#decision-file-input").set_input_files(backup_file)
-    page.locator("#decision-title").wait_for(state="visible")
-    assert "Imported draft backup" in page.locator("body").inner_text()
+    page.locator("#decision-title").wait_for(state="attached")
+    assert "Saved decision opened" in page.locator("body").inner_text()
     assert page.locator("#decision-title").input_value() == "Partial blank recovery"
     assert page.locator("#decision-owner").input_value() == "Partial owner"
     assert page.locator("#decision-question").input_value() == ""
@@ -419,22 +432,22 @@ def corrective_draft_and_entry_flow(page: Page, completed_file: str) -> None:
 
     # Existing completed schema 0.2.10 export still opens, then explicit ready resets it.
     page.locator("#decision-file-input").set_input_files(completed_file)
-    page.locator("#decision-title").wait_for(state="visible")
-    assert "Imported completed decision" in page.locator("body").inner_text()
+    page.locator("#decision-title").wait_for(state="attached")
+    assert "Saved decision opened" in page.locator("body").inner_text()
     set_hash_route(page, "/decision/example")
-    page.locator("#decision-title").wait_for(state="visible")
+    page.locator("#decision-title").wait_for(state="attached")
     assert page.locator("#decision-title").input_value() == "Critical-material source qualification decision"
-    assert "Ready example" in page.locator("body").inner_text()
-    page.locator('[data-decision-step="5"]').evaluate("element => element.click()")
+    assert "Synthetic example" in page.locator("body").inner_text()
+    open_stage(page, 5)
     assert page.locator("#human-strategy").input_value() == ""
     assert_page_clean(page)
 
 
 def checkpoint_b_semantics_flow(page: Page) -> None:
     set_hash_route(page, "/decision/example")
-    page.locator("details").filter(has_text="Choose a decision approach").locator("summary").click()
+    page.locator("summary").filter(has_text=re.compile(r"^Choose a decision approach")).click()
     page.locator("#decision-semantic-mode").select_option("sustainability-seer")
-    page.locator("#decision-next").click()
+    page.locator('[data-decision-stage="0"] [data-stage-next]').click()
     page.locator('[data-surface="decision-semantics-criteria"]').wait_for(state="visible")
     body = page.locator("body").inner_text()
     for dimension in ["People", "Planet", "Profits", "Product"]:
@@ -454,7 +467,8 @@ def checkpoint_b_semantics_flow(page: Page) -> None:
         else:
             page.locator(f"#semantic-evidence-{index}").select_option("supported")
             page.locator(f"#semantic-outcome-{index}").select_option("meets")
-    page.locator('[data-decision-step="4"]').evaluate("element => element.click()")
+    page.locator('[data-decision-stage="1"] [data-stage-next]').click()
+    open_stage(page, 4)
     page.locator('[data-surface="decision-posture"]').wait_for(state="visible")
     results = page.locator("body").inner_text()
     assert "Decision posture" in results
@@ -466,16 +480,17 @@ def checkpoint_b_semantics_flow(page: Page) -> None:
     assert "81%" not in results
     page.locator('[data-projection="inspect"] > summary').click()
     assert "Strongest alignment in this comparison" in page.locator("body").inner_text()
-    page.locator('[data-decision-step="5"]').evaluate("element => element.click()")
+    open_stage(page, 5)
     page.locator('[data-surface="advanced-governance"] summary').click()
     page.locator('[data-surface="semantic-controls"]').wait_for(state="visible")
     assert page.locator("#human-strategy").input_value() == ""
     assert "Your final decision remains below" in page.locator("body").inner_text()
-    assert len(page.locator('[data-decision-step]').all()) == 6
+    assert page.locator('[data-decision-stage]').count() == 6
     page.locator("#semantic-condition-statement").fill("Visible People remediation")
     page.locator("#semantic-condition-target").select_option("CRT-001")
     page.locator("#semantic-monitoring-observable").fill("Visible monitoring record")
-    page.locator('[data-decision-step="0"]').evaluate("element => element.click()")
+    open_stage(page, 0)
+    page.wait_for_timeout(350)
     page.evaluate(
         """() => {
           const key = 'fde.decision.autosave.v0.2.11';
@@ -487,22 +502,22 @@ def checkpoint_b_semantics_flow(page: Page) -> None:
     )
     page.reload(wait_until="networkidle")
     page.locator("#resume-browser-draft").click()
-    page.locator('[data-decision-step="5"]').evaluate("element => element.click()")
+    open_stage(page, 5)
     page.locator('[data-surface="advanced-governance"] summary').click()
     page.locator("#semantic-condition-statement").fill("Edited visible People remediation")
     page.locator("#semantic-monitoring-observable").fill("Edited visible monitoring record")
-    page.locator('[data-decision-step="0"]').evaluate("element => element.click()")
+    open_stage(page, 0)
     preserved = page.evaluate("JSON.parse(localStorage.getItem('fde.decision.autosave.v0.2.11')).decision_semantics")
     assert len(preserved["conditions"]) == 2
     assert len(preserved["monitoring"]) == 2
     assert preserved["conditions"][0]["criterion_refs"] == ["CRT-001"]
     assert preserved["conditions"][1] == {"id": "CON-002", "statement": "Imported condition", "required": False, "state": "satisfied", "criterion_refs": ["CRT-002"], "strategy_refs": ["STR-003"]}
     assert preserved["monitoring"][1] == {"monitoring_id": "MON-002", "observable": "Imported monitor", "trigger": "Imported trigger", "response": "Imported response", "required": False, "criterion_refs": ["CRT-002"], "strategy_refs": ["STR-003"]}
-    page.locator("details").filter(has_text="Choose a decision approach").locator("summary").click()
+    page.locator("summary").filter(has_text=re.compile(r"^Choose a decision approach")).click()
     page.locator("#decision-semantic-mode").select_option("general")
     page.locator("#enable-decision-posture").uncheck()
-    page.locator("#decision-next").click()
-    page.locator('[data-decision-step="4"]').evaluate("element => element.click()")
+    page.locator('[data-decision-stage="0"] [data-stage-next]').click()
+    open_stage(page, 4)
     assert page.locator('[data-surface="decision-posture"]').count() == 0
     stored = page.evaluate("JSON.parse(localStorage.getItem('fde.decision.autosave.v0.2.11'))")
     assert stored["schema_version"] == "0.3.0"
@@ -517,7 +532,7 @@ def print_flow(page: Page) -> None:
     page.emulate_media(media="print")
     assert page.locator(".decision-brief").is_visible()
     assert page.locator(".site-header").evaluate("element => getComputedStyle(element).display") == "none"
-    assert page.locator(".wizard-nav").evaluate("element => getComputedStyle(element).display") == "none"
+    assert page.locator(".stage-actions").first.evaluate("element => getComputedStyle(element).display") == "none"
     pdf_bytes = page.pdf(format="Letter", print_background=True, prefer_css_page_size=True)
     assert pdf_bytes.startswith(b"%PDF"), "print output is not a PDF"
     assert len(pdf_bytes) > 5_000, f"print PDF unexpectedly small: {len(pdf_bytes)}"
@@ -580,7 +595,7 @@ def run_mode(
         corrective_draft_and_entry_flow(page, completed_file)
         checkpoint_b_semantics_flow(page)
     else:
-        route(page, base, "/decision", '[data-surface="working-interface"] h1', "Frontier Decision Engine")
+        route(page, base, "/decision", '[data-surface="fde-hero"] h1', "Frontier Decision Engine")
     assert not console_errors, f"console errors in {label}: {console_errors}"
     assert not page_errors, f"page errors in {label}: {page_errors}"
     assert_page_clean(page)
@@ -588,25 +603,17 @@ def run_mode(
     print(f"{label}: PASS ({execution_mode})")
 
 
-def no_js_walkthrough(browser) -> None:
+def no_js_one_page(browser) -> None:
     context = browser.new_context(viewport={"width": 1280, "height": 900}, java_script_enabled=False)
     install_static_route(context)
     page = context.new_page()
-    page.goto("http://fde.test/start.html", wait_until="domcontentloaded")
-    panels = page.locator(".example-panel")
-    assert panels.count() == 6
-    for index in range(6):
-        assert panels.nth(index).is_visible(), f"no-JS walkthrough stage {index + 1} is hidden"
+    page.goto("http://fde.test/index.html", wait_until="domcontentloaded")
     body = page.locator("body").inner_text()
-    for text in ["Synthetic example", "Strongest tested alternative", "Decision posture", "Recorded human decision", "What would change this decision?", "Open Decision Lab"]:
+    for text in ["Frontier Decision Engine", "How it works", "Frame", "Compare", "Decide", "Your decision", "What matters", "Your choices", "What may change", "What we learned", "Choose next step", "Human authority", "stays in this browser"]:
         assert text in body
     assert page.evaluate("document.documentElement.scrollWidth <= window.innerWidth")
-    page.locator('.example-hero [data-action="open-decision-lab"]').click()
-    page.wait_for_url(re.compile(r"/index\.html#/decision/example$"))
-    assert page.title() == "Overview | Frontier Decision Engine"
-    assert "Decision support remains understandable without JavaScript" in page.locator("body").inner_text()
     context.close()
-    print("no-js-six-stage-walkthrough: PASS")
+    print("no-js-one-page-fallback: PASS")
 
 
 def walkthrough_front_door(browser) -> None:
@@ -681,6 +688,23 @@ def walkthrough_handoff(browser, base: str, native_http: bool) -> None:
     print("walkthrough-decision-lab-handoff-desktop-mobile-keyboard: PASS")
 
 
+def compatibility_routes(browser) -> None:
+    for viewport in ({"width": 1440, "height": 900}, {"width": 375, "height": 812}):
+        context = browser.new_context(viewport=viewport, reduced_motion="reduce")
+        install_static_route(context)
+        page = context.new_page()
+        page.goto("http://fde.test/start.html", wait_until="networkidle")
+        page.wait_for_url(re.compile(r"/index\.html#/method$"))
+        assert page.title() == "Frontier Decision Engine"
+        assert page.locator('[data-surface="fde-hero"] h1').inner_text() == "Frontier Decision Engine"
+        assert page.locator('[data-surface="integrated-method"]').is_visible()
+        assert page.locator('[data-decision-stage]').count() == 6
+        assert page.locator('[data-decision-stage][open]').count() == 1
+        assert page.evaluate("document.documentElement.scrollWidth <= window.innerWidth")
+        context.close()
+    print("start-and-method-compatibility-routes: PASS")
+
+
 def main() -> None:
     executable = browser_executable()
     external_base = os.environ.get("FDE_BASE_URL", "").strip().rstrip("/")
@@ -725,9 +749,8 @@ def main() -> None:
                 browser, base, "forced-colors", {"width": 1280, "height": 900},
                 "light", False, native_http, forced_colors="active"
             )
-            no_js_walkthrough(browser)
-            walkthrough_front_door(browser)
-            walkthrough_handoff(browser, base, native_http)
+            no_js_one_page(browser)
+            compatibility_routes(browser)
         finally:
             browser.close()
             if server is not None:

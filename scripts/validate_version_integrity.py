@@ -54,13 +54,6 @@ def main() -> int:
     expected_module = f"export const APPLICATION_VERSION = '{version}';\n"
     if runtime_module != expected_module:
         fail("site/src/version.js does not match package.json", errors)
-    app = load_text("site/src/app.js")
-    if "import { APPLICATION_VERSION } from './version.js';" not in app:
-        fail("Method page does not import the application-version authority", errors)
-    if "Version ${APPLICATION_VERSION} uses" not in app:
-        fail("Method page does not render the application-version authority", errors)
-    if re.search(r"Version \d+\.\d+\.\d+ uses", app):
-        fail("Method page contains a hard-coded application version", errors)
     decision_ui = load_text("site/src/decision-ui.js")
     if "import { APPLICATION_VERSION } from './version.js';" not in decision_ui:
         fail("readable export does not import the application-version authority", errors)

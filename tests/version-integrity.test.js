@@ -50,12 +50,6 @@ test("stale runtime version module fails", async () => {
   await writeFile(path.join(dir, "site", "src", "version.js"), "export const APPLICATION_VERSION = '0.2.12';\n");
   assert.notEqual(run(dir).status, 0);
 });
-test("hard-coded Method application version fails", async () => {
-  const dir = await fixture();
-  const p = path.join(dir, "site", "src", "app.js");
-  await writeFile(p, (await readFile(p, "utf8")).replace("Version ${APPLICATION_VERSION} uses", "Version 0.2.12 uses"));
-  assert.notEqual(run(dir).status, 0);
-});
 test("hard-coded readable-export application version fails", async () => {
   const dir = await fixture();
   const p = path.join(dir, "site", "src", "decision-ui.js");

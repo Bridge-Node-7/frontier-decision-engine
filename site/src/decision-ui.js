@@ -40,6 +40,8 @@ const state = {
   source: 'blank',
   pendingDraft: restored.decision,
   entryResolved: !restored.decision,
+  maxReached: 0,
+  expandAll: false,
   saveStatus: restored.decision ? 'A browser draft is available.' : restored.status,
 };
 
@@ -50,6 +52,8 @@ function startDecision(decision, source, status) {
   state.entryResolved = true;
   state.saveStatus = status;
   state.step = 0;
+  state.maxReached = 0;
+  state.expandAll = false;
 }
 function persistDecision() {
   const result = saveDecision(browserStorage, state.decision);
@@ -78,18 +82,46 @@ function textarea(label, id, value, help = '') {
   return `<label class="field">${escapeHtml(label)}<textarea id="${id}">${escapeHtml(value)}</textarea>${help ? `<span class="help">${escapeHtml(help)}</span>` : ''}</label>`;
 }
 
-function decisionNav() {
-  return `<nav class="wizard-nav workflow-progress" aria-label="Decision workflow"><div class="workflow-position"><span>${state.step + 1} of ${steps.length}</span><strong>${escapeHtml(steps[state.step])}</strong></div><div class="workflow-track" aria-hidden="true">${steps.map((_, index) => `<i class="${index < state.step ? 'complete' : index === state.step ? 'current' : ''}"></i>`).join('')}</div><details class="workflow-all-steps"><summary>All steps</summary><div>${steps.map((label, index) => `<button class="wizard-step" type="button" data-decision-step="${index}" aria-controls="decision-step-content" ${index === state.step ? 'aria-current="step"' : ''}>${index + 1}. ${escapeHtml(label)}</button>`).join('')}</div></details></nav>`;
+function onePageIntro() {
+  return `<section class="fde-hero" data-surface="fde-hero" aria-labelledby="fde-title">
+    <span class="eyebrow">Frontier Decision Engine</span>
+    <h1 id="fde-title">Frontier Decision Engine</h1>
+    <p class="hero-line">Decide with clarity.</p>
+    <p class="lede">Frame what matters. Compare real choices across what may change. You choose what happens next.</p>
+    <div id="how-it-works" class="method-strand" data-surface="integrated-method" tabindex="-1" aria-labelledby="method-title">
+      <h2 id="method-title" class="sr-only">How it works</h2>
+      <div><strong>Frame</strong><span>What are you deciding?</span></div>
+      <div><strong>Compare</strong><span>What matters across what may change?</span></div>
+      <div><strong>Decide</strong><span>What controls the decision? What happens next?</span></div>
+    </div>
+    <p class="method-truth">Compare the same choices across plausible futures. Keep trade-offs and human judgment visible.</p>
+  </section>`;
 }
+
+function stageSummary(index) {
+  const decision = state.decision;
+  if (index === 0) return decision.title || decision.question || 'State the decision';
+  if (index === 1) return decision.objectives.map((item) => item.label).filter(Boolean).slice(0, 3).join(' · ') || 'Name what must be true';
+  if (index === 2) return decision.strategies.map((item) => item.label).filter(Boolean).slice(0, 3).join(' · ') || 'Describe the real choices';
+  if (index === 3) return decision.scenarios.map((item) => item.label).filter(Boolean).slice(0, 2).join(' · ') || 'Describe plausible futures';
+  if (index === 4) {
+    const synthesis = deriveDecisionSynthesis(decision);
+    return synthesis.posture ? `${synthesis.posture} · ${synthesis.strongest_alternative?.label || 'Review the comparison'}` : 'Review what the comparison found';
+  }
+  const selected = decision.strategies.find((item) => item.strategy_id === decision.human_decision.selected_strategy_id);
+  return selected?.label || 'Record the human decision';
+}
+
+const stageActionLabels = ['Continue to What matters →', 'Continue to Your choices →', 'Continue to What may change →', 'See what we learned →', 'Choose next step →'];
 
 function frameStep() {
   const item = state.decision;
   const semantics = semanticView(item);
   return `<div class="stack">
-    <div><span class="eyebrow">1 of 6 · Your decision</span><h2 id="decision-step-heading" tabindex="-1">What are you deciding?</h2></div>
+    <div><h2 id="decision-step-heading-0" tabindex="-1">What are you deciding?</h2></div>
     <div class="primary-decision-field">${textarea('State the decision', 'decision-question', item.question, 'One clear question that a person can answer.')}</div>
-    ${field('Short name', 'decision-title', item.title, 'text')}
-    <details class="soft-panel"><summary><strong>Add decision context</strong><span class="help">Responsibility, timing, urgency, and reversibility</span></summary><div class="grid-2 decision-section-body">
+    <details class="soft-panel"><summary><strong>Add context</strong><span class="help">Name, responsibility, timing, urgency, and reversibility</span></summary><div class="grid-2 decision-section-body">
+      ${field('Short name', 'decision-title', item.title, 'text', 'Optional here; FDE derives one from the decision when needed.')}
       ${field('Who is responsible for deciding?', 'decision-owner', item.decision_owner, 'text', 'Use a person or role, such as Research lead.')}
       ${field('How far ahead are you thinking?', 'decision-horizon', item.time_horizon, 'text', 'Example: 90 days, one year, or five years.')}
       <label class="field">How soon is the choice needed?<select id="decision-urgency"><option value="" ${item.urgency ? '' : 'selected'}>Choose when known</option><option value="immediate" ${item.urgency === 'immediate' ? 'selected' : ''}>Immediate</option><option value="near-term" ${item.urgency === 'near-term' ? 'selected' : ''}>Near term</option><option value="planned" ${item.urgency === 'planned' ? 'selected' : ''}>Planned</option></select></label>
@@ -108,7 +140,7 @@ function mapStep() {
   const semanticCriteria = item.schema_version === '0.3.0' ? `<section class="stack" data-surface="decision-semantics-criteria"><div><span class="eyebrow">${semantics.mode === 'sustainability-seer' ? 'Four independent dimensions' : 'Decision posture'}</span><h3>What must remain true?</h3><p class="muted">Review one dimension at a time. Evidence and outcome stay separate; required criteria affect posture, not the comparison.</p></div><div class="dimension-overview">${dimensions.map((dimension, dimensionIndex) => { const criteria = semantics.criteria.map((criterion, index) => ({ criterion, index })).filter((entry) => entry.criterion.dimension === dimension); const stateLabel = dimension === 'general' ? (criteria.length ? 'Review criteria' : 'Not assessed') : fourPSummaries.get(dimension)?.state || 'Not assessed'; const requiredCount = criteria.filter((entry) => entry.criterion.must_be_true).length; return `<details class="panel dimension-card" ${dimensionIndex === 0 ? 'open' : ''} data-dimension="${dimension}"><summary><span><strong>${escapeHtml(dimension[0].toUpperCase() + dimension.slice(1))}</strong><span class="help">${escapeHtml(dimensionPrompts[dimension])}</span></span><span class="dimension-status"><strong>${escapeHtml(stateLabel)}</strong><span class="help">${criteria.length} ${criteria.length === 1 ? 'criterion' : 'criteria'}${requiredCount ? ` · ${requiredCount} required` : ''}</span><span class="review-label">Review</span></span></summary><div class="dimension-detail stack">${criteria.map(({ criterion, index }) => `<article class="semantic-criterion stack" data-semantic-criterion="${index}"><div class="grid-2">${field('What matters?', `semantic-label-${index}`, criterion.label)}${field('What must be true?', `semantic-requirement-${index}`, criterion.requirement)}<label class="field">What do we know?<select id="semantic-evidence-${index}">${EVIDENCE_STATES.map((value) => `<option value="${value}" ${criterion.evidence_state === value ? 'selected' : ''}>${escapeHtml(value)}</option>`).join('')}</select></label><label class="field">Does it meet the requirement?<select id="semantic-outcome-${index}">${CRITERION_OUTCOMES.map((value) => `<option value="${value}" ${criterion.outcome === value ? 'selected' : ''}>${escapeHtml(value)}</option>`).join('')}</select></label>${field('What evidence would resolve this?', `semantic-evidence-need-${index}`, criterion.evidence_need || '')}<label class="field required-control"><span><input id="semantic-required-${index}" type="checkbox" ${criterion.must_be_true ? 'checked' : ''}> Required to move forward</span></label></div></article>`).join('')}</div></details>`; }).join('')}</div></section>` : '';
   const collapsedSemanticCriteria = semanticCriteria.replace(' open data-dimension=', ' data-dimension=');
   return `<div class="stack">
-    <div><span class="eyebrow">2 of 6 · What matters</span><h2 id="decision-step-heading" tabindex="-1">What must be true?</h2></div>
+    <div><h2 id="decision-step-heading-1" tabindex="-1">What must be true?</h2></div>
     <details class="comparison-model"><summary><strong>Review the comparison model</strong><span class="help">Goals, uncertainties, relationships, and thresholds remain available without crowding the first view.</span></summary><div class="decision-map">
       <section class="panel stack"><div class="actions"><strong>What may change <span class="method-word">(X · uncertainties)</span></strong>${badge(`${item.uncertainties.length}`)}</div>${item.uncertainties.map((uncertainty) => `<div class="map-item"><strong>${escapeHtml(uncertainty.label)}</strong><p class="help">${escapeHtml(uncertainty.description)}</p><div class="actions">${uncertainty.states.map((entry) => badge(entry)).join('')}</div></div>`).join('')}</section>
       <section class="panel stack"><div class="actions"><strong>Choices you control <span class="method-word">(L · levers)</span></strong>${badge(`${item.strategies.length}`)}</div>${item.strategies.map((strategy) => `<div class="map-item"><strong>${escapeHtml(strategy.label)}</strong><p class="help">${escapeHtml(strategy.description)}</p></div>`).join('')}</section>
@@ -127,7 +159,7 @@ function strategiesStep() {
     return `<div class="score-field"><label>${escapeHtml(objective.label || `Goal ${objectiveIndex + 1}`)}<input data-strategy-score="${strategyIndex}:${objective.objective_id}" type="number" min="0" max="100" value="${strategy.baseline[objective.objective_id] ?? ''}"></label><span class="help">Analyst-assigned normalized input, not a probability.</span>${state.decision.schema_version === '0.3.0' ? `<details class="score-rationale"><summary>Why this score?</summary><div class="stack"><label class="field">Basis<select data-score-basis="${strategyIndex}:${objective.objective_id}"><option value="analyst-judgment" ${trace?.basis !== 'declared-rubric' && trace?.basis !== 'other' ? 'selected' : ''}>Analyst judgment</option><option value="declared-rubric" ${trace?.basis === 'declared-rubric' ? 'selected' : ''}>Declared rubric</option><option value="other" ${trace?.basis === 'other' ? 'selected' : ''}>Other stated basis</option></select></label><label class="field">Rationale<textarea data-score-rationale="${strategyIndex}:${objective.objective_id}" placeholder="No rationale recorded.">${escapeHtml(trace?.rationale || '')}</textarea></label></div></details>` : ''}</div>`;
   };
   return `<div class="stack">
-    <div><span class="eyebrow">3 of 6 · Your choices</span><h2 id="decision-step-heading" tabindex="-1">What can you do?</h2></div>
+    <div><h2 id="decision-step-heading-2" tabindex="-1">What can you actually do?</h2></div>
     ${state.decision.strategies.map((strategy, strategyIndex) => `<article class="panel stack">
       <div class="grid-2">${field('Choice name', `strategy-label-${strategyIndex}`, strategy.label)}${textarea('What would this choice do?', `strategy-description-${strategyIndex}`, strategy.description)}</div>
       <details><summary><strong>Review comparison inputs</strong></summary><div class="score-grid decision-section-body">${objectives.map((objective, objectiveIndex) => scoreField(strategy, strategyIndex, objective, objectiveIndex)).join('')}</div></details>
@@ -140,7 +172,7 @@ function scenariosStep() {
   const objectives = state.decision.objectives;
   const strategies = state.decision.strategies;
   return `<div class="stack">
-    <div><span class="eyebrow">4 of 6 · What may change</span><h2 id="decision-step-heading" tabindex="-1">What could change?</h2><p class="muted">Plausible futures worth testing. No probability required.</p></div>
+    <div><h2 id="decision-step-heading-3" tabindex="-1">What could change?</h2><p class="muted">Plausible futures worth testing. No probability required.</p></div>
     ${state.decision.scenarios.map((scenario, scenarioIndex) => `<article class="panel stack">
       <div class="grid-2">${field('Future name', `scenario-label-${scenarioIndex}`, scenario.label)}${textarea('What happens in this future?', `scenario-description-${scenarioIndex}`, scenario.description)}</div>
       <div class="actions">${Object.entries(scenario.states).map(([uncertaintyId, value]) => badge(`${uncertaintyId}: ${value}`)).join('')}</div>
@@ -153,7 +185,7 @@ function scenariosStep() {
 function resultsStep() {
   const readiness = validateAnalysisReady(state.decision);
   if (!readiness.valid) {
-    return `<div class="stack"><div><span class="eyebrow">Step 5 · Validation before analysis</span><h2 id="decision-step-heading" tabindex="-1">One update is needed</h2><p class="muted">FDE pauses comparison until every expected outcome is complete and usable.</p></div><div class="callout warning"><strong>Complete the case before comparison</strong><ul>${readiness.errors.map((error) => `<li>${escapeHtml(error)}</li>`).join('')}</ul></div></div>`;
+    return `<div class="stack"><div><h2 id="decision-step-heading-4" tabindex="-1">One update is needed</h2><p class="muted">FDE pauses comparison until every expected outcome is complete and usable.</p></div><div class="callout warning"><strong>Complete the case before comparison</strong><ul>${readiness.errors.map((error) => `<li>${escapeHtml(error)}</li>`).join('')}</ul></div></div>`;
   }
   const summaries = summarizeStrategies(state.decision);
   const candidateResult = robustCandidateDecision(state.decision);
@@ -183,7 +215,7 @@ function resultsStep() {
   };
   const scoreTraceability = state.decision.schema_version === '0.3.0' ? `<details class="soft-panel score-traceability"><summary><strong>Why these normalized inputs?</strong></summary><div class="stack">${state.decision.strategies.map((strategy) => `<section><h4>${escapeHtml(strategy.label)}</h4><ul>${state.decision.objectives.map((objective) => { const trace = strategy.score_rationales?.[objective.objective_id]; return `<li><strong>${escapeHtml(objective.label)} ${strategy.baseline[objective.objective_id]}</strong> · ${trace ? `${escapeHtml(trace.basis)} · ${escapeHtml(trace.rationale)}` : 'No rationale recorded.'}</li>`; }).join('')}</ul></section>`).join('')}</div></details>` : '';
   return `<div class="stack">
-    <div><span class="eyebrow">5 of 6 · What we learned</span><h2 id="decision-step-heading" tabindex="-1">What did we learn?</h2><p class="muted">The answer first. Evidence on demand.</p></div>
+    <div><h2 id="decision-step-heading-4" tabindex="-1">What did we learn?</h2><p class="muted">The answer first. Evidence on demand.</p></div>
     ${candidateNotice}
     ${semanticSummary}
     <details class="projection soft-panel" data-projection="brief" open><summary><strong>Brief</strong><span class="help">Conclusion and control point</span></summary><div class="projection-body"><p><strong>Strongest tested alternative:</strong> ${escapeHtml(synthesis.strongest_alternative?.label || 'No unique leader')}</p><p>${synthesis.posture ? `The controlling issue determines posture. ` : ''}The comparison identifies an alternative; a person records the decision.</p></div></details>
@@ -212,9 +244,9 @@ function decisionBriefStep() {
   const visibleConditionTarget = semantics.conditions[0]?.criterion_refs?.length === 1 ? semantics.conditions[0].criterion_refs[0] : '';
   const semanticControls = decision.schema_version === '0.3.0' ? `<section class="soft-panel stack" data-surface="semantic-controls"><div><span class="eyebrow">Human-declared proceed conditions</span><h3>Decision posture controls</h3></div><label class="field"><span><input id="posture-enabled" type="checkbox" ${semantics.posture_enabled ? 'checked' : ''}> Show Decision posture</span></label><label class="field">Have proceed conditions been reviewed?<select id="proceed-conditions-state"><option value="unreviewed" ${semantics.proceed_conditions_state === 'unreviewed' ? 'selected' : ''}>Not reviewed</option><option value="declared" ${semantics.proceed_conditions_state === 'declared' ? 'selected' : ''}>Required criteria declared</option><option value="none-required" ${semantics.proceed_conditions_state === 'none-required' ? 'selected' : ''}>None required — deliberately confirmed</option></select></label><div class="grid-2">${field('Required condition or safeguard', 'semantic-condition-statement', semantics.conditions[0]?.statement || '')}<label class="field">This condition applies to<select id="semantic-condition-target"><option value="" ${visibleConditionTarget ? '' : 'selected'}>Whole decision (not remediation)</option>${semantics.criteria.map((criterion) => `<option value="${escapeHtml(criterion.criterion_id)}" ${visibleConditionTarget === criterion.criterion_id ? 'selected' : ''}>${escapeHtml(criterion.dimension[0].toUpperCase() + criterion.dimension.slice(1))}: ${escapeHtml(criterion.label || criterion.criterion_id)}</option>`).join('')}</select><span class="help">Only an explicitly targeted open condition can remediate that criterion.</span></label><label class="field">Condition state<select id="semantic-condition-state"><option value="open" ${semantics.conditions[0]?.state !== 'satisfied' ? 'selected' : ''}>Open</option><option value="satisfied" ${semantics.conditions[0]?.state === 'satisfied' ? 'selected' : ''}>Satisfied</option></select></label>${field('Monitoring obligation', 'semantic-monitoring-observable', semantics.monitoring[0]?.observable || '')}${field('Reassessment', 'semantic-reassessment', semantics.reassessment || '')}</div><p class="help">This compact view edits the first condition and monitoring record only; additional imported records remain preserved.</p><label class="field">Cautious human posture override<select id="posture-override"><option value="">No override</option>${['ADVANCE WITH CONDITIONS','REWORK','HOLD','STOP'].map((value) => `<option value="${value}" ${semantics.posture_override === value ? 'selected' : ''}>${value}</option>`).join('')}</select></label>${textarea('Why use a more cautious posture?', 'posture-override-reason', semantics.posture_override_reason || '')}<p><strong>Current Decision posture:</strong> ${escapeHtml(posture.posture || 'Inactive')}</p><p class="help">These controls do not choose a strategy. Your final decision remains below.</p></section>` : '';
   return `<div class="stack">
-    <div><span class="eyebrow">6 of 6 · Your decision</span><h2 id="decision-step-heading" tabindex="-1">What do you choose?</h2></div>
+    <div><h2 id="decision-step-heading-5" tabindex="-1">What do you choose?</h2></div>
     <section class="decision-brief">
-      <div class="brief-head"><div><span class="eyebrow">Decision question</span><h3>${escapeHtml(decision.question)}</h3></div><div class="actions">${badge(decision.status)}${badge(`Profile: ${decision.profile}`)}</div></div>
+      <div class="brief-head"><div><span class="eyebrow">Decision question</span><h3>${escapeHtml(decision.question || 'Decision not yet framed')}</h3></div><div class="actions">${badge(decision.status)}${badge(`Profile: ${decision.profile}`)}</div></div>
       <div class="brief-grid">
         <div><span class="help">Decision owner</span><strong>${escapeHtml(decision.decision_owner)}</strong></div>
         <div><span class="help">Time horizon</span><strong>${escapeHtml(decision.time_horizon)}</strong></div>
@@ -235,7 +267,7 @@ function decisionBriefStep() {
       </div></details>
       <details class="decision-section soft-panel" open><summary><strong>Plan for change <span class="method-word">(adaptive planning)</span></strong></summary><div class="grid-2 decision-section-body"><div class="stack"><h3>Act now</h3><ul>${decision.adaptive_pathway.act_now.map((item) => `<li>${escapeHtml(item)}</li>`).join('')}</ul></div><div class="stack"><h3>Monitor</h3><ul>${decision.adaptive_pathway.monitor.map((item) => `<li>${escapeHtml(item)}</li>`).join('')}</ul></div><div class="stack"><h3>Trigger</h3><ul>${decision.adaptive_pathway.triggers.map((item) => `<li>${escapeHtml(item)}</li>`).join('')}</ul></div><div class="stack"><h3>Contingencies</h3><ul>${decision.adaptive_pathway.contingencies.map((item) => `<li>${escapeHtml(item)}</li>`).join('')}</ul></div></div><p><strong>Reassessment:</strong> ${escapeHtml(decision.adaptive_pathway.reassessment)}</p></details>
     </section>
-    <div class="self-service-panel decision-output" data-surface="decision-output"><div class="record-prompt"><strong>Record the decision.</strong><p>Validate the human choice, reason, and next action.</p></div><div class="record-prompt actions"><button id="record-decision" class="primary" type="button">Record decision →</button></div><div class="decision-complete stack" data-surface="decision-complete" hidden><h3 id="decision-recorded-heading" tabindex="-1">Decision recorded.</h3><p>Keep the record before moving on.</p><div class="actions"><button id="export-decision-html" data-action="download-readable-summary" class="primary" type="button">Download Decision Brief</button><button id="export-decision-json" data-action="download-decision-file" type="button">Save Decision File</button><button id="reset-decision" class="ghost" type="button">Use ready example</button></div></div></div>
+    <div class="self-service-panel decision-output" data-surface="decision-output"><div class="record-prompt"><strong>Record the decision.</strong><p>Validate the human choice, reason, and next action.</p></div><div class="record-prompt actions"><button id="record-decision" class="primary" type="button">Record decision →</button></div><div class="decision-complete stack" data-surface="decision-complete" hidden><h3 id="decision-recorded-heading" tabindex="-1">Decision recorded.</h3><p>Keep the record before moving on.</p><div class="actions"><button id="export-decision-html" data-action="download-readable-summary" class="primary" type="button">Download Decision Brief</button><button id="export-decision-json" data-action="download-decision-file" type="button">Save decision</button><button id="reset-decision" class="ghost" type="button">Use ready example</button></div></div></div>
     <div id="decision-validation" class="status-line" role="alert" tabindex="-1" aria-live="assertive">${validation.valid ? `Decision case passes v${escapeHtml(decision.schema_version)} structural validation.` : escapeHtml(validation.errors.join(' '))}</div>
   </div>`;
 }
@@ -387,17 +419,17 @@ async function openDecisionFile(file, main, input) {
   renderInto(main, { focusStep: true });
 }
 
-function renderDraftReturn(main, { openFile = false } = {}) {
+function renderDraftReturn(main, { openFile = false, focusMethod = false } = {}) {
   const backupAvailable = canDownloadDraftBackup(state.pendingDraft);
   main.innerHTML = `
-    <div class="breadcrumbs"><a href="#/">Home</a><span aria-hidden="true">/</span><span>Decision Lab</span></div>
+    ${onePageIntro()}
     <section class="panel stack" data-surface="saved-draft-return" aria-labelledby="saved-draft-title">
       <span class="eyebrow">Frontier Decision Engine</span>
-      <h1 id="saved-draft-title">Welcome back.</h1>
-      <p>A decision is saved in this browser.</p>
+      <h2 id="saved-draft-title">Welcome back.</h2>
+      <p>Your decision is saved in this browser.</p>
       <div class="callout warning"><strong>Browser privacy boundary</strong><p>Anyone with access to this browser profile may be able to reopen the saved decision. Browser storage is not encrypted confidential storage.</p></div>
       <div class="actions"><button id="resume-browser-draft" class="primary" type="button">Resume your decision →</button></div>
-      <details class="soft-panel"><summary><strong>Other options</strong></summary><div class="actions decision-section-body"><button id="download-browser-draft" type="button" ${backupAvailable ? '' : 'disabled'}>${backupAvailable ? 'Download draft backup' : 'Draft backup unavailable'}</button><button id="start-blank-decision" type="button">Start fresh</button><button id="start-ready-example" type="button">Use ready example</button><button id="open-decision-file" type="button">Open an FDE file</button><button id="clear-browser-draft" type="button">Clear browser draft</button><input id="decision-file-input" type="file" accept="application/json,.json,.fde.json,.fde-draft.json" hidden aria-label="Open a completed decision file or in-progress draft backup"></div></details>
+      <details class="soft-panel"><summary><strong>Other options</strong></summary><div class="actions decision-section-body"><button id="download-browser-draft" type="button" ${backupAvailable ? '' : 'disabled'}>${backupAvailable ? 'Download draft backup' : 'Draft backup unavailable'}</button><button id="start-blank-decision" type="button">Start fresh</button><button id="start-ready-example" type="button">Use ready example</button><button id="open-decision-file" type="button">Open a saved decision</button><button id="clear-browser-draft" type="button">Clear browser draft</button><input id="decision-file-input" type="file" accept="application/json,.json,.fde.json,.fde-draft.json" hidden aria-label="Open a saved decision or in-progress draft backup"></div></details>
       <div id="decision-entry-status" class="status-line" role="alert" tabindex="-1" aria-live="assertive"></div>
     </section>`;
   const replaceDraft = (decision, source, status) => {
@@ -424,6 +456,10 @@ function renderDraftReturn(main, { openFile = false } = {}) {
   main.querySelector('#open-decision-file')?.addEventListener('click', () => main.querySelector('#decision-file-input')?.click());
   main.querySelector('#decision-file-input')?.addEventListener('change', (event) => openDecisionFile(event.target.files?.[0], main, event.target));
   if (openFile) requestAnimationFrame(() => main.querySelector('#open-decision-file')?.click());
+  if (focusMethod) requestAnimationFrame(() => {
+    main.querySelector('#how-it-works')?.focus({ preventScroll: true });
+    main.querySelector('#how-it-works')?.scrollIntoView({ block: 'start', behavior: 'auto' });
+  });
 }
 
 function renderDecisionEntry(main, { openFile = false } = {}) {
@@ -450,6 +486,21 @@ function renderDecisionEntry(main, { openFile = false } = {}) {
   if (openFile) requestAnimationFrame(() => main.querySelector('#open-decision-file')?.click());
 }
 
+function validateStage(index, root) {
+  syncStep();
+  if (index === 0 && !state.decision.question.trim()) {
+    const message = root.querySelector('[data-stage-validation="0"]');
+    if (message) message.textContent = 'State the decision before continuing.';
+    root.querySelector('#decision-question')?.focus();
+    return false;
+  }
+  if (index === 0 && !state.decision.title.trim()) {
+    state.decision.title = state.decision.question.trim().replace(/[?.!]$/, '').slice(0, 80);
+  }
+  persistDecision();
+  return true;
+}
+
 function bindEvents(root) {
   root.querySelector('#toggle-method-words')?.addEventListener('click', (event) => {
     const visible = document.documentElement.classList.toggle('show-method-words');
@@ -462,21 +513,36 @@ function bindEvents(root) {
     startDecision(createDecisionCase(), 'ready-example', 'Fresh ready example loaded.');
     renderInto(root.closest('main') || root, { focusStep: true });
   });
-  root.querySelectorAll('[data-decision-step]').forEach((button) => button.addEventListener('click', () => {
+  root.querySelector('#toggle-all-stages')?.addEventListener('click', () => {
     syncStep();
-    state.step = Number(button.dataset.decisionStep);
+    state.expandAll = !state.expandAll;
+    renderInto(root.closest('main') || root);
+  });
+  root.querySelectorAll('[data-decision-stage]').forEach((details) => details.addEventListener('toggle', () => {
+    if (!details.open || state.expandAll) return;
+    syncStep();
+    state.step = Number(details.dataset.decisionStage);
+    root.querySelectorAll('[data-decision-stage]').forEach((other) => {
+      if (other !== details) other.removeAttribute('open');
+      other.toggleAttribute('data-active', other === details);
+    });
+    requestAnimationFrame(() => details.querySelector('h2')?.focus({ preventScroll: true }));
+  }));
+  root.querySelectorAll('[data-stage-next]').forEach((button) => button.addEventListener('click', () => {
+    const current = Number(button.dataset.stageNext);
+    state.step = current;
+    if (!validateStage(current, root)) return;
+    state.maxReached = Math.max(state.maxReached, current + 1);
+    state.step = Math.min(steps.length - 1, current + 1);
+    state.expandAll = false;
     renderInto(root.closest('main') || root, { focusStep: true });
   }));
-  root.querySelector('#decision-back')?.addEventListener('click', () => {
+  root.querySelectorAll('[data-stage-back]').forEach((button) => button.addEventListener('click', () => {
     syncStep();
-    state.step = Math.max(0, state.step - 1);
+    state.step = Math.max(0, Number(button.dataset.stageBack) - 1);
+    state.expandAll = false;
     renderInto(root.closest('main') || root, { focusStep: true });
-  });
-  root.querySelector('#decision-next')?.addEventListener('click', () => {
-    syncStep();
-    state.step = Math.min(steps.length - 1, state.step + 1);
-    renderInto(root.closest('main') || root, { focusStep: true });
-  });
+  }));
   root.querySelector('#human-strategy')?.addEventListener('change', (event) => {
     state.decision.human_decision.selected_strategy_id = event.target.value;
   });
@@ -522,7 +588,9 @@ function bindEvents(root) {
   root.querySelector('#decision-file-input')?.addEventListener('change', async (event) => {
     await openDecisionFile(event.target.files?.[0], root.closest('main') || root, event.target);
   });
-  root.addEventListener('input', () => {
+  root.addEventListener('input', (event) => {
+    const stage = event.target.closest('[data-decision-stage]');
+    if (stage) state.step = Number(stage.dataset.decisionStage);
     window.clearTimeout(state.autosaveTimer);
     state.autosaveTimer = window.setTimeout(() => {
       syncStep();
@@ -538,43 +606,47 @@ function bindEvents(root) {
   });
 }
 
-function renderInto(main, { focusStep = false } = {}) {
-  main.innerHTML = `
-    <div class="breadcrumbs"><a href="#/">Home</a><span aria-hidden="true">/</span><span>Decision Lab</span></div>
-    <section class="section-head interface-heading" data-surface="working-interface"><div><span class="eyebrow">Working decision experience</span><h1 class="page-title">Frontier Decision Engine</h1></div><p>${state.source === 'blank' ? 'State the decision.' : state.source === 'ready-example' ? 'Synthetic example.' : state.source === 'restored-browser-draft' ? 'Decision resumed.' : state.source === 'imported-draft-backup' ? 'Draft backup opened.' : 'Decision file opened.'}</p></section>
-    <div class="interface-entry-panel" data-surface="decision-entry">
-      <div>
-        <strong>${state.source === 'blank' ? 'Blank decision' : state.source === 'ready-example' ? 'Ready example' : state.source === 'restored-browser-draft' ? 'Restored browser draft' : state.source === 'imported-draft-backup' ? 'Imported draft backup' : 'Imported completed decision'}</strong>
-        <p>Changes save in this browser.</p>
-        <span id="decision-save-status" class="status-line" aria-live="polite">${escapeHtml(state.saveStatus)}</span>
-      </div>
-      <div class="actions">
+function renderInto(main, { focusStep = false, focusMethod = false } = {}) {
+  const sourceLabel = state.source === 'ready-example' ? 'Synthetic example' : state.source.includes('imported') ? 'Saved decision opened' : 'Saved in this browser';
+  const stages = steps.map((label, index) => {
+    const open = state.expandAll || index === state.step;
+    const complete = index < state.maxReached;
+    const actions = index < steps.length - 1 ? `<div class="stage-actions"><button data-stage-back="${index}" type="button" ${index === 0 ? 'disabled' : ''}>Back</button><span class="status-line" data-stage-validation="${index}" role="alert"></span><button data-stage-next="${index}" class="primary" type="button">${stageActionLabels[index]}</button></div>` : `<div class="stage-actions"><button data-stage-back="${index}" type="button">Back</button></div>`;
+    return `<details class="fde-stage" data-decision-stage="${index}" ${open ? 'open' : ''} ${index === state.step ? 'data-active' : ''}>
+      <summary aria-controls="decision-stage-${index}"><span class="stage-number">${complete ? '✓' : index + 1}</span><span class="stage-name">${escapeHtml(label)}</span><span class="stage-summary">${escapeHtml(stageSummary(index))}</span></summary>
+      <div id="decision-stage-${index}" class="stage-body">${decisionStepRenderers[index]()}${actions}</div>
+    </details>`;
+  }).join('');
+  main.innerHTML = `${onePageIntro()}
+    <section id="decision-work" class="decision-work" data-surface="working-interface" aria-labelledby="decision-work-title">
+      <div class="work-heading"><div><span class="eyebrow">Your decision</span><h2 id="decision-work-title">Make the decision.</h2></div><span id="decision-save-status" class="save-status" aria-live="polite">${escapeHtml(sourceLabel)}</span></div>
+      <details class="begin-options" data-surface="decision-entry"><summary>Other ways to begin</summary><div class="actions">
         <button id="use-ready-example" type="button">Try an example</button>
-        <button id="open-decision-file" data-action="open-saved-decision" type="button">Open an FDE file</button>
-        <input id="decision-file-input" type="file" accept="application/json,.json,.fde.json,.fde-draft.json" hidden aria-label="Open a completed decision file or in-progress draft backup">
-        <button id="toggle-method-words" type="button" aria-pressed="false">Show method words</button>
-        <a class="quiet-link" href="./start.html">How it works</a>
-      </div>
-    </div>
-    <div class="wizard decision-wizard">
-      ${decisionNav()}
-      <div class="wizard-content panel"><div id="decision-step-content">${decisionStepRenderers[state.step]()}</div>
-        <div class="wizard-actions"><button id="decision-back" type="button" ${state.step === 0 ? 'disabled' : ''}>Back</button><span class="status-line">Step ${state.step + 1} of ${steps.length}: ${escapeHtml(steps[state.step])}</span><button id="decision-next" class="primary" type="button" ${state.step === steps.length - 1 ? 'disabled' : ''}>${state.step < steps.length - 1 ? `Next: ${escapeHtml(steps[state.step + 1])}` : 'Ready to review'}</button></div>
-      </div>
-    </div>`;
-  if (state.step === 5) main.querySelectorAll('.decision-section[open]').forEach((details) => details.removeAttribute('open'));
+        <button id="open-decision-file" data-action="open-saved-decision" type="button">Open a saved decision</button>
+        <input id="decision-file-input" type="file" accept="application/json,.json,.fde.json,.fde-draft.json" hidden aria-label="Open a saved decision or in-progress draft backup">
+        <button id="toggle-method-words" type="button" aria-pressed="false">Technical terms</button>
+      </div></details>
+      <div class="stage-toolbar"><button id="toggle-all-stages" class="quiet-control" type="button">${state.expandAll ? 'Collapse all' : 'Expand all'}</button></div>
+      <div class="fde-stages">${stages}</div>
+    </section>`;
+  if (state.step === 5 && !state.expandAll) main.querySelectorAll('.decision-section[open]').forEach((details) => details.removeAttribute('open'));
   bindEvents(main);
   if (focusStep) requestAnimationFrame(() => {
-    const heading = main.querySelector('#decision-step-heading');
+    const heading = main.querySelector(`#decision-step-heading-${state.step}`);
     if (!heading) return;
     heading.focus({ preventScroll: true });
     heading.scrollIntoView({ block: 'start', behavior: 'auto' });
   });
+  if (focusMethod) requestAnimationFrame(() => {
+    const method = main.querySelector('#how-it-works');
+    method?.focus({ preventScroll: true });
+    method?.scrollIntoView({ block: 'start', behavior: 'auto' });
+  });
 }
 
-export function renderDecisionLab(main, { openFile = false, entryMode = null } = {}) {
+export function renderDecisionLab(main, { openFile = false, entryMode = null, focusMethod = false } = {}) {
   if (state.pendingDraft && !state.entryResolved) {
-    renderDraftReturn(main, { openFile });
+    renderDraftReturn(main, { openFile, focusMethod });
     return;
   }
   if (entryMode === 'blank') {
@@ -585,6 +657,6 @@ export function renderDecisionLab(main, { openFile = false, entryMode = null } =
     clearSavedDecision(browserStorage);
     startDecision(createDecisionCase(), 'ready-example', 'Fresh ready example loaded.');
   }
-  renderInto(main);
+  renderInto(main, { focusMethod });
   if (openFile) requestAnimationFrame(() => main.querySelector('#open-decision-file')?.click());
 }

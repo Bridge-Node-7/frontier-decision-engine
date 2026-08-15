@@ -267,8 +267,8 @@ for path in (SITE / "src").rglob("*.js"):
 
 app_text = (SITE / "src/app.js").read_text(encoding="utf-8")
 decision_text = (SITE / "src/decision-ui.js").read_text(encoding="utf-8")
-if decision_text.count('id="decision-step-heading" tabindex="-1"') != 7:
-    errors.append("Decision Lab must expose six focusable steps and one incomplete-analysis heading")
+if len(re.findall(r'id="decision-step-heading-[0-5]" tabindex="-1"', decision_text)) != 7:
+    errors.append("FDE must expose six unique focusable stage headings and one incomplete-analysis variant")
 if 'id="case-step-heading"' in app_text:
     errors.append("removed case-wizard heading remains in the public application")
 for stale in [
