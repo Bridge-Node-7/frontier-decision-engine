@@ -119,8 +119,8 @@ function renderMethod() {
 async function router() {
   const path = location.hash.slice(1) || '/';
   if (path === '/') {
-    document.title = 'Overview | Frontier Decision Engine';
-    renderHome();
+    document.title = 'Frontier Decision Engine';
+    renderDecisionLab(main);
   } else if (path === '/decision' || path === '/decision/new' || path === '/decision/example' || path === '/decision/open') {
     document.title = path === '/decision/open' ? 'Open Decision | Frontier Decision Engine' : 'Decision Lab | Frontier Decision Engine';
     renderDecisionLab(main, {

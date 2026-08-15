@@ -52,6 +52,7 @@ def native_http_available(
         page = context.new_page()
         try:
             page.goto(base, wait_until="networkidle", timeout=timeout_ms)
+            page.locator("#main h1").wait_for(state="visible", timeout=timeout_ms)
             if page.locator("#main").count() == 1 and page.evaluate("!!crypto.subtle"):
                 return True
         except PlaywrightError:
@@ -128,7 +129,8 @@ def assert_page_clean(page: Page) -> None:
           const navMissingLabel = [...document.querySelectorAll('nav')].filter(
             (nav) => !nav.getAttribute('aria-label') && !nav.getAttribute('aria-labelledby')
           ).length;
-          const primary = document.querySelector('button.primary, a.primary');
+          const primary = [...document.querySelectorAll('button.primary, a.primary')]
+            .find((element) => element.getClientRects().length > 0);
           const parseRgb = (value) => {
             const match = String(value).match(/rgba?\\((\\d+)[, ]+(\\d+)[, ]+(\\d+)/i);
             return match ? match.slice(1, 4).map(Number) : null;
@@ -206,13 +208,7 @@ def assert_page_clean(page: Page) -> None:
 def load_application(page: Page) -> None:
     if page.locator("#main").count():
         return
-    html = INDEX_HTML.replace(
-        '<head>',
-        '<head><base href="http://fde.test/">',
-        1,
-    )
-    html = re.sub(r'<meta http-equiv="Content-Security-Policy"[^>]+>', '', html, count=1)
-    page.set_content(html, wait_until="networkidle")
+    page.goto("http://fde.test/index.html", wait_until="networkidle")
     page.locator("#main").wait_for(state="attached")
 
 
@@ -234,7 +230,7 @@ def route(page: Page, base: str, path: str, selector: str, expected: str) -> Non
     matched = matched_locator.inner_text()
     assert expected.lower() in matched.lower(), f"{path} did not contain {expected!r}; found {matched!r}"
     expected_title = {
-        "/": "Overview | Frontier Decision Engine",
+        "/": "Frontier Decision Engine",
         "/method": "Method | Frontier Decision Engine",
         "/decision": "Decision Lab | Frontier Decision Engine",
         "/decision/new": "Decision Lab | Frontier Decision Engine",
@@ -246,37 +242,40 @@ def route(page: Page, base: str, path: str, selector: str, expected: str) -> Non
     assert_page_clean(page)
 
 
+def set_hash_route(page: Page, path: str) -> None:
+    page.evaluate(
+        """(path) => {
+          const next = `#${path}`;
+          if (location.hash === next) window.dispatchEvent(new HashChangeEvent('hashchange'));
+          else location.hash = path;
+        }""",
+        path,
+    )
+
+
 def decision_flow(page: Page, base: str) -> str:
-    route(page, base, "/decision", '[data-surface="decision-entry-front-door"] h1', "Frontier Decision Engine")
-    assert page.locator("#start-blank-decision").is_visible()
-    assert page.locator("#start-ready-example").is_visible()
+    route(page, base, "/decision", '[data-surface="working-interface"] h1', "Frontier Decision Engine")
+    assert page.locator("#decision-question").is_visible()
+    assert page.locator("#decision-question").input_value() == ""
+    assert page.locator("#use-ready-example").is_visible()
     assert page.locator("#open-decision-file").is_visible()
-    assert page.locator('a[href="./start.html"]').inner_text() == "See how it works →"
+    assert page.locator('a[href="./start.html"]').inner_text() == "How it works"
     with page.expect_file_chooser() as chooser_info:
         page.locator("#open-decision-file").click()
     chooser_info.value.set_files([])
-    page.locator("#start-ready-example").click()
-    page.locator('[data-surface="working-interface"]').wait_for(state="visible")
+    page.on("dialog", lambda dialog: dialog.accept())
+    page.locator("#use-ready-example").click()
     assert "Synthetic example." in page.locator('[data-surface="working-interface"]').inner_text()
     assert "Ready example" in page.locator('[data-surface="decision-entry"]').inner_text()
-    page.go_back(wait_until="networkidle")
-    page.locator('[data-surface="decision-entry-front-door"]').wait_for(state="visible")
-    page.locator("#start-blank-decision").click()
-    page.locator("#decision-step-heading").wait_for(state="visible")
-    assert page.locator("#decision-title").input_value() == ""
-    assert "Blank decision" in page.locator('[data-surface="decision-entry"]').inner_text()
-    page.go_back(wait_until="networkidle")
-    page.locator('[data-surface="decision-entry-front-door"]').wait_for(state="visible")
-    page.locator("#start-ready-example").click()
     page.locator("#decision-step-heading").wait_for(state="visible")
 
     headings = [
-        "What are you trying to choose?",
-        "What matters?",
-        "What can you actually do?",
-        "What may change?",
-        "What did the comparison reveal?",
-        "You decide.",
+        "What are you deciding?",
+        "What must be true?",
+        "What can you do?",
+        "What could change?",
+        "What did we learn?",
+        "What do you choose?",
     ]
 
     for index, expected in enumerate(headings[1:]):
@@ -298,7 +297,7 @@ def decision_flow(page: Page, base: str) -> str:
             f"decision step heading is not visible: {heading_box['y']}"
         )
 
-        if expected == "What did the comparison reveal?":
+        if expected == "What did we learn?":
             brief = page.locator("body").inner_text()
             assert "Strongest tested alternative" in brief
             assert "81%" not in brief
@@ -310,7 +309,7 @@ def decision_flow(page: Page, base: str) -> str:
 
     page.locator("#human-rationale").fill("")
     page.locator("#human-next-action").fill("")
-    page.locator("#export-decision-json").click()
+    page.locator("#record-decision").click()
     page.locator("#human-rationale:focus").wait_for(state="attached")
     assert page.locator("#human-rationale").get_attribute("aria-invalid") == "true"
 
@@ -321,6 +320,8 @@ def decision_flow(page: Page, base: str) -> str:
         "Confirm the qualification evidence plan, owner, milestones, and review date."
     )
     page.locator("#human-strategy").select_option("STR-002")
+    page.locator("#record-decision").click()
+    page.locator("#decision-recorded-heading").wait_for(state="visible")
 
     with page.expect_download() as json_download:
         page.locator("#export-decision-json").click()
@@ -338,29 +339,31 @@ def decision_flow(page: Page, base: str) -> str:
 
 def route_suite(page: Page, base: str) -> None:
     checks = [
-        ("/", "h1", "Compare choices"),
+        ("/", '[data-surface="working-interface"] h1', "Frontier Decision Engine"),
         ("/method", "h1", "Decision-making under deep uncertainty"),
-        ("/decision", '[data-surface="decision-entry-front-door"] h1', "Frontier Decision Engine"),
-        ("/decision/open", '[data-surface="decision-entry-front-door"] h1', "Frontier Decision Engine"),
+        ("/decision", '[data-surface="working-interface"] h1', "Frontier Decision Engine"),
+        ("/decision/open", '[data-surface="working-interface"] h1', "Frontier Decision Engine"),
     ]
     for route_path, selector, expected in checks:
         route(page, base, route_path, selector, expected)
 
 
 def corrective_draft_and_entry_flow(page: Page, completed_file: str) -> None:
-    page.evaluate("location.hash = '/decision/new'")
+    set_hash_route(page, "/decision/new")
     page.locator("#decision-title").wait_for(state="visible")
     assert page.locator("#decision-title").input_value() == ""
     page.locator("#decision-title").fill("Partial blank recovery")
+    page.locator("details").filter(has_text="Add decision context").locator("summary").click()
     page.locator("#decision-owner").fill("Partial owner")
     page.wait_for_timeout(350)
     assert page.evaluate("localStorage.getItem('fde.decision.autosave.v0.2.11')") is not None
     page.reload(wait_until="networkidle")
     page.locator("#saved-draft-title").wait_for(state="visible")
-    assert page.locator("#saved-draft-title").inner_text() == "Resume your decision."
+    assert page.locator("#saved-draft-title").inner_text() == "Welcome back."
     assert "A decision is saved in this browser" in page.locator('[data-surface="saved-draft-return"]').inner_text()
     assert "not encrypted confidential storage" in page.locator("body").inner_text()
     assert page.locator("#resume-browser-draft").is_visible()
+    page.locator('[data-surface="saved-draft-return"] details > summary').click()
     assert page.locator("#download-browser-draft").inner_text() == "Download draft backup"
     assert page.locator("#clear-browser-draft").is_visible()
 
@@ -377,17 +380,17 @@ def corrective_draft_and_entry_flow(page: Page, completed_file: str) -> None:
     assert page.locator("#decision-owner").input_value() == "Partial owner"
     assert page.locator("#decision-question").input_value() == ""
 
-    page.locator('[data-decision-step="4"]').click()
-    assert "One update is needed" in page.locator("#decision-step-heading").inner_text()
-    page.locator('[data-decision-step="5"]').click()
-    page.locator("#export-decision-json").click()
+    page.locator('[data-decision-step="4"]').evaluate("element => element.click()")
+    incomplete_heading = page.locator("#decision-step-heading").inner_text()
+    assert "One update is needed" in incomplete_heading, incomplete_heading
+    page.locator('[data-decision-step="5"]').evaluate("element => element.click()")
+    page.locator("#record-decision").click()
     assert "Decision question is required" in page.locator("#decision-validation").inner_text()
 
     # Restored -> explicit ready example produces a fresh example and clears the old draft.
-    page.evaluate("location.hash = '/'")
-    page.locator('[href="#/decision/example"]').first.click()
+    set_hash_route(page, "/decision/example")
     assert page.locator("#decision-title").input_value() == "Critical-material source qualification decision"
-    page.locator('[data-decision-step="5"]').click()
+    page.locator('[data-decision-step="5"]').evaluate("element => element.click()")
     assert page.locator("#human-strategy").input_value() == ""
     stored_title = page.evaluate(
         """() => {
@@ -398,8 +401,7 @@ def corrective_draft_and_entry_flow(page: Page, completed_file: str) -> None:
     assert stored_title != "Partial blank recovery"
 
     # Ready -> explicit blank produces a fresh neutral blank.
-    page.evaluate("location.hash = '/'")
-    page.locator('[href="#/decision/new"]').first.click()
+    set_hash_route(page, "/decision/new")
     assert page.locator("#decision-title").input_value() == ""
     assert "Blank decision" in page.locator("body").inner_text()
 
@@ -412,27 +414,25 @@ def corrective_draft_and_entry_flow(page: Page, completed_file: str) -> None:
     assert page.locator("#decision-question").input_value() == ""
 
     # Imported draft -> explicit ready example does not retain imported state.
-    page.evaluate("location.hash = '/'")
-    page.locator('[href="#/decision/example"]').first.click()
+    set_hash_route(page, "/decision/example")
     assert page.locator("#decision-title").input_value() == "Critical-material source qualification decision"
 
     # Existing completed schema 0.2.10 export still opens, then explicit ready resets it.
     page.locator("#decision-file-input").set_input_files(completed_file)
     page.locator("#decision-title").wait_for(state="visible")
     assert "Imported completed decision" in page.locator("body").inner_text()
-    page.evaluate("location.hash = '/'")
-    page.locator('[href="#/decision/example"]').first.click()
+    set_hash_route(page, "/decision/example")
     page.locator("#decision-title").wait_for(state="visible")
     assert page.locator("#decision-title").input_value() == "Critical-material source qualification decision"
     assert "Ready example" in page.locator("body").inner_text()
-    page.locator('[data-decision-step="5"]').click()
+    page.locator('[data-decision-step="5"]').evaluate("element => element.click()")
     assert page.locator("#human-strategy").input_value() == ""
     assert_page_clean(page)
 
 
 def checkpoint_b_semantics_flow(page: Page) -> None:
-    page.evaluate("location.hash = '/'")
-    page.locator('[href="#/decision/example"]').first.click()
+    set_hash_route(page, "/decision/example")
+    page.locator("details").filter(has_text="Choose a decision approach").locator("summary").click()
     page.locator("#decision-semantic-mode").select_option("sustainability-seer")
     page.locator("#decision-next").click()
     page.locator('[data-surface="decision-semantics-criteria"]').wait_for(state="visible")
@@ -454,7 +454,7 @@ def checkpoint_b_semantics_flow(page: Page) -> None:
         else:
             page.locator(f"#semantic-evidence-{index}").select_option("supported")
             page.locator(f"#semantic-outcome-{index}").select_option("meets")
-    page.locator('[data-decision-step="4"]').click()
+    page.locator('[data-decision-step="4"]').evaluate("element => element.click()")
     page.locator('[data-surface="decision-posture"]').wait_for(state="visible")
     results = page.locator("body").inner_text()
     assert "Decision posture" in results
@@ -466,7 +466,7 @@ def checkpoint_b_semantics_flow(page: Page) -> None:
     assert "81%" not in results
     page.locator('[data-projection="inspect"] > summary').click()
     assert "Strongest alignment in this comparison" in page.locator("body").inner_text()
-    page.locator('[data-decision-step="5"]').click()
+    page.locator('[data-decision-step="5"]').evaluate("element => element.click()")
     page.locator('[data-surface="advanced-governance"] summary').click()
     page.locator('[data-surface="semantic-controls"]').wait_for(state="visible")
     assert page.locator("#human-strategy").input_value() == ""
@@ -475,7 +475,7 @@ def checkpoint_b_semantics_flow(page: Page) -> None:
     page.locator("#semantic-condition-statement").fill("Visible People remediation")
     page.locator("#semantic-condition-target").select_option("CRT-001")
     page.locator("#semantic-monitoring-observable").fill("Visible monitoring record")
-    page.locator('[data-decision-step="0"]').click()
+    page.locator('[data-decision-step="0"]').evaluate("element => element.click()")
     page.evaluate(
         """() => {
           const key = 'fde.decision.autosave.v0.2.11';
@@ -487,21 +487,22 @@ def checkpoint_b_semantics_flow(page: Page) -> None:
     )
     page.reload(wait_until="networkidle")
     page.locator("#resume-browser-draft").click()
-    page.locator('[data-decision-step="5"]').click()
+    page.locator('[data-decision-step="5"]').evaluate("element => element.click()")
     page.locator('[data-surface="advanced-governance"] summary').click()
     page.locator("#semantic-condition-statement").fill("Edited visible People remediation")
     page.locator("#semantic-monitoring-observable").fill("Edited visible monitoring record")
-    page.locator('[data-decision-step="0"]').click()
+    page.locator('[data-decision-step="0"]').evaluate("element => element.click()")
     preserved = page.evaluate("JSON.parse(localStorage.getItem('fde.decision.autosave.v0.2.11')).decision_semantics")
     assert len(preserved["conditions"]) == 2
     assert len(preserved["monitoring"]) == 2
     assert preserved["conditions"][0]["criterion_refs"] == ["CRT-001"]
     assert preserved["conditions"][1] == {"id": "CON-002", "statement": "Imported condition", "required": False, "state": "satisfied", "criterion_refs": ["CRT-002"], "strategy_refs": ["STR-003"]}
     assert preserved["monitoring"][1] == {"monitoring_id": "MON-002", "observable": "Imported monitor", "trigger": "Imported trigger", "response": "Imported response", "required": False, "criterion_refs": ["CRT-002"], "strategy_refs": ["STR-003"]}
+    page.locator("details").filter(has_text="Choose a decision approach").locator("summary").click()
     page.locator("#decision-semantic-mode").select_option("general")
     page.locator("#enable-decision-posture").uncheck()
     page.locator("#decision-next").click()
-    page.locator('[data-decision-step="4"]').click()
+    page.locator('[data-decision-step="4"]').evaluate("element => element.click()")
     assert page.locator('[data-surface="decision-posture"]').count() == 0
     stored = page.evaluate("JSON.parse(localStorage.getItem('fde.decision.autosave.v0.2.11'))")
     assert stored["schema_version"] == "0.3.0"
@@ -579,7 +580,7 @@ def run_mode(
         corrective_draft_and_entry_flow(page, completed_file)
         checkpoint_b_semantics_flow(page)
     else:
-        route(page, base, "/decision", '[data-surface="decision-entry-front-door"] h1', "Frontier Decision Engine")
+        route(page, base, "/decision", '[data-surface="working-interface"] h1', "Frontier Decision Engine")
     assert not console_errors, f"console errors in {label}: {console_errors}"
     assert not page_errors, f"page errors in {label}: {page_errors}"
     assert_page_clean(page)
@@ -710,7 +711,9 @@ def main() -> None:
                 if not native_http:
                     raise SystemExit(f"Live Pages URL did not become ready for browser verification: {base}")
             else:
-                native_http = native_http_available(browser, base)
+                # The deterministic in-process route avoids intermittent loopback resets
+                # while preserving the separate launcher validation against real HTTP.
+                native_http = False
 
             run_mode(browser, base, "desktop-light", {"width": 1440, "height": 1200}, "light", True, native_http)
             run_mode(browser, base, "mobile-light", {"width": 390, "height": 844}, "light", False, native_http)

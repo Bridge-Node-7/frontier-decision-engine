@@ -83,15 +83,16 @@ test('walkthrough has exactly six aligned stages and no-JS progressive enhanceme
   assert.doesNotMatch(source, /\.example-steps/);
 });
 
-test('canonical Decision Lab entry makes real work primary and walkthrough optional', async () => {
+test('canonical FDE entry opens the editable working experience and keeps help optional', async () => {
   const source = await readFile(new URL('../site/src/decision-ui.js', import.meta.url), 'utf8');
-  assert.match(source, /data-surface="decision-entry-front-door"/);
+  const app = await readFile(new URL('../site/src/app.js', import.meta.url), 'utf8');
+  assert.match(source, /data-surface="working-interface"/);
   assert.match(source, /Frontier Decision Engine/);
   assert.match(source, /What are you deciding\?/);
-  assert.match(source, /id="start-blank-decision" href="#\/decision\/new"/);
-  assert.match(source, /id="start-ready-example" href="#\/decision\/example"/);
-  assert.match(source, /See how it works →/);
-  assert.match(source, /if \(!entryMode\) \{\s*renderDecisionEntry/);
+  assert.match(source, /primary-decision-field/);
+  assert.match(source, /id="use-ready-example"/);
+  assert.match(source, /href="\.\/start\.html">How it works/);
+  assert.match(app, /if \(path === '\/'\) \{\s*document\.title = 'Frontier Decision Engine'/);
 });
 
 test('0.3.0 score rationale is optional, portable, and does not alter comparison', () => {
