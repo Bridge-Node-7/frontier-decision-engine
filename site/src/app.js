@@ -27,7 +27,7 @@ function renderHome() {
       <div class="engine-intro stack">
         <span class="eyebrow">Bridge Node 7 · Frontier Decision Engine</span>
         <h1><span class="gradient-text">Compare choices</span><br>when the future is uncertain.</h1>
-        <p class="lede">Frontier Decision Engine is a working decision interface. It helps you compare practical choices across the same possible futures and record why a decision advances.</p>
+        <p class="lede">Compare practical choices across possible futures, then record the human decision.</p>
         <div class="actions">
           ${badge('Open source')}${badge('Runs in your browser')}${badge('Transparent inputs')}${badge('Human decides')}
         </div>
@@ -36,13 +36,10 @@ function renderHome() {
       <aside class="launch-panel panel stack" aria-labelledby="launch-title">
         <span class="interface-label">Working application</span>
         <h2 id="launch-title">Start here.</h2>
-        <p>Start with an empty bounded decision, or explore a synthetic critical-material example.</p>
+        <p>Begin fresh or explore a synthetic example.</p>
         <a class="button primary launch-primary" data-action="start-decision" href="#/decision/new">Start a decision</a>
-        <span class="launch-note">Opens the six-stage Decision Lab with user content empty.</span>
         <a class="button" data-action="open-decision-lab" href="#/decision/example">Try the ready example</a>
-        <span class="launch-note">Opens the same Decision Lab with synthetic analysis inputs and no human decision preselected.</span>
         <a class="button" data-action="open-saved-decision" href="#/decision/open">Open an FDE file</a>
-        <span class="launch-note">Open a completed decision file or an in-progress draft backup.</span>
         <a class="quiet-link" data-action="open-walkthrough" href="./start.html">See the walkthrough first →</a>
         <div class="launch-privacy">No account. No default upload. Changes save in this browser.</div>
       </aside>
@@ -96,7 +93,7 @@ function renderMethod() {
     <section class="stack" data-surface="method">
       <div class="section-head">
         <div><span class="eyebrow">Method</span><h1 style="font-size:clamp(2rem,5vw,3.8rem)">Decision-making under deep uncertainty.</h1></div>
-        <p>Use this approach when no single forecast is reliable. Compare the same choices across several plausible futures, keep the goals separate, and preserve the human judgment.</p>
+        <p>Compare the same choices across plausible futures. Keep trade-offs and human judgment visible.</p>
       </div>
 
       <div class="final-three-grid">

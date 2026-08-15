@@ -252,10 +252,10 @@ def decision_flow(page: Page, base: str) -> str:
     headings = [
         "What are you trying to choose?",
         "What matters?",
-        "What could you actually do?",
-        "Explore more than one possible future",
-        "How do the choices perform across changing conditions?",
-        "What advances next?",
+        "What can you actually do?",
+        "What may change?",
+        "What did the comparison reveal?",
+        "You decide.",
     ]
 
     for index, expected in enumerate(headings[1:]):
@@ -277,7 +277,7 @@ def decision_flow(page: Page, base: str) -> str:
             f"decision step heading is not visible: {heading_box['y']}"
         )
 
-        if expected == "How do the choices perform across changing conditions?":
+        if expected == "What did the comparison reveal?":
             brief = page.locator("body").inner_text()
             assert "Strongest tested alternative" in brief
             assert "81%" not in brief
@@ -575,11 +575,32 @@ def no_js_walkthrough(browser) -> None:
     for index in range(6):
         assert panels.nth(index).is_visible(), f"no-JS walkthrough stage {index + 1} is hidden"
     body = page.locator("body").inner_text()
-    for text in ["Strongest tested alternative", "Decision posture", "Recorded human decision", "What would change this decision?", "Open the working Decision Lab"]:
+    for text in ["Synthetic example", "Strongest tested alternative", "Decision posture", "Recorded human decision", "What would change this decision?", "Open Decision Lab"]:
         assert text in body
     assert page.evaluate("document.documentElement.scrollWidth <= window.innerWidth")
     context.close()
     print("no-js-six-stage-walkthrough: PASS")
+
+
+def walkthrough_front_door(browser) -> None:
+    for viewport in ({"width": 1440, "height": 900}, {"width": 375, "height": 812}):
+        context = browser.new_context(viewport=viewport, reduced_motion="reduce")
+        install_static_route(context)
+        page = context.new_page()
+        page.goto("http://fde.test/start.html", wait_until="domcontentloaded")
+        hero = page.locator(".example-hero").inner_text()
+        for text in ["WALKTHROUGH", "See the decision flow.", "Turn evidence and uncertainty into a clear next decision.", "Synthetic example · 6 steps", "Start walkthrough", "Open Decision Lab"]:
+            assert text in hero
+        for removed in ["Not the working interface", "Six-stage method", "Your work stays in this browser"]:
+            assert removed not in hero
+        assert page.locator('[data-action="start-walkthrough"]').is_visible()
+        assert page.locator('[data-action="start-walkthrough"]').evaluate("el => getComputedStyle(el).minHeight === '44px' || el.getBoundingClientRect().height >= 44")
+        page.locator('[data-action="start-walkthrough"]').click()
+        page.locator("#stage-1:focus").wait_for(state="attached")
+        assert page.locator("#stage-1").is_visible()
+        assert page.evaluate("document.documentElement.scrollWidth <= window.innerWidth")
+        context.close()
+    print("walkthrough-front-door-desktop-mobile: PASS")
 
 
 def main() -> None:
@@ -625,6 +646,7 @@ def main() -> None:
                 "light", False, native_http, forced_colors="active"
             )
             no_js_walkthrough(browser)
+            walkthrough_front_door(browser)
         finally:
             browser.close()
             if server is not None:

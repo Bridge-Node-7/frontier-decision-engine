@@ -12,8 +12,8 @@
 <script type="module" src="./src/theme.js"></script>
 <script type="module" src="./src/shell.js"></script>
 <style>
-.example-page{max-width:960px;margin:0 auto;padding:3rem 0 5rem}
-.example-hero{text-align:center;padding:2rem 0}.example-hero h1{max-width:none;margin-inline:auto}.example-hero p{max-width:720px;margin-inline:auto}
+.example-page{max-width:960px;margin:0 auto;padding:2rem 0 5rem}
+.example-hero{text-align:center;padding:1.25rem 0 .5rem}.example-hero h1{max-width:none;margin-inline:auto}.example-hero p{max-width:620px;margin-inline:auto}.example-meta{display:block;color:var(--muted);font-size:.875rem;font-weight:750;letter-spacing:.02em}.example-hero .actions{justify-content:center;margin-top:1rem}
 .example-steps{display:flex;gap:.5rem;flex-wrap:wrap;justify-content:center;margin:1.5rem 0}
 .example-step{border:1px solid var(--line);background:rgba(255,255,255,.04);color:var(--muted);border-radius:999px;padding:.75rem 1rem;cursor:pointer;font-weight:850}
 .example-step[aria-current="step"]{background:var(--accent);color:var(--on-accent);border-color:transparent}
@@ -22,7 +22,7 @@
 .example-item{padding:1.2rem;border:1px solid var(--line);border-radius:20px;background:rgba(255,255,255,.035)}
 .future-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:.75rem;margin-top:1rem}
 .future{padding:1rem;border:1px solid var(--line);border-radius:16px;background:rgba(255,255,255,.03)}
-@media(max-width:700px){.example-grid,.future-grid{grid-template-columns:1fr}}
+@media(max-width:700px){.example-page{padding-top:1rem}.example-hero{padding-top:.5rem}.example-grid,.future-grid{grid-template-columns:1fr}.example-steps{justify-content:flex-start;flex-wrap:nowrap;overflow-x:auto;padding-bottom:.35rem}.example-step{flex:0 0 auto}}
 </style>
 </head>
 <body>
@@ -46,14 +46,11 @@
 
 <main id="walkthrough" class="shell example-page" data-surface="walkthrough">
   <section class="example-hero" aria-labelledby="walkthrough-title">
-    <span class="eyebrow">Walkthrough · Not the working interface</span>
+    <span class="eyebrow">Walkthrough</span>
     <h1 id="walkthrough-title"><span class="gradient-text">See the decision flow.</span></h1>
-    <p class="lede">This short walkthrough explains the same critical-material case used in the Decision Lab. Open the Decision Lab when you are ready to edit the case and create a decision record.</p>
-    <div class="data-class-banner"><strong>Synthetic walkthrough.</strong> This walkthrough explains the flow. It does not run the comparison or save a decision.</div>
-    <div class="actions" style="justify-content:center"><a class="button primary" data-action="open-decision-lab" href="./#/decision">Open the working Decision Lab</a></div>
-    <p><strong>Six-stage method:</strong> frame the decision; map goals and requirements; describe choices; explore futures; review results; record the human decision and next action.</p>
-    <p>The strongest tested alternative, Decision posture, and recorded human decision are separate. A person retains decision authority.</p>
-    <p>Your work stays in this browser unless you download or share it. This public browser-local tool is not presented as an approved environment for sensitive or controlled information. Use only information appropriate for this environment.</p>
+    <p class="lede">Turn evidence and uncertainty into a clear next decision.</p>
+    <span class="example-meta">Synthetic example · 6 steps</span>
+    <div class="actions"><a class="button primary" data-action="start-walkthrough" href="#stage-1">Start walkthrough →</a><a class="button" data-action="open-decision-lab" href="./#/decision">Open Decision Lab</a></div>
   </section>
 
   <nav class="example-steps" aria-label="Walkthrough steps">
@@ -65,22 +62,22 @@
     <button class="example-step" data-example="6">6. Choose next step</button>
   </nav>
 
-  <section class="panel example-panel active" data-panel="1">
+  <section id="stage-1" class="panel example-panel active" data-panel="1" tabindex="-1">
     <span class="eyebrow">1 · Your decision</span>
     <h2>Which source-qualification pathway should advance?</h2>
-    <p>The decision owner must choose a practical next step while the future remains uncertain.</p>
+    <p>Choose a practical next step while the future remains uncertain.</p>
   </section>
 
   <section class="panel example-panel" data-panel="2">
     <span class="eyebrow">2 · What matters</span>
-    <h2>Readiness, continuity, affordability, and flexibility.</h2>
-    <p>Each goal has a visible good-enough line. The goals remain separate so one favorable number cannot hide a trade-off.</p>
+    <h2>What matters?</h2>
+    <p>Readiness · Continuity · Affordability · Flexibility</p>
     <details class="word-helper"><summary>Method terms</summary><p>A goal used in the comparison may be called a <strong>measure</strong>. Its good-enough line may be called a <strong>threshold</strong>.</p></details>
   </section>
 
   <section class="panel example-panel" data-panel="3">
     <span class="eyebrow">3 · Your choices</span>
-    <h2>Three actions the program can take.</h2>
+    <h2>What can we actually do?</h2>
     <div class="example-grid">
       <article class="example-item"><h3>Maintain the current source</h3><p>Lower near-term effort, with continued concentration.</p></article>
       <article class="example-item"><h3>Qualify a second source</h3><p>Add optionality through a bounded qualification effort.</p></article>
@@ -90,28 +87,29 @@
 
   <section class="panel example-panel" data-panel="4">
     <span class="eyebrow">4 · What may change</span>
-    <h2>Use several conditions, not one forecast.</h2>
+    <h2>What may change?</h2>
     <div class="future-grid">
       <div class="future"><strong>Stable demand and source performance</strong></div>
       <div class="future"><strong>Qualification takes longer</strong></div>
       <div class="future"><strong>Primary-source disruption</strong></div>
       <div class="future"><strong>Budget remains constrained</strong></div>
     </div>
-    <p>Every choice is compared against the same four futures. No probability is assigned.</p>
+    <p>Several plausible futures. No probability required.</p>
   </section>
 
   <section class="panel example-panel" data-panel="5">
     <span class="eyebrow">5 · What we learned</span>
-    <h2>Separate the comparison from the control point.</h2>
-    <div class="example-grid"><div class="example-item"><strong>Strongest tested alternative</strong><p>Qualify a second source</p></div><div class="example-item"><strong>Decision posture</strong><p>HOLD</p></div><div class="example-item"><strong>Controlling issue</strong><p>Independent qualification evidence remains unresolved.</p></div></div>
-    <p><strong>What would change this decision?</strong> Obtain the declared qualification evidence.</p><p>Decision posture is separate from the <strong>Recorded human decision</strong>.</p>
+    <h2>Strongest does not mean ready.</h2>
+    <div class="example-grid"><div class="example-item"><strong>Decision posture</strong><p>HOLD</p></div><div class="example-item"><strong>Controlling issue</strong><p>Independent qualification evidence remains unresolved.</p></div><div class="example-item"><strong>What would change this decision?</strong><p>Obtain the declared qualification evidence.</p></div></div>
+    <p><strong>Strongest tested alternative:</strong> Qualify a second source</p>
   </section>
 
   <section class="panel example-panel" data-panel="6">
     <span class="eyebrow">6 · Choose next step</span>
-    <h2>A person records the decision.</h2>
+    <h2>You decide.</h2>
     <p><strong>Choice:</strong> Qualify a second source.</p><p><strong>Why:</strong> The decision owner accepts the bounded trade-off while keeping the evidence condition visible.</p><p><strong>Next action:</strong> Obtain and review the declared qualification evidence.</p>
-    <div class="actions"><a class="button primary" data-action="open-decision-lab" href="./#/decision">Open the working Decision Lab</a><a class="button" href="./">Return to Overview</a></div>
+    <p class="help">The comparison informs. A person decides. The <strong>Recorded human decision</strong> remains yours.</p>
+    <div class="actions"><a class="button primary" data-action="open-decision-lab" href="./#/decision">Open Decision Lab</a><a class="button" href="./">Return to Overview</a></div>
   </section>
 </main>
 
@@ -126,6 +124,11 @@
 document.documentElement.classList.add('js');
 const buttons=[...document.querySelectorAll('[data-example]')];
 const panels=[...document.querySelectorAll('.example-panel')];
+document.querySelector('[data-action="start-walkthrough"]')?.addEventListener('click',event=>{
+  event.preventDefault();
+  document.querySelector('#stage-1')?.focus({preventScroll:true});
+  document.querySelector('#stage-1')?.scrollIntoView({behavior:matchMedia('(prefers-reduced-motion: reduce)').matches?'auto':'smooth',block:'start'});
+});
 buttons.forEach(button=>button.addEventListener('click',()=>{
   buttons.forEach(item=>item.removeAttribute('aria-current'));
   panels.forEach(item=>item.classList.remove('active'));
