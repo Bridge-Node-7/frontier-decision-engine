@@ -320,23 +320,10 @@ def activate_ready_example(page: Page) -> None:
         assert button.is_visible(), "ready-example button is not visible"
         assert button.is_enabled(), "ready-example button is not enabled"
         button.click()
-        page.wait_for_function(
-            """([expectedMessage, expectedQuestion]) => {
-              const confirmation = window.__fdeReadyExampleConfirmation;
-              const status = document.querySelector('#decision-save-status');
-              const question = document.querySelector('#decision-question');
-              const heading = document.querySelector('#decision-step-heading-0');
-              return confirmation?.invoked === true
-                && confirmation.message === expectedMessage
-                && confirmation.result === true
-                && status?.textContent?.trim() === 'Synthetic example'
-                && question?.value === expectedQuestion
-                && document.querySelectorAll('[data-decision-stage]').length === 6
-                && heading !== null
-                && heading.getClientRects().length > 0;
-            }""",
-            arg=[expected_message, expected_question],
-        )
+        page.locator("#decision-save-status").filter(
+            has_text=re.compile(r"^Synthetic example$")
+        ).wait_for(state="visible")
+        page.locator("#decision-step-heading-0").wait_for(state="visible")
         confirmation = page.evaluate(
             """() => ({
               invoked: window.__fdeReadyExampleConfirmation?.invoked ?? false,
