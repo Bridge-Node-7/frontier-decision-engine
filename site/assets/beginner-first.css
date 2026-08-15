@@ -143,6 +143,7 @@ a.primary {
 .fde-stage[open]>summary{border-bottom:1px solid rgba(255,255,255,.08)}
 .fde-stage[open] .stage-summary{visibility:hidden}
 .stage-body{padding:clamp(1.25rem,3vw,2.5rem) clamp(.2rem,2vw,1.5rem) clamp(1.5rem,3vw,2.5rem)}
+.stage-body>div.stack{grid-template-columns:minmax(0,1fr)}
 .stage-body>div.stack>div:first-child h2{margin-top:0;font-size:clamp(1.8rem,3.5vw,3rem)}
 .stage-actions{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:1rem;align-items:center;margin-top:2rem;padding-top:1.2rem;border-top:1px solid var(--line)}
 .stage-actions .primary{min-height:50px}
