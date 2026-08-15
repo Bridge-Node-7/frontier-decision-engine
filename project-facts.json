@@ -1,21 +1,22 @@
 {
-  "applicationVersion": "0.2.13",
+  "applicationVersion": "0.3.0",
   "schemaVersions": {
     "decision": "0.2.10",
     "opvCase": "0.1.0"
   },
-  "testCount": 81,
-  "routeCount": 4,
+  "testCount": 117,
+  "discoveredHashRouteLiteralCount": 5,
   "browserModes": [
     "desktop-light",
     "mobile-light",
+    "mobile-375",
     "desktop-dark",
     "reflow-200-equivalent",
     "reflow-400-equivalent",
     "forced-colors"
   ],
-  "manifestEntryCount": 27,
-  "datasetCounts": {
+  "manifestEntryCount": 30,
+  "retainedReferenceArtifactItemCounts": {
     "profiles/phenomena/profile.json": 5,
     "site/data/experiences.json": 41,
     "site/data/morphology.json": 209,

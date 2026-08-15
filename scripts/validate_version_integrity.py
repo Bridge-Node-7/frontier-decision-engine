@@ -32,6 +32,8 @@ def main() -> int:
     lock = load_json("package-lock.json")
     facts = load_json("project-facts.json")
     decision = load_json("examples/phenomena-second-station/decision.fde.json")
+    semantic_schema = load_json("schemas/decision-0.3.0.schema.json")
+    deployed_semantic_schema = load_json("site/schemas/decision-0.3.0.schema.json")
     version = str(package.get("version", ""))
     if not re.fullmatch(r"\d+\.\d+\.\d+", version):
         fail(f"invalid package version: {version!r}", errors)
@@ -52,13 +54,6 @@ def main() -> int:
     expected_module = f"export const APPLICATION_VERSION = '{version}';\n"
     if runtime_module != expected_module:
         fail("site/src/version.js does not match package.json", errors)
-    app = load_text("site/src/app.js")
-    if "import { APPLICATION_VERSION } from './version.js';" not in app:
-        fail("Method page does not import the application-version authority", errors)
-    if "Version ${APPLICATION_VERSION} uses" not in app:
-        fail("Method page does not render the application-version authority", errors)
-    if re.search(r"Version \d+\.\d+\.\d+ uses", app):
-        fail("Method page contains a hard-coded application version", errors)
     decision_ui = load_text("site/src/decision-ui.js")
     if "import { APPLICATION_VERSION } from './version.js';" not in decision_ui:
         fail("readable export does not import the application-version authority", errors)
@@ -82,12 +77,16 @@ def main() -> int:
         fail("decision example schema does not match project-facts", errors)
     if schema != "0.2.10":
         fail(f"unexpected decision schema change: {schema}", errors)
+    if semantic_schema.get("properties", {}).get("schema_version", {}).get("const") != "0.3.0":
+        fail("parallel semantic decision schema 0.3.0 is missing or invalid", errors)
+    if semantic_schema != deployed_semantic_schema:
+        fail("source and deployed semantic decision schemas differ", errors)
     if errors:
         print("VERSION INTEGRITY FAILED")
         for error in errors:
             print(f"- {error}")
         return 1
-    print(f"VERSION INTEGRITY PASS — application {version}; decision schema {schema}")
+    print(f"VERSION INTEGRITY PASS — application {version}; legacy decision schema {schema}; semantic decision schema 0.3.0")
     return 0
 
 if __name__ == "__main__":

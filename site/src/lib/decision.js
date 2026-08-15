@@ -1,3 +1,5 @@
+import { SEMANTIC_SCHEMA_VERSION, validateDecisionSemantics } from './semantics.js';
+
 const clamp = (value, minimum = 0, maximum = 100) => Math.min(maximum, Math.max(minimum, Number(value)));
 
 export function createDecisionCase() {
@@ -60,10 +62,63 @@ export function createDecisionCase() {
       { scenario_id: 'SCN-003', label: 'Primary-source disruption', description: 'The current source becomes temporarily unavailable.', states: { 'UNC-001': 'higher', 'UNC-002': 'planned', 'UNC-003': 'disrupted' }, strategy_modifiers: { 'STR-001': { 'OBJ-001': -35, 'OBJ-002': -45, 'OBJ-003': -5, 'OBJ-004': -15 }, 'STR-002': { 'OBJ-001': 5, 'OBJ-002': 10, 'OBJ-003': -5, 'OBJ-004': 0 }, 'STR-003': { 'OBJ-001': 10, 'OBJ-002': 15, 'OBJ-003': -15, 'OBJ-004': 0 } } },
       { scenario_id: 'SCN-004', label: 'Budget remains constrained', description: 'The program must advance within a tighter cost boundary.', states: { 'UNC-001': 'higher', 'UNC-002': 'extended', 'UNC-003': 'stable' }, strategy_modifiers: { 'STR-001': { 'OBJ-001': 0, 'OBJ-002': 0, 'OBJ-003': 5, 'OBJ-004': 0 }, 'STR-002': { 'OBJ-001': -5, 'OBJ-002': 0, 'OBJ-003': -20, 'OBJ-004': -5 }, 'STR-003': { 'OBJ-001': -5, 'OBJ-002': 5, 'OBJ-003': -30, 'OBJ-004': -10 } } },
     ],
-    human_decision: { selected_strategy_id: 'STR-002', rationale: 'The second-source pathway provides the strongest tested alignment while preserving flexibility.', next_action: 'Confirm the qualification evidence plan, owner, milestones, and review date.', approved_by: '', approved_at: null },
+    human_decision: { selected_strategy_id: '', rationale: '', next_action: '', approved_by: '', approved_at: null },
     adaptive_pathway: { act_now: ['Confirm the decision owner and evidence plan.', 'Define qualification milestones and review dates.'], monitor: ['Supplier evidence', 'Qualification progress', 'Capacity', 'Cost', 'Program demand'], triggers: ['Required qualification evidence is complete.', 'Continuity or readiness falls below the selected goal.'], contingencies: ['Adjust the qualification sequence.', 'Use a bounded reserve when near-term readiness requires support.'], reassessment: 'Review at each qualification milestone or when a declared trigger occurs.' },
     provenance: { model_type: 'transparent four-future comparison', probability_model_used: false, values_are_analyst_assigned: true, generated_at: createdAt },
   };
+}
+
+export function createBlankDecisionCase() {
+  const decision = createDecisionCase();
+  decision.title = '';
+  decision.profile = 'general';
+  decision.question = '';
+  decision.decision_owner = '';
+  decision.time_horizon = '';
+  decision.urgency = '';
+  decision.reversibility = '';
+  decision.stakeholders = [];
+  decision.evidence_summary = { known: [], assumed: [], unknown: [] };
+  decision.relationships.forEach((relationship) => {
+    relationship.statement = '';
+    relationship.evidence_class = 'unset';
+    relationship.confidence = 'unset';
+  });
+  decision.uncertainties.forEach((uncertainty) => {
+    uncertainty.label = '';
+    uncertainty.description = '';
+    uncertainty.states = ['state-a', 'state-b'];
+    uncertainty.source_status = 'unset';
+    uncertainty.reducibility = 'unset';
+  });
+  decision.objectives.forEach((objective) => {
+    objective.label = '';
+    objective.description = '';
+    objective.threshold = null;
+    objective.unit = '';
+    objective.critical = false;
+  });
+  decision.strategies.forEach((strategy) => {
+    strategy.label = '';
+    strategy.description = '';
+    strategy.action_now = '';
+    strategy.monitor = '';
+    strategy.trigger = '';
+    strategy.contingency = '';
+    for (const objectiveId of Object.keys(strategy.baseline)) strategy.baseline[objectiveId] = null;
+  });
+  decision.scenarios.forEach((scenario) => {
+    scenario.label = '';
+    scenario.description = '';
+    for (const uncertaintyId of Object.keys(scenario.states)) scenario.states[uncertaintyId] = 'state-a';
+    for (const modifiers of Object.values(scenario.strategy_modifiers)) {
+      for (const objectiveId of Object.keys(modifiers)) modifiers[objectiveId] = null;
+    }
+  });
+  decision.adaptive_pathway = { act_now: [], monitor: [], triggers: [], contingencies: [], reassessment: '' };
+  decision.provenance.model_type = 'bounded comparison draft';
+  decision.provenance.values_are_analyst_assigned = false;
+  return decision;
 }
 export const OUTCOME_STATE = Object.freeze({
   VALID_PASS: 'VALID_PASS',
@@ -250,7 +305,8 @@ export function validateDecisionCase(decisionCase) {
     if (ids.length !== new Set(ids).size) errors.push(`${label} IDs must be unique.`);
   };
 
-  if (decisionCase?.schema_version !== '0.2.10') errors.push('Unsupported decision schema version.');
+  if (!['0.2.10', SEMANTIC_SCHEMA_VERSION].includes(decisionCase?.schema_version)) errors.push('Unsupported decision schema version.');
+  if (decisionCase?.schema_version === SEMANTIC_SCHEMA_VERSION) errors.push(...validateDecisionSemantics(decisionCase.decision_semantics).errors);
   if (!/^FDE-[A-Z0-9-]+$/.test(decisionCase?.decision_id || '')) errors.push('Invalid decision ID.');
   for (const [label, value] of [
     ['Decision title', decisionCase?.title],
@@ -295,6 +351,10 @@ export function validateDecisionCase(decisionCase) {
     for (const field of ['action_now', 'monitor', 'trigger', 'contingency']) {
       if (!nonEmpty(strategy?.[field])) errors.push(`${strategy.label || strategy.strategy_id} requires ${field.replaceAll('_', ' ')}.`);
     }
+    if (decisionCase.schema_version === SEMANTIC_SCHEMA_VERSION) for (const [objectiveId, trace] of Object.entries(strategy.score_rationales || {})) {
+      if (!objectiveIds.has(objectiveId)) errors.push(`${strategy.label || strategy.strategy_id} has score rationale for an unavailable objective.`);
+      if (!['analyst-judgment', 'declared-rubric', 'other'].includes(trace?.basis) || !nonEmpty(trace?.rationale)) errors.push(`${strategy.label || strategy.strategy_id} score rationale for ${objectiveId} requires a valid basis and rationale.`);
+    }
   }
 
   for (const scenario of decisionCase?.scenarios || []) {
@@ -312,9 +372,12 @@ export function validateDecisionCase(decisionCase) {
   }
 
   const selected = decisionCase?.human_decision?.selected_strategy_id;
-  if (!strategyIds.has(selected)) errors.push('The selected human decision does not match an available strategy.');
-  if (!nonEmpty(decisionCase?.human_decision?.rationale)) errors.push('A human decision rationale is required.');
-  if (!nonEmpty(decisionCase?.human_decision?.next_action)) errors.push('A single next action is required.');
+  const rationale = decisionCase?.human_decision?.rationale;
+  const nextAction = decisionCase?.human_decision?.next_action;
+  const humanDecisionStarted = nonEmpty(selected) || nonEmpty(rationale) || nonEmpty(nextAction);
+  if (humanDecisionStarted && !strategyIds.has(selected)) errors.push('The selected human decision does not match an available strategy.');
+  if (humanDecisionStarted && !nonEmpty(rationale)) errors.push('A human decision rationale is required.');
+  if (humanDecisionStarted && !nonEmpty(nextAction)) errors.push('A single next action is required.');
 
   const pathway = decisionCase?.adaptive_pathway;
   for (const field of ['act_now', 'monitor', 'triggers', 'contingencies']) {
@@ -333,3 +396,89 @@ export function validateDecisionCase(decisionCase) {
   return { valid: errors.length === 0, errors };
 }
 
+export function validateCompletedDecisionCase(decisionCase) {
+  const nonEmpty = (value) => Boolean(String(value ?? '').trim());
+  const result = validateDecisionCase(decisionCase);
+  const errors = [...result.errors];
+  const strategyIds = new Set((decisionCase?.strategies || []).map((item) => item.strategy_id));
+  if (!strategyIds.has(decisionCase?.human_decision?.selected_strategy_id)) errors.push('Choose the human decision before downloading a final record.');
+  if (!nonEmpty(decisionCase?.human_decision?.rationale)) errors.push('A human decision rationale is required.');
+  if (!nonEmpty(decisionCase?.human_decision?.next_action)) errors.push('A single next action is required.');
+  if (decisionCase?.schema_version === SEMANTIC_SCHEMA_VERSION) errors.push(...validateDecisionSemantics(decisionCase.decision_semantics, { completed: true }).errors);
+  return { valid: errors.length === 0, errors: [...new Set(errors)] };
+}
+
+export function validateDraftDecisionCase(decisionCase) {
+  const errors = [];
+  const arrays = ['uncertainties', 'objectives', 'relationships', 'strategies', 'scenarios'];
+  const boundedLengths = { uncertainties: 3, objectives: 4, relationships: 3, strategies: 3, scenarios: 4 };
+  const nullableRange = (value, minimum, maximum) => value === null || (
+    typeof value === 'number' && Number.isFinite(value) && value >= minimum && value <= maximum
+  );
+  const ids = (items, field) => (items || []).map((item) => item?.[field]);
+
+  if (!decisionCase || typeof decisionCase !== 'object' || Array.isArray(decisionCase)) {
+    return { valid: false, errors: ['Draft backup must contain one decision object.'] };
+  }
+  if (!['0.2.10', SEMANTIC_SCHEMA_VERSION].includes(decisionCase.schema_version)) errors.push('Unsupported draft decision schema identity.');
+  if (decisionCase.schema_version === SEMANTIC_SCHEMA_VERSION) errors.push(...validateDecisionSemantics(decisionCase.decision_semantics).errors);
+  if (!/^FDE-[A-Z0-9-]+$/.test(decisionCase.decision_id || '')) errors.push('Invalid draft decision ID.');
+  for (const field of arrays) {
+    if (!Array.isArray(decisionCase[field]) || decisionCase[field].length !== boundedLengths[field]) {
+      errors.push(`Draft ${field} must preserve the bounded ${boundedLengths[field]}-item shape.`);
+    }
+  }
+
+  const objectiveIds = ids(decisionCase.objectives, 'objective_id');
+  const strategyIds = ids(decisionCase.strategies, 'strategy_id');
+  const uncertaintyIds = ids(decisionCase.uncertainties, 'uncertainty_id');
+  for (const [label, values] of [['objective', objectiveIds], ['strategy', strategyIds], ['uncertainty', uncertaintyIds]]) {
+    if (values.some((value) => !value) || new Set(values).size !== values.length) errors.push(`Draft ${label} IDs must be present and unique.`);
+  }
+
+  for (const objective of decisionCase.objectives || []) {
+    if (!nullableRange(objective?.threshold, 0, 100)) errors.push(`Draft threshold for ${objective?.objective_id || 'objective'} is invalid.`);
+    if (!['at-least', 'at-most'].includes(objective?.direction)) errors.push(`Draft direction for ${objective?.objective_id || 'objective'} is invalid.`);
+  }
+  for (const uncertainty of decisionCase.uncertainties || []) {
+    if (!Array.isArray(uncertainty?.states) || uncertainty.states.length < 1 || uncertainty.states.some((value) => typeof value !== 'string')) {
+      errors.push(`Draft states for ${uncertainty?.uncertainty_id || 'uncertainty'} are invalid.`);
+    }
+  }
+  for (const strategy of decisionCase.strategies || []) {
+    if (!strategy?.baseline || typeof strategy.baseline !== 'object') errors.push(`Draft baseline for ${strategy?.strategy_id || 'strategy'} is missing.`);
+    for (const objectiveId of objectiveIds) {
+      if (!nullableRange(strategy?.baseline?.[objectiveId], 0, 100)) errors.push(`Draft baseline for ${strategy?.strategy_id}/${objectiveId} is invalid.`);
+    }
+  }
+  for (const scenario of decisionCase.scenarios || []) {
+    for (const uncertaintyId of uncertaintyIds) {
+      const uncertainty = (decisionCase.uncertainties || []).find((item) => item.uncertainty_id === uncertaintyId);
+      if (!uncertainty?.states?.includes(scenario?.states?.[uncertaintyId])) errors.push(`Draft state for ${scenario?.scenario_id}/${uncertaintyId} is invalid.`);
+    }
+    for (const strategyId of strategyIds) {
+      for (const objectiveId of objectiveIds) {
+        if (!nullableRange(scenario?.strategy_modifiers?.[strategyId]?.[objectiveId], -100, 100)) {
+          errors.push(`Draft modifier for ${scenario?.scenario_id}/${strategyId}/${objectiveId} is invalid.`);
+        }
+      }
+    }
+  }
+  if (!decisionCase.human_decision || typeof decisionCase.human_decision !== 'object') {
+    errors.push('Draft human-decision state is missing.');
+  } else if (['selected_strategy_id', 'rationale', 'next_action'].some((field) => typeof decisionCase.human_decision[field] !== 'string')) {
+    errors.push('Draft human-decision fields are invalid.');
+  }
+  if (!decisionCase.evidence_summary || typeof decisionCase.evidence_summary !== 'object') {
+    errors.push('Draft evidence summary is missing.');
+  } else if (['known', 'assumed', 'unknown'].some((field) => !Array.isArray(decisionCase.evidence_summary[field]))) {
+    errors.push('Draft evidence-summary lists are invalid.');
+  }
+  if (!decisionCase.adaptive_pathway || typeof decisionCase.adaptive_pathway !== 'object') {
+    errors.push('Draft adaptive pathway is missing.');
+  } else if (['act_now', 'monitor', 'triggers', 'contingencies'].some((field) => !Array.isArray(decisionCase.adaptive_pathway[field]))) {
+    errors.push('Draft adaptive-pathway lists are invalid.');
+  }
+  if (!decisionCase.provenance || typeof decisionCase.provenance !== 'object') errors.push('Draft provenance is missing.');
+  return { valid: errors.length === 0, errors: [...new Set(errors)] };
+}

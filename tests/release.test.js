@@ -79,7 +79,7 @@ test('browser end-to-end harness covers the retained Decision Lab surface', asyn
   assert.match(capture, /OUTPUT = ROOT \/ "docs" \/ "screenshots" \/ f"v\{VERSION\}"/);
   assert.equal(runner.includes('wait_for_function'), false);
   assert.equal(capture.includes('wait_for_function'), false);
-  assert.match(runner, /#decision-step-heading:focus/);
+  assert.match(runner, /decision-step-heading-/);
   assert.equal(runner.includes('#case-step-heading:focus'), false);
   assert.match(packageData.scripts.check, /test:e2e/);
   assert.match(packageData.scripts.check, /test:closeout/);
@@ -90,10 +90,13 @@ test('cross-platform manifest generation uses file URL conversion rather than UR
   assert.equal(manifest.includes('.pathname'), false);
 });
 
-test('Decision Lab steps and incomplete-analysis state provide focusable headings', async () => {
+test('one-page FDE stages and incomplete-analysis state provide focusable headings', async () => {
   const decision = await read('site/src/decision-ui.js');
   const app = await read('site/src/app.js');
-  assert.equal((decision.match(/id="decision-step-heading" tabindex="-1"/g) || []).length, 7);
+  assert.equal((decision.match(/id="decision-step-heading-[0-5]" tabindex="-1"/g) || []).length, 7);
+  for (let index = 0; index < 6; index += 1) assert.match(decision, new RegExp(`decision-step-heading-${index}`));
+  assert.match(decision, /data-decision-stage/);
+  assert.match(decision, /toggle-all-stages/);
   assert.equal(app.includes('case-step-heading'), false);
   assert.match(decision, /scrollIntoView\(\{ block: 'start', behavior: 'auto' \}\)/);
 });

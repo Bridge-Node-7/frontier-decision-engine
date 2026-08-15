@@ -1,125 +1,19 @@
 <!doctype html>
 <html lang="en">
 <head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
-<meta name="description" content="A critical-material source-qualification walkthrough for the Frontier Decision Engine.">
-<meta name="theme-color" content="#050914">
-<title>Walkthrough | Frontier Decision Engine</title>
-<link rel="stylesheet" href="./assets/styles.css">
-<link rel="stylesheet" href="./assets/bridge-node-7-shell.css">
-<link rel="stylesheet" href="./assets/beginner-first.css">
-<script type="module" src="./src/theme.js"></script>
-<script type="module" src="./src/shell.js"></script>
-<style>
-.example-page{max-width:960px;margin:0 auto;padding:3rem 0 5rem}
-.example-hero{text-align:center;padding:2rem 0}.example-hero h1{max-width:none;margin-inline:auto}.example-hero p{max-width:720px;margin-inline:auto}
-.example-steps{display:flex;gap:.5rem;flex-wrap:wrap;justify-content:center;margin:1.5rem 0}
-.example-step{border:1px solid var(--line);background:rgba(255,255,255,.04);color:var(--muted);border-radius:999px;padding:.75rem 1rem;cursor:pointer;font-weight:850}
-.example-step[aria-current="step"]{background:var(--accent);color:var(--on-accent);border-color:transparent}
-.example-panel{display:none}.example-panel.active{display:block}
-.example-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:1rem}
-.example-item{padding:1.2rem;border:1px solid var(--line);border-radius:20px;background:rgba(255,255,255,.035)}
-.future-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:.75rem;margin-top:1rem}
-.future{padding:1rem;border:1px solid var(--line);border-radius:16px;background:rgba(255,255,255,.03)}
-@media(max-width:700px){.example-grid,.future-grid{grid-template-columns:1fr}}
-</style>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex">
+  <meta http-equiv="refresh" content="0; url=./index.html#/method">
+  <title>Frontier Decision Engine</title>
+  <link rel="canonical" href="https://bridgenode7.com/frontier-decision-engine/">
+  <script>location.replace('./index.html#/method');</script>
 </head>
 <body>
-<a class="skip-link" href="#walkthrough">Skip to walkthrough</a>
-<header class="site-header bn7-site-header">
-  <div class="shell header-inner">
-    <a class="brand bn7-brand" href="./" aria-label="Frontier Decision Engine home">
-      <span class="bn7-mark" aria-hidden="true"><span>7</span></span>
-      <span class="bn7-brand-copy"><strong>Bridge Node 7</strong><span>Frontier Decision Engine</span></span>
-    </a>
-    <button id="mobile-menu-toggle" class="mobile-menu-toggle" type="button" aria-controls="primary-navigation" aria-expanded="false">Menu</button>
-    <nav id="primary-navigation" data-open="false" aria-label="Primary navigation">
-      <a href="./">Overview</a>
-      <a href="./#/decision">Decision Lab</a>
-      <a href="./#/method">Method</a>
-      <button id="theme-toggle" type="button" class="theme-toggle">Dark appearance</button>
-      <a class="bn7-inquiry" href="mailto:contact@bridgenode7.com?subject=Bridge%20Node%207%20%7C%20Frontier%20Decision%20Engine">Strategic Inquiry</a>
-    </nav>
-  </div>
-</header>
-
-<main id="walkthrough" class="shell example-page" data-surface="walkthrough">
-  <section class="example-hero" aria-labelledby="walkthrough-title">
-    <span class="eyebrow">Walkthrough · Not the working interface</span>
-    <h1 id="walkthrough-title"><span class="gradient-text">See the decision flow.</span></h1>
-    <p class="lede">This short walkthrough explains the same critical-material case used in the Decision Lab. Open the Decision Lab when you are ready to edit the case and create a decision record.</p>
-    <div class="data-class-banner"><strong>Synthetic walkthrough.</strong> This walkthrough explains the flow. It does not run the comparison or save a decision.</div>
-    <div class="actions" style="justify-content:center"><a class="button primary" data-action="open-decision-lab" href="./#/decision">Open the working Decision Lab</a></div>
-  </section>
-
-  <nav class="example-steps" aria-label="Walkthrough steps">
-    <button class="example-step" aria-current="step" data-example="1">Decision</button>
-    <button class="example-step" data-example="2">Goals</button>
-    <button class="example-step" data-example="3">Choices</button>
-    <button class="example-step" data-example="4">Futures</button>
-    <button class="example-step" data-example="5">Decision record</button>
-  </nav>
-
-  <section class="panel example-panel active" data-panel="1">
-    <span class="eyebrow">Decision</span>
-    <h2>Which source-qualification pathway should advance?</h2>
-    <p>The decision owner must choose a practical next step while the future remains uncertain.</p>
-  </section>
-
-  <section class="panel example-panel" data-panel="2">
-    <span class="eyebrow">Goals</span>
-    <h2>Readiness, continuity, affordability, and flexibility.</h2>
-    <p>Each goal has a visible good-enough line. The goals remain separate so one favorable number cannot hide a trade-off.</p>
-    <details class="word-helper"><summary>Method terms</summary><p>A goal used in the comparison may be called a <strong>measure</strong>. Its good-enough line may be called a <strong>threshold</strong>.</p></details>
-  </section>
-
-  <section class="panel example-panel" data-panel="3">
-    <span class="eyebrow">Choices</span>
-    <h2>Three actions the program can take.</h2>
-    <div class="example-grid">
-      <article class="example-item"><h3>Maintain the current source</h3><p>Lower near-term effort, with continued concentration.</p></article>
-      <article class="example-item"><h3>Qualify a second source</h3><p>Add optionality through a bounded qualification effort.</p></article>
-      <article class="example-item"><h3>Build a reserve and qualify</h3><p>Add near-term coverage while qualification proceeds.</p></article>
-    </div>
-  </section>
-
-  <section class="panel example-panel" data-panel="4">
-    <span class="eyebrow">Possible futures</span>
-    <h2>Use several conditions, not one forecast.</h2>
-    <div class="future-grid">
-      <div class="future"><strong>Stable demand and source performance</strong></div>
-      <div class="future"><strong>Qualification takes longer</strong></div>
-      <div class="future"><strong>Primary-source disruption</strong></div>
-      <div class="future"><strong>Budget remains constrained</strong></div>
-    </div>
-    <p>Every choice is compared against the same four futures. No probability is assigned.</p>
-  </section>
-
-  <section class="panel example-panel" data-panel="5">
-    <span class="eyebrow">Decision record</span>
-    <h2>Choose what advances and explain why.</h2>
-    <p>The comparison may identify one choice as the strongest alignment under the stated rules. The decision owner still reviews the evidence, accepts or rejects the result, and records the next action.</p>
-    <div class="actions"><a class="button primary" data-action="open-decision-lab" href="./#/decision">Open the working Decision Lab</a><a class="button" href="./">Return to Overview</a></div>
-  </section>
-</main>
-
-<footer class="site-footer bn7-footer">
-  <div class="shell footer-inner">
-    <p><strong>Frontier Decision Engine</strong> · Bridge Node 7</p>
-    <p><a href="./">Overview</a> · <a href="./#/decision">Decision Lab</a> · <a href="./#/method">Method</a> · <a href="https://bridgenode7.com/materials/">Materials</a> · <a href="https://bridgenode7.com/readiness/">Readiness</a></p>
-  </div>
-</footer>
-
-<script>
-const buttons=[...document.querySelectorAll('[data-example]')];
-const panels=[...document.querySelectorAll('.example-panel')];
-buttons.forEach(button=>button.addEventListener('click',()=>{
-  buttons.forEach(item=>item.removeAttribute('aria-current'));
-  panels.forEach(item=>item.classList.remove('active'));
-  button.setAttribute('aria-current','step');
-  document.querySelector(`[data-panel="${button.dataset.example}"]`).classList.add('active');
-}));
-</script>
+  <main>
+    <h1>Frontier Decision Engine</h1>
+    <p>How it works is now part of the Frontier Decision Engine page.</p>
+    <p><a href="./index.html#/method">Continue to Frontier Decision Engine</a></p>
+  </main>
 </body>
 </html>

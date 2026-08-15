@@ -1,0 +1,575 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://bridge-node-7.github.io/frontier-decision-engine/schemas/decision-0.3.0.schema.json",
+  "title": "Frontier Decision Engine Case with Decision Semantics",
+  "type": "object",
+  "required": [
+    "schema_version",
+    "decision_id",
+    "title",
+    "profile",
+    "question",
+    "decision_owner",
+    "objectives",
+    "uncertainties",
+    "strategies",
+    "scenarios",
+    "human_decision",
+    "adaptive_pathway",
+    "provenance",
+    "decision_semantics"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": "0.3.0"
+    },
+    "decision_id": {
+      "type": "string",
+      "pattern": "^FDE-[A-Z0-9-]+$"
+    },
+    "title": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 200
+    },
+    "profile": {
+      "type": "string",
+      "minLength": 1
+    },
+    "question": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 4000
+    },
+    "decision_owner": {
+      "type": "string",
+      "minLength": 1
+    },
+    "time_horizon": {
+      "type": "string"
+    },
+    "urgency": {
+      "enum": [
+        "immediate",
+        "near-term",
+        "planned"
+      ]
+    },
+    "reversibility": {
+      "enum": [
+        "reversible",
+        "partially-reversible",
+        "irreversible"
+      ]
+    },
+    "status": {
+      "enum": [
+        "draft",
+        "under-review",
+        "approved",
+        "superseded",
+        "closed"
+      ]
+    },
+    "stakeholders": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/stakeholder"
+      }
+    },
+    "evidence_summary": {
+      "$ref": "#/$defs/evidenceSummary"
+    },
+    "uncertainties": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "$ref": "#/$defs/uncertainty"
+      }
+    },
+    "objectives": {
+      "type": "array",
+      "minItems": 2,
+      "items": {
+        "$ref": "#/$defs/objective"
+      }
+    },
+    "relationships": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/relationship"
+      }
+    },
+    "strategies": {
+      "type": "array",
+      "minItems": 2,
+      "items": {
+        "$ref": "#/$defs/strategy"
+      }
+    },
+    "scenarios": {
+      "type": "array",
+      "minItems": 2,
+      "items": {
+        "$ref": "#/$defs/scenario"
+      }
+    },
+    "human_decision": {
+      "$ref": "#/$defs/humanDecision"
+    },
+    "adaptive_pathway": {
+      "$ref": "#/$defs/adaptivePathway"
+    },
+    "provenance": {
+      "$ref": "#/$defs/provenance"
+    },
+    "decision_semantics": {
+      "$ref": "#/$defs/decisionSemantics"
+    }
+  },
+  "additionalProperties": true,
+  "$defs": {
+    "stakeholder": {
+      "type": "object",
+      "required": [
+        "stakeholder_id",
+        "name",
+        "role"
+      ],
+      "properties": {
+        "stakeholder_id": {
+          "type": "string"
+        },
+        "name": {
+          "type": "string"
+        },
+        "role": {
+          "type": "string"
+        },
+        "objectives": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      },
+      "additionalProperties": true
+    },
+    "evidenceSummary": {
+      "type": "object",
+      "required": [
+        "known",
+        "assumed",
+        "unknown"
+      ],
+      "properties": {
+        "known": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "assumed": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "unknown": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      },
+      "additionalProperties": false
+    },
+    "uncertainty": {
+      "type": "object",
+      "required": [
+        "uncertainty_id",
+        "label",
+        "states",
+        "source_status"
+      ],
+      "properties": {
+        "uncertainty_id": {
+          "type": "string"
+        },
+        "label": {
+          "type": "string"
+        },
+        "description": {
+          "type": "string"
+        },
+        "states": {
+          "type": "array",
+          "minItems": 2,
+          "items": {
+            "type": "string"
+          }
+        },
+        "source_status": {
+          "type": "string"
+        },
+        "reducibility": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": true
+    },
+    "objective": {
+      "type": "object",
+      "required": [
+        "objective_id",
+        "label",
+        "threshold",
+        "direction",
+        "critical"
+      ],
+      "properties": {
+        "objective_id": {
+          "type": "string"
+        },
+        "label": {
+          "type": "string"
+        },
+        "description": {
+          "type": "string"
+        },
+        "threshold": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 100
+        },
+        "unit": {
+          "type": "string"
+        },
+        "direction": {
+          "enum": [
+            "at-least",
+            "at-most"
+          ]
+        },
+        "critical": {
+          "type": "boolean"
+        }
+      },
+      "additionalProperties": true
+    },
+    "relationship": {
+      "type": "object",
+      "required": [
+        "relationship_id",
+        "statement",
+        "evidence_class",
+        "confidence"
+      ],
+      "properties": {
+        "relationship_id": {
+          "type": "string"
+        },
+        "statement": {
+          "type": "string"
+        },
+        "evidence_class": {
+          "type": "string"
+        },
+        "confidence": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": true
+    },
+    "strategy": {
+      "type": "object",
+      "required": [
+        "strategy_id",
+        "label",
+        "description",
+        "baseline",
+        "action_now",
+        "monitor",
+        "trigger",
+        "contingency"
+      ],
+      "properties": {
+        "strategy_id": {
+          "type": "string"
+        },
+        "label": {
+          "type": "string"
+        },
+        "description": {
+          "type": "string"
+        },
+        "baseline": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 100
+          }
+        },
+        "score_rationales": {
+          "type": "object",
+          "description": "Optional traceability for analyst-entered normalized baseline values, keyed by objective ID.",
+          "additionalProperties": {
+            "type": "object",
+            "required": ["basis", "rationale"],
+            "properties": {
+              "basis": { "enum": ["analyst-judgment", "declared-rubric", "other"] },
+              "rationale": { "type": "string" }
+            },
+            "additionalProperties": false
+          }
+        },
+        "action_now": {
+          "type": "string"
+        },
+        "monitor": {
+          "type": "string"
+        },
+        "trigger": {
+          "type": "string"
+        },
+        "contingency": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": true
+    },
+    "scenario": {
+      "type": "object",
+      "required": [
+        "scenario_id",
+        "label",
+        "description",
+        "states",
+        "strategy_modifiers"
+      ],
+      "properties": {
+        "scenario_id": {
+          "type": "string"
+        },
+        "label": {
+          "type": "string"
+        },
+        "description": {
+          "type": "string"
+        },
+        "states": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "string"
+          }
+        },
+        "strategy_modifiers": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "number",
+              "minimum": -100,
+              "maximum": 100
+            }
+          }
+        }
+      },
+      "additionalProperties": true
+    },
+    "humanDecision": {
+      "type": "object",
+      "required": [
+        "selected_strategy_id",
+        "rationale",
+        "next_action"
+      ],
+      "properties": {
+        "selected_strategy_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "rationale": {
+          "type": "string",
+          "minLength": 1
+        },
+        "next_action": {
+          "type": "string",
+          "minLength": 1
+        },
+        "approved_by": {
+          "type": "string"
+        },
+        "approved_at": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "format": "date-time"
+        }
+      },
+      "additionalProperties": true
+    },
+    "adaptivePathway": {
+      "type": "object",
+      "required": [
+        "act_now",
+        "monitor",
+        "triggers",
+        "contingencies",
+        "reassessment"
+      ],
+      "properties": {
+        "act_now": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "monitor": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "triggers": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "contingencies": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "reassessment": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": false
+    },
+    "decisionSemantics": {
+      "type": "object",
+      "required": ["mode", "posture_enabled", "proceed_conditions_state", "criteria", "affected_parties", "dissent", "conditions", "safeguards", "monitoring", "reassessment", "posture_override", "posture_override_reason"],
+      "properties": {
+        "mode": { "enum": ["general", "sustainability-seer"] },
+        "posture_enabled": { "type": "boolean" },
+        "proceed_conditions_state": { "enum": ["unreviewed", "declared", "none-required"] },
+        "criteria": { "type": "array", "items": { "$ref": "#/$defs/semanticCriterion" } },
+        "affected_parties": { "type": "array", "items": { "$ref": "#/$defs/affectedParty" } },
+        "dissent": { "type": "array", "items": { "$ref": "#/$defs/dissent" } },
+        "conditions": { "type": "array", "items": { "$ref": "#/$defs/condition" } },
+        "safeguards": { "type": "array", "items": { "$ref": "#/$defs/condition" } },
+        "monitoring": { "type": "array", "items": { "$ref": "#/$defs/monitoring" } },
+        "reassessment": { "type": "string" },
+        "posture_override": { "type": ["string", "null"], "enum": ["ADVANCE", "ADVANCE WITH CONDITIONS", "REWORK", "HOLD", "STOP", null] },
+        "posture_override_reason": { "type": "string" }
+      },
+      "additionalProperties": false
+    },
+    "semanticCriterion": {
+      "type": "object",
+      "required": ["criterion_id", "dimension", "label", "requirement", "must_be_true", "evidence_state", "outcome"],
+      "properties": {
+        "criterion_id": { "type": "string", "minLength": 1 },
+        "dimension": { "enum": ["general", "people", "planet", "profits", "product"] },
+        "label": { "type": "string" },
+        "requirement": { "type": "string" },
+        "must_be_true": { "type": "boolean" },
+        "evidence_state": { "enum": ["supported", "partial", "unknown", "contested", "stale", "invalid"] },
+        "outcome": { "enum": ["meets", "does-not-meet", "not-assessable"] },
+        "source_refs": { "$ref": "#/$defs/stringList" },
+        "evidence_need": { "type": "string" },
+        "affected_party_ids": { "$ref": "#/$defs/stringList" },
+        "missing_perspectives": { "$ref": "#/$defs/stringList" },
+        "assumptions": { "$ref": "#/$defs/stringList" },
+        "limitations": { "$ref": "#/$defs/stringList" }
+      },
+      "additionalProperties": false
+    },
+    "affectedParty": {
+      "type": "object",
+      "required": ["party_id", "label", "engagement_state"],
+      "properties": {
+        "party_id": { "type": "string", "minLength": 1 },
+        "label": { "type": "string", "minLength": 1 },
+        "relationship": { "type": "string" },
+        "engagement_state": { "enum": ["not-engaged", "invited", "consulted", "participated"] },
+        "notes": { "type": "string" }
+      },
+      "additionalProperties": false
+    },
+    "dissent": {
+      "type": "object",
+      "required": ["dissent_id", "statement", "criterion_refs", "party_refs", "attribution_status", "unresolved"],
+      "properties": {
+        "dissent_id": { "type": "string", "minLength": 1 },
+        "statement": { "type": "string", "minLength": 1 },
+        "criterion_refs": { "$ref": "#/$defs/stringList" },
+        "party_refs": { "$ref": "#/$defs/stringList" },
+        "attribution_status": { "enum": ["attributed", "anonymous", "unattributed"] },
+        "unresolved": { "type": "boolean" }
+      },
+      "additionalProperties": false
+    },
+    "condition": {
+      "type": "object",
+      "required": ["id", "statement", "required", "state", "criterion_refs"],
+      "properties": {
+        "id": { "type": "string", "minLength": 1 },
+        "statement": { "type": "string", "minLength": 1 },
+        "required": { "type": "boolean" },
+        "state": { "enum": ["open", "satisfied"] },
+        "criterion_refs": { "$ref": "#/$defs/stringList" },
+        "strategy_refs": { "$ref": "#/$defs/stringList" }
+      },
+      "additionalProperties": false
+    },
+    "monitoring": {
+      "type": "object",
+      "required": ["monitoring_id", "observable", "trigger", "response", "required"],
+      "properties": {
+        "monitoring_id": { "type": "string", "minLength": 1 },
+        "observable": { "type": "string", "minLength": 1 },
+        "trigger": { "type": "string" },
+        "response": { "type": "string" },
+        "required": { "type": "boolean" },
+        "criterion_refs": { "$ref": "#/$defs/stringList" },
+        "strategy_refs": { "$ref": "#/$defs/stringList" }
+      },
+      "additionalProperties": false
+    },
+    "stringList": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "provenance": {
+      "type": "object",
+      "required": [
+        "model_type",
+        "probability_model_used",
+        "values_are_analyst_assigned",
+        "generated_at"
+      ],
+      "properties": {
+        "model_type": {
+          "type": "string"
+        },
+        "probability_model_used": {
+          "type": "boolean"
+        },
+        "values_are_analyst_assigned": {
+          "type": "boolean"
+        },
+        "generated_at": {
+          "type": "string",
+          "format": "date-time"
+        }
+      },
+      "additionalProperties": true
+    }
+  }
+}

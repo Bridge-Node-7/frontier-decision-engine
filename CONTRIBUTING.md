@@ -22,3 +22,8 @@ npm run check
 
 Open a focused pull request that states the user value, public-data impact, and
 validation result.
+
+Public bug and method-improvement forms are retained under
+`.github/ISSUE_TEMPLATE/`. If a non-owner cannot open one, enabling public issue
+submission is a later repository-settings ADMIN GATE; do not send security
+reports through a public issue. Use the private path in [SECURITY.md](SECURITY.md).

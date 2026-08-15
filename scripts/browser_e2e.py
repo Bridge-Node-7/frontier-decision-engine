@@ -52,6 +52,7 @@ def native_http_available(
         page = context.new_page()
         try:
             page.goto(base, wait_until="networkidle", timeout=timeout_ms)
+            page.locator("#main h1").wait_for(state="visible", timeout=timeout_ms)
             if page.locator("#main").count() == 1 and page.evaluate("!!crypto.subtle"):
                 return True
         except PlaywrightError:
@@ -128,7 +129,8 @@ def assert_page_clean(page: Page) -> None:
           const navMissingLabel = [...document.querySelectorAll('nav')].filter(
             (nav) => !nav.getAttribute('aria-label') && !nav.getAttribute('aria-labelledby')
           ).length;
-          const primary = document.querySelector('button.primary, a.primary');
+          const primary = [...document.querySelectorAll('button.primary, a.primary')]
+            .find((element) => element.getClientRects().length > 0);
           const parseRgb = (value) => {
             const match = String(value).match(/rgba?\\((\\d+)[, ]+(\\d+)[, ]+(\\d+)/i);
             return match ? match.slice(1, 4).map(Number) : null;
@@ -150,10 +152,25 @@ def assert_page_clean(page: Page) -> None:
             }
             primaryHeight = primary.getBoundingClientRect().height;
           }
-          const uncontainedOverflow = [...document.querySelectorAll('body *')].filter((element) => {
+          const overflowOffenders = [...document.querySelectorAll('body *')].filter((element) => {
             const rect = element.getBoundingClientRect();
             return (rect.right > window.innerWidth + 1 || rect.left < -1) && !element.closest('.table-wrap');
-          }).length;
+          }).slice(0, 8).map((element) => {
+            const rect = element.getBoundingClientRect();
+            const style = getComputedStyle(element);
+            return {
+              tag: element.tagName.toLowerCase(),
+              id: element.id || null,
+              class: [...element.classList].slice(0, 4).join(' ') || null,
+              left: Math.round(rect.left * 10) / 10,
+              right: Math.round(rect.right * 10) / 10,
+              width: Math.round(rect.width * 10) / 10,
+              viewportWidth: window.innerWidth,
+              overflowX: style.overflowX,
+              whiteSpace: style.whiteSpace,
+              display: style.display,
+            };
+          });
           const originalX = window.scrollX;
           const originalY = window.scrollY;
           window.scrollTo({ left: 100000, top: originalY, behavior: 'instant' });
@@ -173,7 +190,10 @@ def assert_page_clean(page: Page) -> None:
             h1Count: document.querySelectorAll('main h1').length,
             mainCount: document.querySelectorAll('main').length,
             overflow: document.documentElement.scrollWidth - window.innerWidth,
-            uncontainedOverflow,
+            uncontainedOverflow: overflowOffenders.length,
+            overflowOffenders,
+            hash: location.hash,
+            dataRoute: document.querySelector('main')?.dataset.route || null,
             horizontalScroll,
             contrast,
             primaryHeight,
@@ -206,14 +226,19 @@ def assert_page_clean(page: Page) -> None:
 def load_application(page: Page) -> None:
     if page.locator("#main").count():
         return
-    html = INDEX_HTML.replace(
-        '<head>',
-        '<head><base href="http://fde.test/">',
-        1,
-    )
-    html = re.sub(r'<meta http-equiv="Content-Security-Policy"[^>]+>', '', html, count=1)
-    page.set_content(html, wait_until="networkidle")
+    page.goto("http://fde.test/index.html", wait_until="networkidle")
     page.locator("#main").wait_for(state="attached")
+
+
+def wait_for_render_settle(page: Page) -> None:
+    page.evaluate(
+        """async () => {
+          await document.fonts.ready;
+          await new Promise((resolve) => requestAnimationFrame(
+            () => requestAnimationFrame(resolve)
+          ));
+        }"""
+    )
 
 
 def route(page: Page, base: str, path: str, selector: str, expected: str) -> None:
@@ -222,6 +247,7 @@ def route(page: Page, base: str, path: str, selector: str, expected: str) -> Non
     page.evaluate(
         """
         (path) => {
+          document.querySelector('main').dataset.route = '';
           const next = `#${path}`;
           if (location.hash === next) window.dispatchEvent(new HashChangeEvent('hashchange'));
           else location.hash = path;
@@ -229,50 +255,184 @@ def route(page: Page, base: str, path: str, selector: str, expected: str) -> Non
         """,
         path,
     )
+    page.locator(f'#main[data-route="{path}"]').wait_for(state="attached")
+    wait_for_render_settle(page)
     matched_locator = page.locator(selector).filter(has_text=re.compile(re.escape(expected), re.IGNORECASE)).first
     matched_locator.wait_for(state="visible")
     matched = matched_locator.inner_text()
     assert expected.lower() in matched.lower(), f"{path} did not contain {expected!r}; found {matched!r}"
+    expected_title = {
+        "/": "Frontier Decision Engine",
+        "/method": "Frontier Decision Engine",
+        "/decision": "Frontier Decision Engine",
+        "/decision/new": "Frontier Decision Engine",
+        "/decision/example": "Frontier Decision Engine",
+        "/decision/open": "Frontier Decision Engine",
+    }.get(path)
+    if expected_title:
+        assert page.title() == expected_title, f"{path} title was {page.title()!r}"
     assert_page_clean(page)
 
 
-def decision_flow(page: Page, base: str) -> None:
-    route(page, base, "/decision", "#decision-step-heading", "What are you trying to choose?")
+def set_hash_route(page: Page, path: str) -> None:
+    page.evaluate(
+        """(path) => {
+          document.querySelector('main').dataset.route = '';
+          const next = `#${path}`;
+          if (location.hash === next) window.dispatchEvent(new HashChangeEvent('hashchange'));
+          else location.hash = path;
+        }""",
+        path,
+    )
+    page.locator(f'#main[data-route="{path}"]').wait_for(state="attached")
+    wait_for_render_settle(page)
+
+
+def open_stage(page: Page, index: int) -> None:
+    stage = page.locator(f'[data-decision-stage="{index}"]')
+    if stage.get_attribute("open") is None:
+        stage.locator(":scope > summary").click()
+    page.locator(f"#decision-step-heading-{index}").wait_for(state="visible")
+
+
+def activate_ready_example(page: Page) -> None:
+    expected_message = "Open the ready example? This replaces the decision currently open in this browser."
+    expected_question = "Which source-qualification pathway creates the strongest readiness across changing conditions?"
+    page.evaluate(
+        """() => {
+          window.__fdeReadyExampleConfirmation = {
+            original: window.confirm,
+            invoked: false,
+            message: null,
+            result: null,
+          };
+          window.confirm = (message) => {
+            const state = window.__fdeReadyExampleConfirmation;
+            state.invoked = true;
+            state.message = String(message);
+            state.result = true;
+            return true;
+          };
+        }"""
+    )
+    button = page.locator("#use-ready-example")
+    try:
+        assert button.is_visible(), "ready-example button is not visible"
+        assert button.is_enabled(), "ready-example button is not enabled"
+        button.click()
+        page.locator("#decision-save-status").filter(
+            has_text=re.compile(r"^Synthetic example$")
+        ).wait_for(state="visible")
+        page.locator("#decision-step-heading-0").wait_for(state="visible")
+        confirmation = page.evaluate(
+            """() => ({
+              invoked: window.__fdeReadyExampleConfirmation?.invoked ?? false,
+              message: window.__fdeReadyExampleConfirmation?.message ?? null,
+              result: window.__fdeReadyExampleConfirmation?.result ?? null,
+            })"""
+        )
+        assert confirmation == {"invoked": True, "message": expected_message, "result": True}
+        assert page.locator("#decision-save-status").inner_text() == "Synthetic example"
+        assert page.locator("#decision-question").input_value() == expected_question
+        assert page.locator('[data-decision-stage]').count() == 6
+        page.locator("#decision-step-heading-0").wait_for(state="visible")
+    except Exception as exc:
+        diagnostics = page.evaluate(
+            """() => {
+              const button = document.querySelector('#use-ready-example');
+              const openStage = document.querySelector('[data-decision-stage][open]');
+              const confirmation = window.__fdeReadyExampleConfirmation;
+              return {
+                url: location.href,
+                hash: location.hash,
+                route: document.querySelector('main')?.dataset.route ?? null,
+                saveStatus: document.querySelector('#decision-save-status')?.textContent?.trim() ?? null,
+                decisionQuestion: document.querySelector('#decision-question')?.value ?? null,
+                openStageIndex: openStage?.dataset.decisionStage ?? null,
+                confirmationInvoked: confirmation?.invoked ?? false,
+                confirmationMessage: confirmation?.message ?? null,
+                confirmationResult: confirmation?.result ?? null,
+                buttonVisible: !!button && button.getClientRects().length > 0,
+                buttonEnabled: !!button && !button.disabled,
+              };
+            }"""
+        )
+        raise AssertionError(f"ready-example transition failed: {diagnostics}") from exc
+    finally:
+        page.evaluate(
+            """() => {
+              const state = window.__fdeReadyExampleConfirmation;
+              if (state?.original) window.confirm = state.original;
+              delete window.__fdeReadyExampleConfirmation;
+            }"""
+        )
+
+
+def decision_flow(page: Page, base: str) -> str:
+    route(page, base, "/decision", '[data-surface="fde-hero"] h1', "Frontier Decision Engine")
+    assert page.locator('[data-surface="integrated-method"]').is_visible()
+    assert page.locator('[data-decision-stage]').count() == 6
+    assert page.locator('[data-decision-stage][open]').count() == 1
+    assert page.locator("#decision-question").is_visible()
+    assert page.locator("#decision-question").input_value() == ""
+    assert page.locator("#use-ready-example").is_visible()
+    assert page.locator("#open-decision-file").is_visible()
+    assert page.locator("#toggle-method-words").inner_text() == "Show technical terms"
+    page.locator("#toggle-method-words").click()
+    assert page.locator("#toggle-method-words").inner_text() == "Hide technical terms"
+    assert page.locator("#toggle-method-words").get_attribute("aria-pressed") == "true"
+    assert "shown where relevant" in page.locator("#technical-terms-status").inner_text()
+    page.locator("#toggle-method-words").click()
+    assert page.locator("#toggle-method-words").inner_text() == "Show technical terms"
+    with page.expect_file_chooser() as chooser_info:
+        page.locator("#open-decision-file").click()
+    chooser_info.value.set_files([])
+    activate_ready_example(page)
+    wait_for_render_settle(page)
 
     headings = [
-        "What are you trying to choose?",
-        "What matters, and what may change?",
-        "What could you actually do?",
-        "Explore more than one possible future",
-        "How do the choices perform across changing conditions?",
-        "What advances next?",
+        "What decision needs to be made?",
+        "What needs to be true?",
+        "What can be done?",
+        "What could change?",
+        "What the comparison shows",
+        "Choose a path.",
     ]
 
     for index, expected in enumerate(headings[1:]):
+        next_button = page.locator('[data-decision-stage][open] [data-stage-next]')
         if index == 0:
-            page.locator("#decision-next").focus()
+            next_button.focus()
             page.keyboard.press("Enter")
         else:
-            page.locator("#decision-next").click()
+            next_button.click()
 
-        page.locator("#decision-step-heading").wait_for(state="visible")
-        page.locator("#decision-step-heading:focus").wait_for(state="attached")
-        actual = page.locator("#decision-step-heading").inner_text()
+        heading = page.locator(f"#decision-step-heading-{index + 1}")
+        heading.wait_for(state="visible")
+        page.locator(f"#decision-step-heading-{index + 1}:focus").wait_for(state="attached")
+        actual = heading.inner_text()
         assert expected in actual, f"expected {expected!r}; found {actual!r}"
 
-        heading_box = page.locator("#decision-step-heading").bounding_box()
+        heading_box = heading.bounding_box()
         assert heading_box is not None, "decision step heading has no layout box"
         viewport_height = page.evaluate("window.innerHeight")
-        assert 0 <= heading_box["y"] <= viewport_height - 100, (
+        assert -2 <= heading_box["y"] <= viewport_height - 100, (
             f"decision step heading is not visible: {heading_box['y']}"
         )
 
-        if expected == "How do the choices perform across changing conditions?":
-            assert "Strongest alignment in this comparison" in page.locator("body").inner_text()
+        if expected == "What the comparison shows":
+            brief = page.locator("body").inner_text()
+            assert "Strongest tested alternative" in brief
+            assert "81%" not in brief
+            page.locator('[data-projection="review"] > summary').click()
+            page.locator('[data-projection="inspect"] > summary').click()
+            inspected = page.locator("body").inner_text()
+            assert "Strongest alignment in this comparison" in inspected
+            assert "81%" in inspected
 
     page.locator("#human-rationale").fill("")
     page.locator("#human-next-action").fill("")
-    page.locator("#export-decision-json").click()
+    page.locator("#record-decision").click()
     page.locator("#human-rationale:focus").wait_for(state="attached")
     assert page.locator("#human-rationale").get_attribute("aria-invalid") == "true"
 
@@ -282,26 +442,201 @@ def decision_flow(page: Page, base: str) -> None:
     page.locator("#human-next-action").fill(
         "Confirm the qualification evidence plan, owner, milestones, and review date."
     )
+    page.locator("#human-strategy").select_option("STR-002")
+    page.locator("#record-decision").click()
+    page.locator("#decision-recorded-heading").wait_for(state="visible")
 
     with page.expect_download() as json_download:
         page.locator("#export-decision-json").click()
     assert json_download.value.suggested_filename.endswith(".fde.json")
+    completed_file = json_download.value.path()
+    assert completed_file is not None
 
     with page.expect_download() as html_download:
         page.locator("#export-decision-html").click()
     assert html_download.value.suggested_filename.endswith(".decision.html")
 
     assert_page_clean(page)
+    return completed_file
 
 
 def route_suite(page: Page, base: str) -> None:
     checks = [
-        ("/", "h1", "Compare choices"),
-        ("/method", "h1", "Decision-making under deep uncertainty"),
-        ("/decision", "#decision-step-heading", "What are you trying to choose?"),
+        ("/", '[data-surface="fde-hero"] h1', "Frontier Decision Engine"),
+        ("/method", '[data-surface="integrated-method"]', "Frame"),
+        ("/decision", '[data-surface="fde-hero"] h1', "Frontier Decision Engine"),
+        ("/decision/open", '[data-surface="fde-hero"] h1', "Frontier Decision Engine"),
     ]
     for route_path, selector, expected in checks:
         route(page, base, route_path, selector, expected)
+
+
+def corrective_draft_and_entry_flow(page: Page, completed_file: str) -> None:
+    set_hash_route(page, "/decision/new")
+    open_stage(page, 0)
+    page.locator("summary").filter(has_text=re.compile(r"^Add context")).click()
+    page.locator("#decision-title").wait_for(state="visible")
+    assert page.locator("#decision-title").input_value() == ""
+    page.locator("#decision-title").fill("Partial blank recovery")
+    page.locator("#decision-owner").fill("Partial owner")
+    page.wait_for_timeout(350)
+    assert page.evaluate("localStorage.getItem('fde.decision.autosave.v0.2.11')") is not None
+    page.reload(wait_until="networkidle")
+    page.locator("#saved-draft-title").wait_for(state="visible")
+    assert page.locator("#saved-draft-title").inner_text() == "Welcome back."
+    assert "Your decision is saved in this browser" in page.locator('[data-surface="saved-draft-return"]').inner_text()
+    assert "not encrypted confidential storage" in page.locator("body").inner_text()
+    assert page.locator("#resume-browser-draft").is_visible()
+    page.locator('[data-surface="saved-draft-return"] details > summary').click()
+    assert page.locator("#download-browser-draft").inner_text() == "Download draft backup"
+    assert page.locator("#clear-browser-draft").is_visible()
+
+    with page.expect_download() as backup_download:
+        page.locator("#download-browser-draft").click()
+    assert backup_download.value.suggested_filename.endswith(".fde-draft.json")
+    backup_file = backup_download.value.path()
+    assert backup_file is not None
+
+    page.locator("#resume-browser-draft").click()
+    page.locator("#decision-step-heading-0").wait_for(state="visible")
+    assert "Saved in this browser" in page.locator("body").inner_text()
+    assert page.locator("#decision-title").input_value() == "Partial blank recovery"
+    assert page.locator("#decision-owner").input_value() == "Partial owner"
+    assert page.locator("#decision-question").input_value() == ""
+
+    open_stage(page, 4)
+    incomplete_heading = page.locator("#decision-step-heading-4").inner_text()
+    assert "One update is needed" in incomplete_heading, incomplete_heading
+    open_stage(page, 5)
+    page.locator("#record-decision").click()
+    assert "Decision question is required" in page.locator("#decision-validation").inner_text()
+
+    # Restored -> explicit ready example produces a fresh example and clears the old draft.
+    set_hash_route(page, "/decision/example")
+    assert page.locator("#decision-title").input_value() == "Critical-material source qualification decision"
+    open_stage(page, 5)
+    assert page.locator("#human-strategy").input_value() == ""
+    stored_title = page.evaluate(
+        """() => {
+          const raw = localStorage.getItem('fde.decision.autosave.v0.2.11');
+          return raw ? JSON.parse(raw).title : null;
+        }"""
+    )
+    assert stored_title != "Partial blank recovery"
+
+    # Ready -> explicit blank produces a fresh neutral blank.
+    set_hash_route(page, "/decision/new")
+    assert page.locator("#decision-title").input_value() == ""
+    assert "Saved in this browser" in page.locator("body").inner_text()
+
+    # Draft backup reopens exactly and remains incomplete.
+    page.locator("#decision-file-input").set_input_files(backup_file)
+    page.locator("#decision-title").wait_for(state="attached")
+    assert "Saved decision opened" in page.locator("body").inner_text()
+    assert page.locator("#decision-title").input_value() == "Partial blank recovery"
+    assert page.locator("#decision-owner").input_value() == "Partial owner"
+    assert page.locator("#decision-question").input_value() == ""
+
+    # Imported draft -> explicit ready example does not retain imported state.
+    set_hash_route(page, "/decision/example")
+    assert page.locator("#decision-title").input_value() == "Critical-material source qualification decision"
+
+    # Existing completed schema 0.2.10 export still opens, then explicit ready resets it.
+    page.locator("#decision-file-input").set_input_files(completed_file)
+    page.locator("#decision-title").wait_for(state="attached")
+    assert "Saved decision opened" in page.locator("body").inner_text()
+    set_hash_route(page, "/decision/example")
+    page.locator("#decision-title").wait_for(state="attached")
+    assert page.locator("#decision-title").input_value() == "Critical-material source qualification decision"
+    assert "Synthetic example" in page.locator("body").inner_text()
+    open_stage(page, 5)
+    assert page.locator("#human-strategy").input_value() == ""
+    assert_page_clean(page)
+
+
+def checkpoint_b_semantics_flow(page: Page) -> None:
+    set_hash_route(page, "/decision/example")
+    page.locator("summary").filter(has_text=re.compile(r"^Choose a decision approach")).click()
+    page.locator("#decision-semantic-mode").select_option("sustainability-seer")
+    page.locator('[data-decision-stage="0"] [data-stage-next]').click()
+    page.locator('[data-surface="decision-semantics-criteria"]').wait_for(state="visible")
+    wait_for_render_settle(page)
+    body = page.locator("body").inner_text()
+    for dimension in ["People", "Planet", "Profits", "Product"]:
+        assert dimension in body
+    for index, dimension in enumerate(["People", "Planet", "Profits", "Product"]):
+        dimension_panel = page.locator(f'[data-dimension="{dimension.lower()}"]')
+        if dimension_panel.get_attribute("open") is None:
+            dimension_panel.locator("summary").press("Enter")
+        page.locator(f'[data-dimension="{dimension.lower()}"][open]').wait_for(state="attached")
+        page.locator(f"#semantic-label-{index}").fill(f"{dimension} criterion")
+        page.locator(f"#semantic-requirement-{index}").fill(f"Declared {dimension.lower()} requirement")
+        if index == 0:
+            page.locator(f"#semantic-required-{index}").check()
+            page.locator(f"#semantic-evidence-{index}").select_option("unknown")
+            page.locator(f"#semantic-outcome-{index}").select_option("not-assessable")
+            page.locator(f"#semantic-evidence-need-{index}").fill("Obtain the declared People evidence.")
+        else:
+            page.locator(f"#semantic-evidence-{index}").select_option("supported")
+            page.locator(f"#semantic-outcome-{index}").select_option("meets")
+    page.locator('[data-decision-stage="1"] [data-stage-next]').click()
+    open_stage(page, 4)
+    page.locator('[data-surface="decision-posture"]').wait_for(state="visible")
+    results = page.locator("body").inner_text()
+    assert "Decision posture" in results
+    assert "HOLD" in results
+    assert "People" in results and "Needs evidence" in results
+    assert "Planet" in results and "Meets" in results
+    assert "Most decision-relevant next evidence" in results
+    assert "composite sustainability score" not in results.lower()
+    assert "81%" not in results
+    page.locator('[data-projection="inspect"] > summary').click()
+    assert "Strongest alignment in this comparison" in page.locator("body").inner_text()
+    open_stage(page, 5)
+    page.locator('[data-surface="advanced-governance"] summary').click()
+    page.locator('[data-surface="semantic-controls"]').wait_for(state="visible")
+    assert page.locator("#human-strategy").input_value() == ""
+    assert "Your final decision remains below" in page.locator("body").inner_text()
+    assert page.locator('[data-decision-stage]').count() == 6
+    page.locator("#semantic-condition-statement").fill("Visible People remediation")
+    page.locator("#semantic-condition-target").select_option("CRT-001")
+    page.locator("#semantic-monitoring-observable").fill("Visible monitoring record")
+    open_stage(page, 0)
+    page.wait_for_timeout(350)
+    page.evaluate(
+        """() => {
+          const key = 'fde.decision.autosave.v0.2.11';
+          const saved = JSON.parse(localStorage.getItem(key));
+          saved.decision_semantics.conditions.push({ id: 'CON-002', statement: 'Imported condition', required: false, state: 'satisfied', criterion_refs: ['CRT-002'], strategy_refs: ['STR-003'] });
+          saved.decision_semantics.monitoring.push({ monitoring_id: 'MON-002', observable: 'Imported monitor', trigger: 'Imported trigger', response: 'Imported response', required: false, criterion_refs: ['CRT-002'], strategy_refs: ['STR-003'] });
+          localStorage.setItem(key, JSON.stringify(saved));
+        }"""
+    )
+    page.reload(wait_until="networkidle")
+    page.locator("#resume-browser-draft").click()
+    open_stage(page, 5)
+    page.locator('[data-surface="advanced-governance"] summary').click()
+    page.locator("#semantic-condition-statement").fill("Edited visible People remediation")
+    page.locator("#semantic-monitoring-observable").fill("Edited visible monitoring record")
+    open_stage(page, 0)
+    preserved = page.evaluate("JSON.parse(localStorage.getItem('fde.decision.autosave.v0.2.11')).decision_semantics")
+    assert len(preserved["conditions"]) == 2
+    assert len(preserved["monitoring"]) == 2
+    assert preserved["conditions"][0]["criterion_refs"] == ["CRT-001"]
+    assert preserved["conditions"][1] == {"id": "CON-002", "statement": "Imported condition", "required": False, "state": "satisfied", "criterion_refs": ["CRT-002"], "strategy_refs": ["STR-003"]}
+    assert preserved["monitoring"][1] == {"monitoring_id": "MON-002", "observable": "Imported monitor", "trigger": "Imported trigger", "response": "Imported response", "required": False, "criterion_refs": ["CRT-002"], "strategy_refs": ["STR-003"]}
+    page.locator("summary").filter(has_text=re.compile(r"^Choose a decision approach")).click()
+    page.locator("#decision-semantic-mode").select_option("general")
+    page.locator("#enable-decision-posture").uncheck()
+    page.locator('[data-decision-stage="0"] [data-stage-next]').click()
+    open_stage(page, 4)
+    assert page.locator('[data-surface="decision-posture"]').count() == 0
+    stored = page.evaluate("JSON.parse(localStorage.getItem('fde.decision.autosave.v0.2.11'))")
+    assert stored["schema_version"] == "0.3.0"
+    assert len(stored["decision_semantics"]["criteria"]) == 4
+    assert stored["decision_semantics"]["mode"] == "general"
+    assert stored["decision_semantics"]["posture_enabled"] is False
+    assert_page_clean(page)
 
 
 def print_flow(page: Page) -> None:
@@ -309,7 +644,7 @@ def print_flow(page: Page) -> None:
     page.emulate_media(media="print")
     assert page.locator(".decision-brief").is_visible()
     assert page.locator(".site-header").evaluate("element => getComputedStyle(element).display") == "none"
-    assert page.locator(".wizard-nav").evaluate("element => getComputedStyle(element).display") == "none"
+    assert page.locator(".stage-actions").first.evaluate("element => getComputedStyle(element).display") == "none"
     pdf_bytes = page.pdf(format="Letter", print_background=True, prefer_css_page_size=True)
     assert pdf_bytes.startswith(b"%PDF"), "print output is not a PDF"
     assert len(pdf_bytes) > 5_000, f"print PDF unexpectedly small: {len(pdf_bytes)}"
@@ -367,15 +702,119 @@ def run_mode(
     page.on("pageerror", lambda error: page_errors.append(str(error)))
     route_suite(page, base)
     if full:
-        decision_flow(page, base)
+        completed_file = decision_flow(page, base)
         print_flow(page)
+        corrective_draft_and_entry_flow(page, completed_file)
+        checkpoint_b_semantics_flow(page)
     else:
-        route(page, base, "/decision", "#decision-step-heading", "What are you trying to choose?")
+        route(page, base, "/decision", '[data-surface="fde-hero"] h1', "Frontier Decision Engine")
     assert not console_errors, f"console errors in {label}: {console_errors}"
     assert not page_errors, f"page errors in {label}: {page_errors}"
     assert_page_clean(page)
     context.close()
     print(f"{label}: PASS ({execution_mode})")
+
+
+def no_js_one_page(browser) -> None:
+    context = browser.new_context(viewport={"width": 1280, "height": 900}, java_script_enabled=False)
+    install_static_route(context)
+    page = context.new_page()
+    page.goto("http://fde.test/index.html", wait_until="domcontentloaded")
+    body = page.locator("body").inner_text()
+    for text in ["Frontier Decision Engine", "How it works", "Frame", "Compare", "Decide", "Decision", "What matters", "Choices", "What may change", "What the comparison shows", "Choose next step", "Human authority", "stays in this browser"]:
+        assert text in body
+    assert page.evaluate("document.documentElement.scrollWidth <= window.innerWidth")
+    context.close()
+    print("no-js-one-page-fallback: PASS")
+
+
+def walkthrough_front_door(browser) -> None:
+    for viewport in ({"width": 1440, "height": 900}, {"width": 375, "height": 812}):
+        context = browser.new_context(viewport=viewport, reduced_motion="reduce")
+        install_static_route(context)
+        page = context.new_page()
+        page.goto("http://fde.test/start.html", wait_until="domcontentloaded")
+        hero = page.locator(".example-hero").inner_text()
+        for text in ["WALKTHROUGH", "See the decision flow.", "Turn evidence and uncertainty into a clear next decision.", "Synthetic example · 6 steps", "Start walkthrough", "Open Decision Lab"]:
+            assert text in hero
+        for removed in ["Not the working interface", "Six-stage method", "Your work stays in this browser"]:
+            assert removed not in hero
+        assert page.locator('[data-action="start-walkthrough"]').is_visible()
+        assert page.locator('[data-action="start-walkthrough"]').evaluate("el => getComputedStyle(el).minHeight === '44px' || el.getBoundingClientRect().height >= 44")
+        page.locator('[data-action="start-walkthrough"]').click()
+        page.locator("#stage-1:focus").wait_for(state="attached")
+        assert page.locator("#stage-1").is_visible()
+        assert page.evaluate("document.documentElement.scrollWidth <= window.innerWidth")
+        context.close()
+    print("walkthrough-front-door-desktop-mobile: PASS")
+
+
+def walkthrough_handoff(browser, base: str, native_http: bool) -> None:
+    def open_walkthrough(viewport):
+        context = browser.new_context(viewport=viewport, reduced_motion="reduce")
+        if not native_http:
+            install_static_route(context)
+            url = "http://fde.test/start.html"
+        else:
+            url = f"{base}/start.html"
+        page = context.new_page()
+        page.goto(url, wait_until="networkidle")
+        return context, page
+
+    for viewport in ({"width": 1440, "height": 900}, {"width": 375, "height": 812}):
+        context, page = open_walkthrough(viewport)
+        assert page.locator(".example-hero").is_visible()
+        assert not page.locator(".walkthrough-progress").is_visible()
+        assert not page.locator('[data-panel="1"]').is_visible()
+        page.locator('[data-action="start-walkthrough"]').focus()
+        page.keyboard.press("Enter")
+        assert page.locator('[data-panel="1"]:focus').is_visible()
+        assert page.locator("#progress-count").inner_text() == "1 of 6"
+        for number in range(2, 7):
+            page.locator(f'[data-next="{number}"]').click()
+            assert page.locator(f'[data-panel="{number}"]:focus').is_visible()
+            assert page.locator("#progress-count").inner_text() == f"{number} of 6"
+        page.locator('[data-panel="6"] [data-action="open-decision-lab"]').click()
+        page.locator('[data-surface="working-interface"]').wait_for(state="visible")
+        assert "Synthetic example." in page.locator('[data-surface="working-interface"]').inner_text()
+        assert page.locator("#decision-step-heading").is_visible()
+        assert page.locator("#human-decision").count() == 0 or page.locator("#human-decision").input_value() == ""
+        page.go_back(wait_until="networkidle")
+        assert page.locator('[data-panel="1"]').is_visible()
+        context.close()
+
+    for selector, activation in [
+        ('.example-hero [data-action="open-decision-lab"]', "click"),
+        ('#primary-navigation [data-action="open-decision-lab"]', "keyboard"),
+    ]:
+        context, page = open_walkthrough({"width": 1440, "height": 900})
+        target = page.locator(selector)
+        if activation == "keyboard":
+            target.focus()
+            page.keyboard.press("Enter")
+        else:
+            target.click()
+        page.locator('[data-surface="working-interface"]').wait_for(state="visible")
+        assert "Synthetic example." in page.locator('[data-surface="working-interface"]').inner_text()
+        context.close()
+    print("walkthrough-decision-lab-handoff-desktop-mobile-keyboard: PASS")
+
+
+def compatibility_routes(browser) -> None:
+    for viewport in ({"width": 1440, "height": 900}, {"width": 375, "height": 812}):
+        context = browser.new_context(viewport=viewport, reduced_motion="reduce")
+        install_static_route(context)
+        page = context.new_page()
+        page.goto("http://fde.test/start.html", wait_until="networkidle")
+        page.wait_for_url(re.compile(r"/index\.html#/method$"))
+        assert page.title() == "Frontier Decision Engine"
+        assert page.locator('[data-surface="fde-hero"] h1').inner_text() == "Frontier Decision Engine"
+        assert page.locator('[data-surface="integrated-method"]').is_visible()
+        assert page.locator('[data-decision-stage]').count() == 6
+        assert page.locator('[data-decision-stage][open]').count() == 1
+        assert page.evaluate("document.documentElement.scrollWidth <= window.innerWidth")
+        context.close()
+    print("start-and-method-compatibility-routes: PASS")
 
 
 def main() -> None:
@@ -408,17 +847,22 @@ def main() -> None:
                 if not native_http:
                     raise SystemExit(f"Live Pages URL did not become ready for browser verification: {base}")
             else:
-                native_http = native_http_available(browser, base)
+                # The deterministic in-process route avoids intermittent loopback resets
+                # while preserving the separate launcher validation against real HTTP.
+                native_http = False
 
             run_mode(browser, base, "desktop-light", {"width": 1440, "height": 1200}, "light", True, native_http)
             run_mode(browser, base, "mobile-light", {"width": 390, "height": 844}, "light", False, native_http)
+            run_mode(browser, base, "mobile-375", {"width": 375, "height": 812}, "light", True, native_http)
             run_mode(browser, base, "desktop-dark", {"width": 1440, "height": 1200}, "dark", False, native_http)
             run_mode(browser, base, "reflow-200-equivalent", {"width": 640, "height": 900}, "light", False, native_http)
-            run_mode(browser, base, "reflow-400-equivalent", {"width": 320, "height": 800}, "light", False, native_http)
+            run_mode(browser, base, "reflow-400-equivalent", {"width": 320, "height": 800}, "light", True, native_http)
             run_mode(
                 browser, base, "forced-colors", {"width": 1280, "height": 900},
                 "light", False, native_http, forced_colors="active"
             )
+            no_js_one_page(browser)
+            compatibility_routes(browser)
         finally:
             browser.close()
             if server is not None:

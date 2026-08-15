@@ -2,12 +2,15 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {
   buildPerformanceMatrix,
+  createBlankDecisionCase,
   createDecisionCase,
   objectivePasses,
   performanceValue,
   robustCandidate,
   summarizeStrategies,
   validateDecisionCase,
+  validateCompletedDecisionCase,
+  validateDraftDecisionCase,
   vulnerabilityMap,
 } from '../site/src/lib/decision.js';
 
@@ -18,6 +21,53 @@ test('reference decision case is structurally valid', () => {
   assert.equal(decision.objectives.length, 4);
   assert.equal(decision.strategies.length, 3);
   assert.equal(decision.scenarios.length, 4);
+});
+
+test('blank and ready-example factories are isolated bounded decisions', () => {
+  const blank = createBlankDecisionCase();
+  const ready = createDecisionCase();
+  assert.equal(blank.strategies.length, ready.strategies.length);
+  assert.equal(blank.scenarios.length, ready.scenarios.length);
+  assert.equal(blank.objectives.length, ready.objectives.length);
+  assert.equal(blank.title, '');
+  assert.equal(blank.human_decision.selected_strategy_id, '');
+  blank.strategies[0].label = 'Changed blank choice';
+  assert.notEqual(ready.strategies[0].label, blank.strategies[0].label);
+  assert.equal(ready.human_decision.selected_strategy_id, '');
+  assert.equal(validateDraftDecisionCase(blank).valid, true);
+  assert.equal(validateDecisionCase(blank).valid, false);
+});
+
+test('blank decision contains no ready-example domain meaning', () => {
+  const blank = createBlankDecisionCase();
+  const strings = [];
+  const collect = (value) => {
+    if (typeof value === 'string') strings.push(value.toLowerCase());
+    else if (Array.isArray(value)) value.forEach(collect);
+    else if (value && typeof value === 'object') Object.values(value).forEach(collect);
+  };
+  collect(blank);
+  const semanticText = strings.join(' ');
+  for (const term of ['critical-material', 'source qualification', 'supplier', 'reserve', 'affordability', 'continuity']) {
+    assert.equal(semanticText.includes(term), false, `blank retained example meaning: ${term}`);
+  }
+  assert.equal(blank.profile, 'general');
+  assert.equal(blank.urgency, '');
+  assert.equal(blank.reversibility, '');
+  assert.ok(blank.objectives.every((item) => item.threshold === null && item.critical === false));
+  assert.ok(blank.strategies.every((item) => Object.values(item.baseline).every((value) => value === null)));
+  assert.ok(blank.scenarios.every((item) => Object.values(item.strategy_modifiers).every(
+    (modifiers) => Object.values(modifiers).every((value) => value === null),
+  )));
+});
+
+test('partial blank is recoverable as a draft but remains analysis and completion invalid', () => {
+  const blank = createBlankDecisionCase();
+  blank.title = 'Partial decision';
+  blank.question = 'Should we proceed?';
+  assert.equal(validateDraftDecisionCase(blank).valid, true);
+  assert.equal(validateDecisionCase(blank).valid, false);
+  assert.equal(validateCompletedDecisionCase(blank).valid, false);
 });
 
 test('strategy-specific scenario modifiers are transparent and bounded in the R4 case', () => {
@@ -92,11 +142,13 @@ test('critical-objective failure futures gate the machine candidate', () => {
   assert.equal(robustCandidate(decision).strategy_id, 'STR-B');
 });
 
-test('human rationale and next action are mandatory', () => {
+test('fresh ready example has no synthetic human decision', () => {
   const decision = createDecisionCase();
-  decision.human_decision.rationale = '';
-  decision.human_decision.next_action = '';
-  const result = validateDecisionCase(decision);
+  assert.deepEqual(decision.human_decision, {
+    selected_strategy_id: '', rationale: '', next_action: '', approved_by: '', approved_at: null,
+  });
+  assert.equal(validateDecisionCase(decision).valid, true);
+  const result = validateCompletedDecisionCase(decision);
   assert.equal(result.valid, false);
   assert.ok(result.errors.some((error) => error.includes('rationale')));
   assert.ok(result.errors.some((error) => error.includes('next action')));
