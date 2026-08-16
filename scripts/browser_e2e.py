@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import hashlib
+import json
 import mimetypes
 import threading
 import tempfile
@@ -17,7 +18,7 @@ from urllib.parse import unquote, urlparse
 
 try:
     from playwright.sync_api import Error as PlaywrightError
-    from playwright.sync_api import Page, sync_playwright
+    from playwright.sync_api import Page, expect, sync_playwright
 except ImportError as exc:  # pragma: no cover - environment guidance
     raise SystemExit(
         "Browser E2E requires Playwright. Run: python3 -m pip install -r requirements-dev.txt "
@@ -433,6 +434,12 @@ def decision_flow(page: Page, base: str) -> str:
     page.locator("#human-rationale").fill("")
     page.locator("#human-next-action").fill("")
     page.locator("#record-decision").click()
+    page.locator("#human-strategy:focus").wait_for(state="attached")
+    assert page.locator("#human-strategy").get_attribute("aria-invalid") == "true"
+    assert "Decision recorded." not in page.locator("body").inner_text()
+
+    page.locator("#human-strategy").select_option("STR-002")
+    page.locator("#record-decision").click()
     page.locator("#human-rationale:focus").wait_for(state="attached")
     assert page.locator("#human-rationale").get_attribute("aria-invalid") == "true"
 
@@ -442,9 +449,9 @@ def decision_flow(page: Page, base: str) -> str:
     page.locator("#human-next-action").fill(
         "Confirm the qualification evidence plan, owner, milestones, and review date."
     )
-    page.locator("#human-strategy").select_option("STR-002")
     page.locator("#record-decision").click()
     page.locator("#decision-recorded-heading").wait_for(state="visible")
+    assert "Recorded human decision: Qualify a second source" in page.locator("body").inner_text()
 
     with page.expect_download() as json_download:
         page.locator("#export-decision-json").click()
@@ -469,6 +476,45 @@ def route_suite(page: Page, base: str) -> None:
     ]
     for route_path, selector, expected in checks:
         route(page, base, route_path, selector, expected)
+
+
+
+def assert_no_default_ui_leakage(page: Page) -> None:
+    visible = page.locator("body").inner_text()
+    forbidden = [
+        "Invalid outcome for STR-",
+        "Profile: general",
+        "Current substantive fingerprint:",
+        "<!doctype html>",
+        "<html",
+        "</html>",
+    ]
+    for token in forbidden:
+        assert token not in visible, f"default UI leaked {token!r}: {visible[:1200]}"
+    match = re.search(r"\b(?:STR|SCN|OBJ|UNC)-\d{3}\b", visible)
+    assert match is None, f"default UI leaked internal identifier {match.group(0)!r}"
+
+
+def default_ui_leakage_probe(page: Page) -> None:
+    set_hash_route(page, "/decision/new")
+
+    open_stage(page, 4)
+    heading = page.locator("#decision-step-heading-4").inner_text()
+    assert "More information is needed" in heading, heading
+    assert page.locator('[data-decision-stage="4"] .callout.warning li').count() <= 4
+    assert_no_default_ui_leakage(page)
+
+    open_stage(page, 5)
+    assert page.locator('[data-surface="decision-complete"]').count() == 0
+    assert_no_default_ui_leakage(page)
+
+    # This probe shares the page with the full workflow. Restore the neutral
+    # blank entry state so a diagnostic probe can never contaminate the next flow.
+    set_hash_route(page, "/decision/new")
+    open_stage(page, 0)
+    page.locator("#decision-question").wait_for(state="visible")
+    assert page.locator("#decision-question").input_value() == ""
+    assert_no_default_ui_leakage(page)
 
 
 def corrective_draft_and_entry_flow(page: Page, completed_file: str) -> None:
@@ -506,10 +552,11 @@ def corrective_draft_and_entry_flow(page: Page, completed_file: str) -> None:
 
     open_stage(page, 4)
     incomplete_heading = page.locator("#decision-step-heading-4").inner_text()
-    assert "One update is needed" in incomplete_heading, incomplete_heading
+    assert "More information is needed" in incomplete_heading, incomplete_heading
     open_stage(page, 5)
     page.locator("#record-decision").click()
-    assert "Decision question is required" in page.locator("#decision-validation").inner_text()
+    page.locator("#decision-question:focus").wait_for(state="attached")
+    assert page.locator("#decision-question").get_attribute("aria-invalid") == "true"
 
     # Restored -> explicit ready example produces a fresh example and clears the old draft.
     set_hash_route(page, "/decision/example")
@@ -541,16 +588,99 @@ def corrective_draft_and_entry_flow(page: Page, completed_file: str) -> None:
     set_hash_route(page, "/decision/example")
     assert page.locator("#decision-title").input_value() == "Critical-material source qualification decision"
 
-    # Existing completed schema 0.2.10 export still opens, then explicit ready resets it.
+    # A genuine recorded portable export restores Recorded from verified metadata.
     page.locator("#decision-file-input").set_input_files(completed_file)
     page.locator("#decision-title").wait_for(state="attached")
     assert "Saved decision opened" in page.locator("body").inner_text()
+    assert "recorded" in page.locator(".record-lifecycle").inner_text().lower()
+
+    # The same legacy completed payload without record proof is selected but not Recorded.
+    legacy_completed = json.loads(Path(completed_file).read_text(encoding="utf-8"))
+    legacy_completed["human_decision"].pop("recorded_at", None)
+    legacy_completed["human_decision"].pop("recorded_fingerprint", None)
+    page.locator("#decision-file-input").set_input_files({"name": "legacy.fde.json", "mimeType": "application/json", "buffer": json.dumps(legacy_completed).encode("utf-8")})
+    expect(page.locator(".record-lifecycle")).to_contain_text("Ready to Record")
+    assert "recorded" not in page.locator(".record-lifecycle").inner_text().lower()
     set_hash_route(page, "/decision/example")
     page.locator("#decision-title").wait_for(state="attached")
     assert page.locator("#decision-title").input_value() == "Critical-material source qualification decision"
     assert "Synthetic example" in page.locator("body").inner_text()
     open_stage(page, 5)
     assert page.locator("#human-strategy").input_value() == ""
+
+    # A genuinely blank decision can be completed using visible controls only.
+    set_hash_route(page, "/decision/new")
+    page.locator("#decision-question").fill("Which bounded path should we choose?")
+    page.locator("summary").filter(has_text=re.compile(r"^Add context")).click()
+    page.locator("#decision-owner").fill("Decision owner")
+    page.locator('[data-decision-stage="0"] [data-stage-next]').click()
+    assert "✓" in page.locator('[data-decision-stage="0"] .stage-number').inner_text()
+
+    page.locator(".comparison-model > summary").click()
+    for index in range(4):
+        page.locator(f"#objective-label-{index}").fill(f"Goal {index + 1}")
+        page.locator(f"#objective-threshold-{index}").fill("60")
+    page.locator('[data-decision-stage="1"] [data-stage-next]').click()
+    assert "✓" in page.locator('[data-decision-stage="1"] .stage-number').inner_text()
+
+    for strategy_index in range(3):
+        page.locator(f"#strategy-label-{strategy_index}").fill(f"Choice {strategy_index + 1}")
+    for summary in page.locator('[data-decision-stage="2"] summary').filter(has_text="Review comparison inputs").all():
+        summary.click()
+    for score in page.locator("[data-strategy-score]").all():
+        score.fill("60")
+    page.locator('[data-decision-stage="2"] [data-stage-next]').click()
+
+    for scenario_index in range(4):
+        page.locator(f"#scenario-label-{scenario_index}").fill(f"Future {scenario_index + 1}")
+        page.locator(f'[data-scenario-no-change="{scenario_index}"]').check()
+    page.locator('[data-scenario-no-change="0"]').uncheck()
+    assert page.locator('[data-scenario-strategy-modifier^="0:"]').first.input_value() == ""
+    page.locator('[data-scenario-no-change="0"]').check()
+    page.locator('[data-decision-stage="3"] [data-stage-next]').click()
+    assert "What the comparison shows" in page.locator("#decision-step-heading-4").inner_text()
+    assert "Tied leading choices" in page.locator("body").inner_text()
+    page.locator('[data-decision-stage="4"] [data-stage-next]').click()
+
+    # Clearing through the control is captured by sync even without a change event.
+    page.locator("#human-strategy").select_option("STR-003")
+    page.locator("#human-strategy").evaluate("select => { select.value = ''; }")
+    page.locator('[data-decision-stage="5"] [data-stage-back]').click()
+    page.reload(wait_until="networkidle")
+    page.locator("#resume-browser-draft").click()
+    open_stage(page, 5)
+    assert page.locator("#human-strategy").input_value() == ""
+
+    page.locator("#human-strategy").select_option("STR-003")
+    page.locator("#human-rationale").fill("Human chose a different path & reviewed unknowns. ✓")
+    page.locator("#human-next-action").fill("Owner checks progress next week.")
+    selected_summary = page.locator(".brief-grid > div").filter(has_text="Selected choice").inner_text()
+    assert "Choice 3" in selected_summary
+    assert "Recorded human decision: Choice 3" not in page.locator("body").inner_text()
+    page.locator("#record-decision").focus()
+    page.keyboard.press("Enter")
+    page.locator("#decision-recorded-heading").wait_for(state="visible")
+    assert "Recorded human decision: Choice 3" in page.locator("body").inner_text()
+
+    page.locator("#human-rationale").fill("Human revised the rationale after recording.")
+    page.wait_for_timeout(350)
+    page.locator('[data-decision-stage="5"] [data-stage-back]').click()
+    page.locator('[data-decision-stage="4"] [data-stage-next]').click()
+    lifecycle_text = page.locator(".record-lifecycle").inner_text()
+    assert "changed since recording" in lifecycle_text.lower(), lifecycle_text
+    assert "Recorded human decision: Choice 3" in page.locator("body").inner_text()
+    page.locator("#record-decision").click()
+    assert "recorded" in page.locator(".record-lifecycle").inner_text().lower()
+    page.reload(wait_until="networkidle")
+    page.locator("#resume-browser-draft").click()
+    assert "recorded" in page.locator(".record-lifecycle").inner_text().lower()
+
+    # A failed import never replaces the decision currently in progress.
+    current_question = page.locator("#decision-question").input_value()
+    page.locator("#decision-file-input").set_input_files({"name": "invalid.json", "mimeType": "application/json", "buffer": b"not json"})
+    expect(page.locator("#decision-validation")).to_contain_text("neither a completed FDE decision")
+    assert page.locator("#decision-question").input_value() == current_question
+    assert "neither a completed FDE decision nor a valid in-progress draft backup" in page.locator("#decision-validation").text_content()
     assert_page_clean(page)
 
 
@@ -701,6 +831,7 @@ def run_mode(
     page.on("console", lambda message: console_errors.append(message.text) if message.type == "error" else None)
     page.on("pageerror", lambda error: page_errors.append(str(error)))
     route_suite(page, base)
+    default_ui_leakage_probe(page)
     if full:
         completed_file = decision_flow(page, base)
         print_flow(page)

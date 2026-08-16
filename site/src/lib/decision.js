@@ -135,11 +135,125 @@ export const CANDIDATE_STATE = Object.freeze({
   INSUFFICIENT_DATA: 'INSUFFICIENT_DATA',
 });
 
+export const REQUIREMENT_CLASS = Object.freeze({
+  CONTINUE: 'Required to Continue',
+  COMPARE: 'Required to Compare',
+  RECORD: 'Required to Record',
+  CONDITIONAL: 'Conditional',
+  OPTIONAL: 'Optional',
+  DERIVED: 'Derived',
+  DEFAULTED: 'Defaulted',
+  SYSTEM: 'System-Generated',
+});
+
+// One public contract for the bounded 0.2.10/0.3.0 UI. Array topology and IDs
+// remain fixed for compatibility; no internal identifier is user-authored.
+export const REQUIREMENT_CONTRACT = Object.freeze({
+  question: REQUIREMENT_CLASS.CONTINUE,
+  decision_owner: REQUIREMENT_CLASS.RECORD,
+  title: REQUIREMENT_CLASS.DERIVED,
+  profile: REQUIREMENT_CLASS.DEFAULTED,
+  status: REQUIREMENT_CLASS.DEFAULTED,
+  time_horizon: REQUIREMENT_CLASS.OPTIONAL,
+  urgency: REQUIREMENT_CLASS.OPTIONAL,
+  reversibility: REQUIREMENT_CLASS.OPTIONAL,
+  objective_label: REQUIREMENT_CLASS.COMPARE,
+  objective_threshold: REQUIREMENT_CLASS.COMPARE,
+  objective_direction: REQUIREMENT_CLASS.DEFAULTED,
+  objective_description: REQUIREMENT_CLASS.OPTIONAL,
+  objective_unit: REQUIREMENT_CLASS.OPTIONAL,
+  objective_critical: REQUIREMENT_CLASS.DEFAULTED,
+  strategy_label: REQUIREMENT_CLASS.COMPARE,
+  strategy_baseline: REQUIREMENT_CLASS.COMPARE,
+  strategy_description: REQUIREMENT_CLASS.OPTIONAL,
+  strategy_planning: REQUIREMENT_CLASS.OPTIONAL,
+  scenario_label: REQUIREMENT_CLASS.COMPARE,
+  scenario_description: REQUIREMENT_CLASS.OPTIONAL,
+  scenario_modifier: REQUIREMENT_CLASS.COMPARE,
+  uncertainty_and_scenario_states: REQUIREMENT_CLASS.SYSTEM,
+  uncertainty_labels_and_descriptions: REQUIREMENT_CLASS.OPTIONAL,
+  uncertainty_source_metadata: REQUIREMENT_CLASS.DEFAULTED,
+  evidence_summary: REQUIREMENT_CLASS.OPTIONAL,
+  relationships: REQUIREMENT_CLASS.OPTIONAL,
+  stakeholders: REQUIREMENT_CLASS.OPTIONAL,
+  adaptive_pathway: REQUIREMENT_CLASS.OPTIONAL,
+  human_selection: REQUIREMENT_CLASS.RECORD,
+  human_rationale: REQUIREMENT_CLASS.RECORD,
+  human_next_action: REQUIREMENT_CLASS.RECORD,
+  human_approval_metadata: REQUIREMENT_CLASS.OPTIONAL,
+  decision_semantics: REQUIREMENT_CLASS.CONDITIONAL,
+  ids_and_provenance: REQUIREMENT_CLASS.SYSTEM,
+});
+
+const textPresent = (value) => Boolean(String(value ?? '').trim());
+const numberInRange = (value, minimum, maximum) => typeof value === 'number'
+  && Number.isFinite(value) && value >= minimum && value <= maximum;
+
+export function requirementIssues(decisionCase, scope = 'compare') {
+  const issues = [];
+  const add = (stage, fieldId, category, message) => issues.push({ stage, fieldId, category, message });
+  if (!textPresent(decisionCase?.question)) add(0, 'decision-question', REQUIREMENT_CLASS.CONTINUE, 'State the decision you need to make.');
+
+  (decisionCase?.objectives || []).forEach((objective, index) => {
+    if (!textPresent(objective?.label)) add(1, `objective-label-${index}`, REQUIREMENT_CLASS.COMPARE, `Name goal ${index + 1}.`);
+    if (!numberInRange(objective?.threshold, 0, 100)) add(1, `objective-threshold-${index}`, REQUIREMENT_CLASS.COMPARE, `Set goal ${index + 1}'s good-enough line from 0 to 100.`);
+  });
+  (decisionCase?.strategies || []).forEach((strategy, strategyIndex) => {
+    if (!textPresent(strategy?.label)) add(2, `strategy-label-${strategyIndex}`, REQUIREMENT_CLASS.COMPARE, `Name choice ${strategyIndex + 1}.`);
+    (decisionCase?.objectives || []).forEach((objective, objectiveIndex) => {
+      if (!numberInRange(strategy?.baseline?.[objective.objective_id], 0, 100)) {
+        add(2, `strategy-score-${strategyIndex}-${objectiveIndex}`, REQUIREMENT_CLASS.COMPARE, `Score choice ${strategyIndex + 1} against goal ${objectiveIndex + 1} from 0 to 100.`);
+      }
+    });
+  });
+  (decisionCase?.scenarios || []).forEach((scenario, scenarioIndex) => {
+    if (!textPresent(scenario?.label)) add(3, `scenario-label-${scenarioIndex}`, REQUIREMENT_CLASS.COMPARE, `Name future ${scenarioIndex + 1}.`);
+    (decisionCase?.strategies || []).forEach((strategy, strategyIndex) => {
+      (decisionCase?.objectives || []).forEach((objective, objectiveIndex) => {
+        if (!numberInRange(scenario?.strategy_modifiers?.[strategy.strategy_id]?.[objective.objective_id], -100, 100)) {
+          add(3, `scenario-modifier-${scenarioIndex}-${strategyIndex}-${objectiveIndex}`, REQUIREMENT_CLASS.COMPARE, `Describe how future ${scenarioIndex + 1} changes choice ${strategyIndex + 1} on goal ${objectiveIndex + 1}, or choose No modeled change.`);
+        }
+      });
+    });
+  });
+  if (scope === 'record') {
+    if (!textPresent(decisionCase?.decision_owner)) add(0, 'decision-owner', REQUIREMENT_CLASS.RECORD, 'Name the person or role responsible for this decision.');
+    const strategyIds = new Set((decisionCase?.strategies || []).map((item) => item.strategy_id));
+    if (!strategyIds.has(decisionCase?.human_decision?.selected_strategy_id)) add(5, 'human-strategy', REQUIREMENT_CLASS.RECORD, 'Choose the path the person decided on.');
+    if (!textPresent(decisionCase?.human_decision?.rationale)) add(5, 'human-rationale', REQUIREMENT_CLASS.RECORD, 'Explain the reason for the human choice.');
+    if (!textPresent(decisionCase?.human_decision?.next_action)) add(5, 'human-next-action', REQUIREMENT_CLASS.RECORD, 'Name the next action.');
+  }
+  return issues;
+}
+
+export function validateStageRequirements(decisionCase, stage, { forRecord = false } = {}) {
+  const scope = forRecord ? 'record' : 'compare';
+  const issues = requirementIssues(decisionCase, scope).filter((issue) => issue.stage === stage);
+  return { valid: issues.length === 0, issues, errors: issues.map((issue) => issue.message) };
+}
+
 export function performanceValue(strategy, scenario, objectiveId) {
-  const baseline = Number(strategy?.baseline?.[objectiveId]);
-  const modifier = Number(scenario?.strategy_modifiers?.[strategy?.strategy_id]?.[objectiveId] ?? 0);
-  if (!Number.isFinite(baseline) || !Number.isFinite(modifier)) return null;
-  return clamp(baseline + modifier);
+  const baselineInput = strategy?.baseline?.[objectiveId];
+  const modifierInput = scenario?.strategy_modifiers?.[strategy?.strategy_id]?.[objectiveId];
+  if (typeof baselineInput !== 'number' || !Number.isFinite(baselineInput)) return null;
+  if (typeof modifierInput !== 'number' || !Number.isFinite(modifierInput)) return null;
+  return clamp(baselineInput + modifierInput);
+}
+
+export function setScenarioNoModeledChange(decisionCase, scenarioIndex, enabled) {
+  const scenario = decisionCase?.scenarios?.[scenarioIndex];
+  if (!scenario) return false;
+  const cells = (decisionCase.strategies || []).flatMap((strategy) => (decisionCase.objectives || []).map((objective) => ({
+    strategyId: strategy.strategy_id,
+    objectiveId: objective.objective_id,
+  })));
+  if (enabled) {
+    for (const cell of cells) scenario.strategy_modifiers[cell.strategyId][cell.objectiveId] = 0;
+    return true;
+  }
+  if (!cells.every((cell) => scenario.strategy_modifiers?.[cell.strategyId]?.[cell.objectiveId] === 0)) return false;
+  for (const cell of cells) scenario.strategy_modifiers[cell.strategyId][cell.objectiveId] = null;
+  return true;
 }
 
 export function objectivePasses(value, objective) {
@@ -282,12 +396,14 @@ export function vulnerabilityMap(decisionCase, strategyId) {
 }
 
 export function validateAnalysisReady(decisionCase) {
-  const structural = validateDecisionCase(decisionCase);
+  const draft = validateDraftDecisionCase(decisionCase);
   const matrix = buildPerformanceMatrix(decisionCase);
   const expected = (decisionCase?.strategies?.length || 0)
     * (decisionCase?.scenarios?.length || 0)
     * (decisionCase?.objectives?.length || 0);
-  const errors = [...structural.errors];
+  const contract = requirementIssues(decisionCase, 'compare');
+  const errors = [...contract.map((issue) => issue.message)];
+  if (!draft.valid) errors.push('The bounded decision model structure needs attention. Open Inspect for technical details.');
   if (matrix.length !== expected) errors.push(`Expected ${expected} performance rows; received ${matrix.length}.`);
   for (const row of matrix) {
     if (![OUTCOME_STATE.VALID_PASS, OUTCOME_STATE.VALID_FAIL].includes(row.state)) {
@@ -344,12 +460,9 @@ export function validateDecisionCase(decisionCase) {
   }
 
   for (const strategy of decisionCase?.strategies || []) {
-    if (!nonEmpty(strategy.strategy_id) || !nonEmpty(strategy.label) || !nonEmpty(strategy.description)) errors.push('Every strategy requires an ID, label, and description.');
+    if (!nonEmpty(strategy.strategy_id) || !nonEmpty(strategy.label)) errors.push('Every strategy requires an ID and label.');
     for (const objectiveId of objectiveIds) {
       if (!inRange(strategy?.baseline?.[objectiveId], 0, 100)) errors.push(`${strategy.label || strategy.strategy_id} baseline for ${objectiveId} must be between 0 and 100.`);
-    }
-    for (const field of ['action_now', 'monitor', 'trigger', 'contingency']) {
-      if (!nonEmpty(strategy?.[field])) errors.push(`${strategy.label || strategy.strategy_id} requires ${field.replaceAll('_', ' ')}.`);
     }
     if (decisionCase.schema_version === SEMANTIC_SCHEMA_VERSION) for (const [objectiveId, trace] of Object.entries(strategy.score_rationales || {})) {
       if (!objectiveIds.has(objectiveId)) errors.push(`${strategy.label || strategy.strategy_id} has score rationale for an unavailable objective.`);
@@ -358,7 +471,7 @@ export function validateDecisionCase(decisionCase) {
   }
 
   for (const scenario of decisionCase?.scenarios || []) {
-    if (!nonEmpty(scenario.scenario_id) || !nonEmpty(scenario.label) || !nonEmpty(scenario.description)) errors.push('Every scenario requires an ID, label, and description.');
+    if (!nonEmpty(scenario.scenario_id) || !nonEmpty(scenario.label)) errors.push('Every scenario requires an ID and label.');
     for (const [uncertaintyId, uncertainty] of uncertaintyMap.entries()) {
       const state = scenario?.states?.[uncertaintyId];
       if (!uncertainty.states?.includes(state)) errors.push(`${scenario.label || scenario.scenario_id} has an invalid or missing state for ${uncertaintyId}.`);
@@ -381,11 +494,9 @@ export function validateDecisionCase(decisionCase) {
 
   const pathway = decisionCase?.adaptive_pathway;
   for (const field of ['act_now', 'monitor', 'triggers', 'contingencies']) {
-    if (!Array.isArray(pathway?.[field]) || pathway[field].length < 1 || pathway[field].some((item) => !nonEmpty(item))) {
-      errors.push(`Adaptive pathway ${field.replaceAll('_', ' ')} must contain at least one non-empty item.`);
-    }
+    if (!Array.isArray(pathway?.[field]) || pathway[field].some((item) => typeof item !== 'string')) errors.push(`Adaptive pathway ${field.replaceAll('_', ' ')} is invalid.`);
   }
-  if (!nonEmpty(pathway?.reassessment)) errors.push('An adaptive-pathway reassessment condition is required.');
+  if (typeof pathway?.reassessment !== 'string') errors.push('Adaptive-pathway reassessment must be text.');
 
   const provenance = decisionCase?.provenance;
   if (!nonEmpty(provenance?.model_type)) errors.push('Decision provenance must identify the model type.');
@@ -400,6 +511,7 @@ export function validateCompletedDecisionCase(decisionCase) {
   const nonEmpty = (value) => Boolean(String(value ?? '').trim());
   const result = validateDecisionCase(decisionCase);
   const errors = [...result.errors];
+  errors.push(...requirementIssues(decisionCase, 'record').map((issue) => issue.message));
   const strategyIds = new Set((decisionCase?.strategies || []).map((item) => item.strategy_id));
   if (!strategyIds.has(decisionCase?.human_decision?.selected_strategy_id)) errors.push('Choose the human decision before downloading a final record.');
   if (!nonEmpty(decisionCase?.human_decision?.rationale)) errors.push('A human decision rationale is required.');

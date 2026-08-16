@@ -66,8 +66,8 @@ def capture(browser) -> None:
             page,
             "http://fde.test",
             "/decision",
-            "#decision-step-heading",
-            "What are you trying to choose?",
+            "#decision-step-heading-0",
+            "What decision needs to be made?",
         )
         page.screenshot(
             path=str(OUTPUT / "desktop-decision-frame.png"),

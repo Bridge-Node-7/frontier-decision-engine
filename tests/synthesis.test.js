@@ -4,6 +4,7 @@ import { readFile } from 'node:fs/promises';
 import { createDecisionCase } from '../site/src/lib/decision.js';
 import { activateDecisionSemantics } from '../site/src/lib/semantics.js';
 import { deriveDecisionSynthesis } from '../site/src/lib/synthesis.js';
+import { createDecisionRecord } from '../site/src/lib/recording.js';
 import { buildDecisionHtml } from '../site/src/decision-ui.js';
 
 function decision() {
@@ -28,7 +29,10 @@ test('shared synthesis keeps posture, comparison, and human decision distinct', 
   assert.equal(result.posture, 'ADVANCE');
   assert.equal(result.reason_category, 'proceed-conditions-satisfied');
   assert.ok(result.strongest_alternative?.label);
-  assert.ok(result.recorded_human_decision?.label);
+  assert.ok(result.selected_human_choice?.label);
+  assert.equal(result.recorded_human_decision, null);
+  const recorded = deriveDecisionSynthesis(value, createDecisionRecord(value));
+  assert.equal(recorded.recorded_human_decision.label, result.selected_human_choice.label);
 });
 
 test('shared synthesis reports a structured controlling reason', () => {
@@ -45,7 +49,7 @@ test('shared synthesis reports a structured controlling reason', () => {
 test('readable brief consumes the shared synthesis', () => {
   const value = decision();
   const synthesis = deriveDecisionSynthesis(value);
-  const html = buildDecisionHtml(value);
+  const html = buildDecisionHtml(createDecisionRecord(value));
   assert.match(html, /Decision signature/);
   assert.ok(html.includes(synthesis.controlling_issue));
   assert.ok(html.includes(synthesis.strongest_alternative.label));

@@ -51,7 +51,7 @@
 .self-service-panel{display:grid;grid-template-columns:minmax(0,1fr) minmax(320px,1.2fr);gap:1rem;align-items:center;padding:1rem 1.1rem;border:1px solid var(--line);border-radius:20px;background:rgba(255,255,255,.035)}
 .self-service-panel p{margin:.25rem 0;color:var(--muted)}
 .self-service-panel .actions{justify-content:flex-end}
-@media(max-width:760px){.self-service-panel{grid-template-columns:1fr}.self-service-panel .actions{justify-content:flex-start}.self-service-panel button{width:100%}}
+@media(max-width:760px){.self-service-panel{grid-template-columns:minmax(0,1fr);min-width:0;width:100%}.self-service-panel>*{min-width:0}.self-service-panel .actions{justify-content:flex-start}.self-service-panel button{width:100%;white-space:normal;overflow-wrap:anywhere}}
 
 
 /* Final public-page hierarchy */
@@ -147,6 +147,12 @@ a.primary {
 .stage-body>div.stack>div:first-child h2{margin-top:0;font-size:clamp(1.8rem,3.5vw,3rem)}
 .stage-actions{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:1rem;align-items:center;margin-top:2rem;padding-top:1.2rem;border-top:1px solid var(--line)}
 .stage-actions .primary{min-height:50px}
+.requirement{display:block;margin:.15rem 0;color:var(--muted);font-size:.76rem;font-weight:700;letter-spacing:.02em;text-transform:none}
+.no-change-control{display:grid;grid-template-columns:auto 1fr;gap:.25rem .6rem;align-items:start;padding:.9rem 1rem;border:1px solid var(--line);border-radius:12px;background:rgba(255,255,255,.025)}
+.no-change-control .help{grid-column:2}.record-lifecycle,.record-state strong{display:inline-flex;width:max-content;max-width:100%;padding:.28rem .65rem;border:1px solid var(--line);border-radius:999px;color:var(--muted);font-size:.78rem;font-weight:900;letter-spacing:.05em;text-transform:uppercase}
+.record-lifecycle.recorded,.record-state.recorded strong{border-color:var(--success);color:var(--success)}
+.record-lifecycle.changed,.record-state.changed strong{border-color:var(--warning);color:var(--warning)}
+.technical-inspect{margin-top:.75rem}.technical-inspect>summary{font-size:.86rem;color:var(--muted)}
 .decision-output[data-recorded="true"]>.record-prompt{display:none}
 .decision-output[data-recorded="true"]{margin-top:1.5rem}
 .technical-status{display:none}
@@ -154,6 +160,6 @@ a.primary {
 .completion-actions{display:grid;grid-template-columns:max-content max-content max-content;gap:.75rem;align-items:center}
 .completion-actions button{white-space:nowrap}
 @media(max-width:900px){.fde-hero h1{font-size:clamp(3rem,6.6vw,4.4rem)}}
-@media(max-width:760px){.fde-hero{padding:2.25rem 0 2.5rem}.fde-hero h1{font-size:clamp(2.7rem,13vw,4rem);white-space:normal;max-width:10ch}.hero-line{font-size:1.7rem}.method-strand{grid-template-columns:1fr}.method-strand>div{padding:1rem .25rem}.method-strand>div+div{border-left:0;border-top:1px solid var(--line)}.work-heading{align-items:flex-start;flex-direction:column}.entry-utilities{gap:.1rem .8rem}.fde-stage>summary{grid-template-columns:1.8rem minmax(0,1fr) auto;min-height:66px;gap:.65rem}.fde-stage>summary::after{grid-column:3;grid-row:1}.stage-summary{grid-column:2/4;white-space:normal}.fde-stage[open] .stage-summary{display:none}.stage-actions{grid-template-columns:1fr}.stage-actions .status-line{grid-row:1}.stage-actions button{width:100%}.stage-actions .primary{grid-row:2}.stage-actions button:first-child{grid-row:3}.completion-actions{grid-template-columns:1fr}.completion-actions button{width:100%}}
+@media(max-width:760px){.fde-hero{padding:2.25rem 0 2.5rem}.fde-hero h1{font-size:clamp(2.7rem,13vw,4rem);white-space:normal;max-width:10ch}.hero-line{font-size:1.7rem}.method-strand{grid-template-columns:1fr}.method-strand>div{padding:1rem .25rem}.method-strand>div+div{border-left:0;border-top:1px solid var(--line)}.work-heading{align-items:flex-start;flex-direction:column}.entry-utilities{gap:.1rem .8rem}.fde-stage>summary{grid-template-columns:1.8rem minmax(0,1fr) auto;min-height:66px;gap:.65rem}.fde-stage>summary::after{grid-column:3;grid-row:1}.stage-summary{grid-column:2/4;white-space:normal}.fde-stage[open] .stage-summary{display:none}.stage-actions{grid-template-columns:1fr}.stage-actions .status-line{grid-row:1}.stage-actions button{width:100%}.stage-actions .primary{grid-row:2}.stage-actions button:first-child{grid-row:3}.completion-actions{grid-template-columns:minmax(0,1fr)}.completion-actions button{width:100%;white-space:normal;overflow-wrap:anywhere}}
 @media(max-width:760px){.fde-hero h1{max-width:none}}
 @media(forced-colors:active){.stage-number,.fde-stage,.method-strand,.method-strand>div+div{border-color:CanvasText}}
