@@ -15,7 +15,7 @@ function reasonCategory(decision, posture) {
   return 'posture-inactive';
 }
 
-export function deriveDecisionSynthesis(decision) {
+export function deriveDecisionSynthesis(decision, record = null) {
   const candidateResult = robustCandidateDecision(decision);
   const strongest = candidateResult.status === CANDIDATE_STATE.UNIQUE_LEADER ? candidateResult.candidates[0] : null;
   const posture = decisionPosture(decision);
@@ -34,8 +34,12 @@ export function deriveDecisionSynthesis(decision) {
     next_evidence: posture.next_evidence,
     unresolved_conditions: openConditions,
     uncertainty_summary: list(decision?.evidence_summary?.unknown),
-    recorded_human_decision: selected ? { strategy_id: selected.strategy_id, label: selected.label } : null,
-    recorded_rationale: decision?.human_decision?.rationale || '',
-    recorded_next_action: decision?.human_decision?.next_action || '',
+    selected_human_choice: selected ? { strategy_id: selected.strategy_id, label: selected.label } : null,
+    recorded_human_decision: record?.snapshot ? {
+      strategy_id: record.snapshot.human_decision.selected_strategy_id,
+      label: record.snapshot.strategies.find((item) => item.strategy_id === record.snapshot.human_decision.selected_strategy_id)?.label || '',
+    } : null,
+    recorded_rationale: record?.snapshot?.human_decision?.rationale || '',
+    recorded_next_action: record?.snapshot?.human_decision?.next_action || '',
   };
 }

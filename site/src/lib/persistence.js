@@ -1,4 +1,5 @@
 export const DECISION_STORAGE_KEY = 'fde.decision.autosave.v0.2.11';
+export const DECISION_RECORD_STORAGE_KEY = 'fde.decision.record.v0.3.1';
 export const MAX_DECISION_FILE_BYTES = 1_000_000;
 export const MAX_DECISION_DEPTH = 40;
 export const MAX_DECISION_NODES = 20_000;
@@ -41,15 +42,18 @@ export function getBrowserStorage(scope = globalThis) {
   try { return scope?.localStorage || null; } catch { return null; }
 }
 
-export function saveDecision(storage, decision) {
+export function saveDecision(storage, decision, record = null) {
   if (!storage || !decision) return { ok: false, status: 'Autosave unavailable in this browser.' };
   try {
     const serialized = JSON.stringify(decision);
-    const backupSerialized = JSON.stringify(createDraftBackup(decision));
-    if (byteLength(backupSerialized) > MAX_DECISION_FILE_BYTES || !inspectStructure(createDraftBackup(decision)).ok) {
+    const backup = createDraftBackup(decision, record);
+    const backupSerialized = JSON.stringify(backup);
+    if (byteLength(backupSerialized) > MAX_DECISION_FILE_BYTES || !inspectStructure(backup).ok) {
       return { ok: false, status: 'This decision is too large for browser autosave or draft backup. Remove some content and try again.' };
     }
     storage.setItem(DECISION_STORAGE_KEY, serialized);
+    if (record) storage.setItem(DECISION_RECORD_STORAGE_KEY, JSON.stringify(record));
+    else storage.removeItem(DECISION_RECORD_STORAGE_KEY);
     return { ok: true, status: 'Saved in this browser.' };
   } catch (error) {
     return { ok: false, status: `Autosave unavailable: ${error?.message || 'storage error'}` };
@@ -60,32 +64,36 @@ export function loadSavedDecision(storage, validateDecision) {
   if (!storage) return { decision: null, status: 'Autosave unavailable in this browser.' };
   try {
     const raw = storage.getItem(DECISION_STORAGE_KEY);
-    if (!raw) return { decision: null, status: 'Ready. Changes will save in this browser.' };
+    if (!raw) return { decision: null, record: null, status: 'Ready. Changes will save in this browser.' };
     const parsed = parseDecisionText(raw, validateDecision);
     if (!parsed.ok) {
-      return { decision: null, status: 'A saved decision needs attention and was not opened automatically.' };
+      return { decision: null, record: null, status: 'A saved decision needs attention and was not opened automatically.' };
     }
-    return { decision: parsed.decision, status: 'Restored from this browser.' };
+    let record = null;
+    try { record = parseJsonSafely(storage.getItem(DECISION_RECORD_STORAGE_KEY) || 'null'); } catch { record = null; }
+    return { decision: parsed.decision, record, status: 'Restored from this browser.' };
   } catch {
-    return { decision: null, status: 'A saved decision could not be opened. The ready example was restored.' };
+    return { decision: null, record: null, status: 'A saved decision could not be opened. The ready example was restored.' };
   }
 }
 
 export function clearSavedDecision(storage) {
   if (!storage) return;
   try { storage.removeItem(DECISION_STORAGE_KEY); } catch { /* no-op */ }
+  try { storage.removeItem(DECISION_RECORD_STORAGE_KEY); } catch { /* no-op */ }
 }
 
-export function createDraftBackup(decision) {
+export function createDraftBackup(decision, record = null) {
   return {
     file_type: DRAFT_BACKUP_TYPE,
     format_version: DRAFT_BACKUP_VERSION,
     decision,
+    ...(record ? { record } : {}),
   };
 }
 
-export function canDownloadDraftBackup(decision) {
-  const backup = createDraftBackup(decision);
+export function canDownloadDraftBackup(decision, record = null) {
+  const backup = createDraftBackup(decision, record);
   return byteLength(JSON.stringify(backup)) <= MAX_DECISION_FILE_BYTES && inspectStructure(backup).ok;
 }
 
@@ -125,7 +133,7 @@ export function parseDraftBackupText(text, validateDraftDecision) {
     return validateDraftDecision(value.decision);
   });
   return parsed.ok
-    ? { ok: true, decision: parsed.decision.decision, kind: 'draft-backup', errors: [] }
+    ? { ok: true, decision: parsed.decision.decision, record: parsed.decision.record || null, kind: 'draft-backup', errors: [] }
     : { ...parsed, kind: null };
 }
 

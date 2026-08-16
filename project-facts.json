@@ -1,10 +1,10 @@
 {
-  "applicationVersion": "0.3.0",
+  "applicationVersion": "0.3.1",
   "schemaVersions": {
     "decision": "0.2.10",
     "opvCase": "0.1.0"
   },
-  "testCount": 117,
+  "testCount": 124,
   "discoveredHashRouteLiteralCount": 5,
   "browserModes": [
     "desktop-light",
@@ -15,7 +15,7 @@
     "reflow-400-equivalent",
     "forced-colors"
   ],
-  "manifestEntryCount": 30,
+  "manifestEntryCount": 31,
   "retainedReferenceArtifactItemCounts": {
     "profiles/phenomena/profile.json": 5,
     "site/data/experiences.json": 41,

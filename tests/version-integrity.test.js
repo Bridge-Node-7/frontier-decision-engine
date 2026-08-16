@@ -15,6 +15,17 @@ async function fixture() {
   return dir;
 }
 function run(dir) { return spawnSync("python3", [validator, "--root", dir], { encoding: "utf8" }); }
+async function fixtureVersion(dir) {
+  const packageData = JSON.parse(await readFile(path.join(dir, "package.json"), "utf8"));
+  return packageData.version;
+}
+async function replaceRequired(file, from, to) {
+  const before = await readFile(file, "utf8");
+  assert.ok(before.includes(from), `expected fixture text not found: ${from}`);
+  const after = before.replace(from, to);
+  assert.notEqual(after, before, `fixture mutation did not change ${file}`);
+  await writeFile(file, after);
+}
 test("version authorities agree", async () => {
   const dir = await fixture();
   const result = run(dir);
@@ -23,7 +34,8 @@ test("version authorities agree", async () => {
 test("stale citation fails", async () => {
   const dir = await fixture();
   const p = path.join(dir, "CITATION.cff");
-  await writeFile(p, (await readFile(p, "utf8")).replace("version: 0.3.0", "version: 0.2.12"));
+  const version = await fixtureVersion(dir);
+  await replaceRequired(p, `version: ${version}`, "version: 0.0.0");
   assert.notEqual(run(dir).status, 0);
 });
 test("stale generated facts fail", async () => {
@@ -42,7 +54,8 @@ test("stale package lock fails", async () => {
 });
 test("missing current release notes fail", async () => {
   const dir = await fixture();
-  await rm(path.join(dir, "docs", "releases", "v0.3.0.md"));
+  const version = await fixtureVersion(dir);
+  await rm(path.join(dir, "docs", "releases", `v${version}.md`));
   assert.notEqual(run(dir).status, 0);
 });
 test("stale runtime version module fails", async () => {
@@ -59,7 +72,12 @@ test("hard-coded readable-export application version fails", async () => {
 test("stale README screenshot path fails", async () => {
   const dir = await fixture();
   const p = path.join(dir, "README.md");
-  await writeFile(p, (await readFile(p, "utf8")).replace("docs/screenshots/v0.3.0/", "docs/screenshots/v0.2.12/"));
+  const version = await fixtureVersion(dir);
+  await replaceRequired(
+    p,
+    `docs/screenshots/v${version}/`,
+    "docs/screenshots/v0.0.0/",
+  );
   assert.notEqual(run(dir).status, 0);
 });
 test("hard-coded screenshot capture version fails", async () => {

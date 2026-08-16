@@ -13,6 +13,7 @@ import {
   validateDraftDecisionCase,
   vulnerabilityMap,
 } from '../site/src/lib/decision.js';
+import { createDecisionRecord } from '../site/src/lib/recording.js';
 
 test('reference decision case is structurally valid', () => {
   const decision = createDecisionCase();
@@ -178,9 +179,14 @@ test('decision interface exposes all six renderers', async () => {
 
 test('exported decision brief preserves assumptions, vulnerabilities, and adaptive controls', async () => {
   const { buildDecisionHtml } = await import('../site/src/decision-ui.js');
-  const html = buildDecisionHtml(createDecisionCase());
+  const decision = createDecisionCase();
+  decision.human_decision.selected_strategy_id = 'STR-002';
+  decision.human_decision.rationale = 'The human selected this choice.';
+  decision.human_decision.next_action = 'Begin review.';
+  const html = buildDecisionHtml(createDecisionRecord(decision));
   assert.match(html, /<h3>Assumed<\/h3>/);
-  assert.match(html, /Selected-strategy vulnerabilities/);
+  assert.match(html, /Selected-choice vulnerabilities/);
+  assert.match(html, /Recorded human decision/);
   assert.match(html, /<h3>Monitor<\/h3>/);
   assert.match(html, /<h3>Contingencies<\/h3>/);
   assert.match(html, /Reassessment:/);
@@ -189,6 +195,10 @@ test('exported decision brief preserves assumptions, vulnerabilities, and adapti
 
 test('machine candidate discloses critical gaps in the exported brief', async () => {
   const { buildDecisionHtml } = await import('../site/src/decision-ui.js');
-  const html = buildDecisionHtml(createDecisionCase());
+  const decision = createDecisionCase();
+  decision.human_decision.selected_strategy_id = 'STR-002';
+  decision.human_decision.rationale = 'Human rationale.';
+  decision.human_decision.next_action = 'Human next action.';
+  const html = buildDecisionHtml(createDecisionRecord(decision));
   assert.match(html, /critical gaps in 2 included futures/);
 });
