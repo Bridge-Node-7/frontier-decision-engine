@@ -6,10 +6,12 @@ Security fixes are applied to the current release line.
 
 ## Reporting a vulnerability
 
-Do not open a public issue for a vulnerability that could expose evidence files, personal data, or integrity controls. Use GitHub's private vulnerability reporting feature for this repository.
+Use GitHub private vulnerability reporting for security issues involving this repository. Do not post sensitive security details publicly.
 
-Include the affected version, reproduction steps, impact, and any proposed mitigation. Do not include private evidence files in the report.
+Provide only the minimum information needed to understand and reproduce the issue safely.
 
 ## Security boundary
 
-The public application is static and local-first. It does not require accounts or upload files to an OPV server. A deployment operator may add hosting or analytics outside this repository; those additions are outside the default security boundary and must be disclosed.
+The default application is static and browser-local. It has no backend, account system, analytics, cookies, or default upload endpoint.
+
+Deployment operators may add services outside this repository; those additions are outside the default security boundary and should be reviewed and disclosed separately.
