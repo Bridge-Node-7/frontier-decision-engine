@@ -29,7 +29,7 @@ test('release identity supports a compatible schema and complete current notes',
   const packageData = JSON.parse(await read('package.json'));
   const citation = await read('CITATION.cff');
   const verifier = await read('scripts/verify_release_tag.py');
-  const notes = await read(`docs/releases/v${packageData.version}.md`);
+  const notes = await read('docs/RELEASE_NOTES.md');
   const releasing = await read('docs/RELEASING.md');
   const packager = await read('scripts/package_release.py');
   const versionPattern = packageData.version.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
@@ -75,8 +75,8 @@ test('browser end-to-end harness covers the retained Decision Lab surface', asyn
   assert.match(requirements, /playwright==1\.57\.0/);
   assert.equal(packageData.scripts['test:e2e'], 'python3 scripts/browser_e2e.py');
   assert.equal(packageData.scripts['capture:screenshots'], 'python3 scripts/capture_screenshots.py');
-  assert.match(capture, /VERSION = json\.loads\(\(ROOT \/ "package\.json"\)\.read_text\(encoding="utf-8"\)\)\["version"\]/);
-  assert.match(capture, /OUTPUT = ROOT \/ "docs" \/ "screenshots" \/ f"v\{VERSION\}"/);
+  assert.match(capture, /OUTPUT = ROOT \/ "docs" \/ "screenshots" \/ "reference"/);
+  assert.equal(capture.includes('f"v{VERSION}"'), false);
   assert.equal(runner.includes('wait_for_function'), false);
   assert.equal(capture.includes('wait_for_function'), false);
   assert.match(runner, /decision-step-heading-/);
@@ -243,6 +243,7 @@ test('public repository surface stays lean and user-focused', async () => {
     'DATA_DICTIONARY.md',
     'METHODOLOGY.md',
     'PRIVACY.md',
+    'RELEASE_NOTES.md',
     'RELEASING.md',
     'STYLE_LAYERS.md',
   ]);
@@ -288,14 +289,13 @@ test('delivery automation retains dependency, review, and attestation controls',
   assert.match(release, /actions\/attest@508db95dd578ae2727ebd6217d5ba78e4fbda05d/);
 });
 
-test('README references only the current retained product screenshot', async () => {
-  const packageData = JSON.parse(await read('package.json'));
+test('README references only the stable retained product screenshot', async () => {
   const readme = await read('README.md');
-  const expectedScreenshot = `docs/screenshots/v${packageData.version}/desktop-decision-frame.png`;
+  const expectedScreenshot = 'docs/screenshots/reference/desktop-decision-frame.png';
   assert.equal(readme.includes(expectedScreenshot), true);
   assert.equal(
     (readme.match(/docs\/screenshots\/v\d+\.\d+\.\d+\/desktop-decision-frame\.png/g) || []).length,
-    1,
+    0,
   );
   for (const removed of [
     'desktop-' + 'stress-test-dark.png',
