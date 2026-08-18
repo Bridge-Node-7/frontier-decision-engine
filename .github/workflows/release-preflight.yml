@@ -8,7 +8,7 @@ on:
     paths:
       - '.github/workflows/release.yml'
       - '.github/workflows/release-preflight.yml'
-      - 'docs/releases/**'
+      - 'docs/RELEASE_NOTES.md'
       - 'scripts/package_release.py'
       - 'scripts/verify_release_tag.py'
       - 'scripts/*project-facts.mjs'

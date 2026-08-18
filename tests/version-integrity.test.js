@@ -54,8 +54,7 @@ test("stale package lock fails", async () => {
 });
 test("missing current release notes fail", async () => {
   const dir = await fixture();
-  const version = await fixtureVersion(dir);
-  await rm(path.join(dir, "docs", "releases", `v${version}.md`));
+  await rm(path.join(dir, "docs", "RELEASE_NOTES.md"));
   assert.notEqual(run(dir).status, 0);
 });
 test("stale runtime version module fails", async () => {
@@ -72,23 +71,20 @@ test("hard-coded readable-export application version fails", async () => {
 test("stale README screenshot path fails", async () => {
   const dir = await fixture();
   const p = path.join(dir, "README.md");
-  const version = await fixtureVersion(dir);
   await replaceRequired(
     p,
-    `docs/screenshots/v${version}/`,
-    "docs/screenshots/v0.0.0/",
+    "docs/screenshots/reference/",
+    "docs/screenshots/stale/",
   );
   assert.notEqual(run(dir).status, 0);
 });
-test("hard-coded screenshot capture version fails", async () => {
+test("versioned screenshot capture directory fails", async () => {
   const dir = await fixture();
   const p = path.join(dir, "scripts", "capture_screenshots.py");
-  await writeFile(
+  await replaceRequired(
     p,
-    (await readFile(p, "utf8")).replace(
-      'VERSION = json.loads((ROOT / "package.json").read_text(encoding="utf-8"))["version"]',
-      'VERSION = "0.2.12"',
-    ),
+    'OUTPUT = ROOT / "docs" / "screenshots" / "reference"',
+    'OUTPUT = ROOT / "docs" / "screenshots" / "v0.0.0"',
   );
   assert.notEqual(run(dir).status, 0);
 });

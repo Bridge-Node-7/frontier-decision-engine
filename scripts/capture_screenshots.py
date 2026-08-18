@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import hashlib
-import json
 import sys
 
 sys.dont_write_bytecode = True
@@ -18,8 +17,7 @@ from browser_e2e import (
 )
 
 ROOT = Path(__file__).resolve().parents[1]
-VERSION = json.loads((ROOT / "package.json").read_text(encoding="utf-8"))["version"]
-OUTPUT = ROOT / "docs" / "screenshots" / f"v{VERSION}"
+OUTPUT = ROOT / "docs" / "screenshots" / "reference"
 
 
 def prepare_page(browser, viewport: dict[str, int], color_scheme: str):

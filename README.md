@@ -4,7 +4,7 @@ Browser-local, human-governed decision support for choices under deep uncertaint
 
 [Open the live application](https://bridgenode7.com/frontier-decision-engine/)
 
-![Frontier Decision Engine](docs/screenshots/v0.3.1/desktop-decision-frame.png)
+![Frontier Decision Engine](docs/screenshots/reference/desktop-decision-frame.png)
 
 ## What it does
 

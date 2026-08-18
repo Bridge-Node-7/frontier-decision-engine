@@ -83,8 +83,13 @@ if str(package_lock.get("packages", {}).get("", {}).get("version", "")) != appli
     errors.append("package-lock root package version mismatch")
 if str(facts.get("applicationVersion", "")) != application_version:
     errors.append("project-facts application version mismatch")
-if not (ROOT / "docs" / "releases" / f"v{application_version}.md").is_file():
+release_notes_path = ROOT / "docs" / "RELEASE_NOTES.md"
+if not release_notes_path.is_file():
     errors.append("current release notes file is missing")
+else:
+    release_notes_text = release_notes_path.read_text(encoding="utf-8")
+    if not re.search(rf"(?m)^#\s+v{re.escape(application_version)}\s*$", release_notes_text):
+        errors.append("current release notes version mismatch")
 if decision.get("schema_version") != "0.2.10":
     errors.append("decision example schema version mismatch")
 if profile.get("profile_id") != "phenomena":
@@ -223,21 +228,23 @@ allowed_static_docs = {
     "docs/METHODOLOGY.md",
     "docs/DATA_DICTIONARY.md",
     "docs/PRIVACY.md",
+    "docs/RELEASE_NOTES.md",
     "docs/RELEASING.md",
     "docs/STYLE_LAYERS.md",
 }
-release_docs = {
-    item for item in docs_markdown
-    if re.fullmatch(r"docs/releases/v\d+\.\d+\.\d+\.md", item)
-}
-unexpected_docs = docs_markdown - allowed_static_docs - release_docs
+unexpected_docs = docs_markdown - allowed_static_docs
 if unexpected_docs:
     errors.append(
         "docs Markdown surface mismatch: "
         + ", ".join(sorted(unexpected_docs))
     )
-if f"docs/releases/v{application_version}.md" not in release_docs:
+release_notes = ROOT / "docs/RELEASE_NOTES.md"
+if not release_notes.is_file():
     errors.append("current release notes are absent from docs surface")
+else:
+    release_text = release_notes.read_text(encoding="utf-8")
+    if not re.search(rf"(?m)^#\s+v{re.escape(application_version)}\s*$", release_text):
+        errors.append("current release notes do not identify the application version")
 
 readme = (ROOT / "README.md").read_text(encoding="utf-8")
 if len(readme.splitlines()) > 100:

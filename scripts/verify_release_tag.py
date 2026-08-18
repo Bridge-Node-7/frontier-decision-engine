@@ -28,7 +28,7 @@ def classify_tag(tag: str) -> dict[str, str]:
         "version": f"{base_version}{prerelease}",
         "base_version": base_version,
         "release_kind": "prerelease" if prerelease else "stable",
-        "notes_file": f"docs/releases/{tag.strip()}.md",
+        "notes_file": "docs/RELEASE_NOTES.md",
     }
 
 
@@ -74,8 +74,16 @@ def verify_repository_identity(identity: dict[str, str]) -> None:
         )
 
     notes_path = ROOT / identity["notes_file"]
-    if not notes_path.is_file() or not notes_path.read_text(encoding="utf-8").strip():
+    if not notes_path.is_file():
         raise ValueError(f"release notes file is missing or empty: {identity['notes_file']}")
+    notes = notes_path.read_text(encoding="utf-8").strip()
+    if not notes:
+        raise ValueError(f"release notes file is missing or empty: {identity['notes_file']}")
+    expected_heading = f"# {identity['tag']}"
+    if notes.splitlines()[0].strip() != expected_heading:
+        raise ValueError(
+            f"release notes heading must be {expected_heading!r}: {identity['notes_file']}"
+        )
 
 
 def write_github_outputs(identity: dict[str, str]) -> None:

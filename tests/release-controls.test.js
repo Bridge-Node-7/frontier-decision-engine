@@ -25,7 +25,7 @@ test('release classifier accepts stable and prerelease tags and rejects malforme
   const identity = JSON.parse(rc.stdout);
   assert.equal(identity.release_kind, 'prerelease');
   assert.equal(identity.base_version, '0.3.0');
-  assert.equal(identity.notes_file, 'docs/releases/v0.3.0-rc.1.md');
+  assert.equal(identity.notes_file, 'docs/RELEASE_NOTES.md');
   const malformed = classify('v0.3');
   assert.notEqual(malformed.status, 0);
 });
@@ -50,8 +50,9 @@ test('release preflight is minimally privileged and never publishes', async () =
   assert.match(workflow, /npm run package:release/);
 });
 
-test('historical release note keeps the execution boundary concise', async () => {
-  const notes = await read('docs/releases/v0.2.10.md');
-  assert.match(notes, /not exercised for\s+this historical release/i);
-  assert.ok(notes.split(/\r?\n/).length <= 12);
+test('stable current release notes keep the decision boundary explicit', async () => {
+  const notes = await read('docs/RELEASE_NOTES.md');
+  assert.match(notes, /^# v0\.3\.1$/m);
+  assert.match(notes, /human judgment/i);
+  assert.match(notes, /browser-local storage is not encrypted confidential storage/i);
 });
