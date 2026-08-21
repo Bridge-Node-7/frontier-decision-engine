@@ -50,6 +50,7 @@ async function collectRetainedReferenceArtifactItemCounts() {
 export async function collectProjectFacts() {
   const packageData = await readJson(join(root, 'package.json'));
   const decisionSchema = await readJson(join(root, 'schemas', 'decision.schema.json'));
+  const semanticDecisionSchema = await readJson(join(root, 'schemas', 'decision-0.3.0.schema.json'));
   const caseSchema = await readJson(join(root, 'schemas', 'case.schema.json'));
   const testFiles = (await walk(join(root, 'tests'))).filter((path) => path.endsWith('.test.js'));
   let testCount = 0;
@@ -84,6 +85,7 @@ export async function collectProjectFacts() {
     applicationVersion: packageData.version,
     schemaVersions: {
       decision: schemaVersion(decisionSchema),
+      semanticDecision: schemaVersion(semanticDecisionSchema),
       opvCase: schemaVersion(caseSchema),
     },
     testCount,

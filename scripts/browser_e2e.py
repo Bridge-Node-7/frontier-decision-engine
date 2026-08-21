@@ -21,8 +21,8 @@ try:
     from playwright.sync_api import Page, expect, sync_playwright
 except ImportError as exc:  # pragma: no cover - environment guidance
     raise SystemExit(
-        "Browser E2E requires Playwright. Run: python3 -m pip install -r requirements-dev.txt "
-        "and python3 -m playwright install chromium"
+        "Browser E2E requires Playwright. Run: node scripts/run-python.mjs -m pip install "
+        "-r requirements-dev.txt and node scripts/run-python.mjs -m playwright install chromium"
     ) from exc
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -73,6 +73,13 @@ def browser_executable() -> str | None:
         found = shutil.which(name)
         if found:
             return found
+    if os.name == "nt":
+        roots = [os.environ.get("PROGRAMFILES"), os.environ.get("PROGRAMFILES(X86)"), os.environ.get("LOCALAPPDATA")]
+        for root in filter(None, roots):
+            for relative in ("Google/Chrome/Application/chrome.exe", "Microsoft/Edge/Application/msedge.exe"):
+                candidate = Path(root, relative)
+                if candidate.is_file():
+                    return str(candidate)
     return None
 
 
@@ -375,6 +382,13 @@ def decision_flow(page: Page, base: str) -> str:
     assert page.locator('[data-decision-stage]').count() == 6
     assert page.locator('[data-decision-stage][open]').count() == 1
     assert page.locator("#decision-question").is_visible()
+    overview = page.locator("#mobile-overview-action")
+    if page.evaluate("window.innerWidth <= 760"):
+        assert overview.is_visible()
+        assert overview.get_attribute("href") == "#how-it-works"
+        assert overview.bounding_box()["y"] < page.locator('[data-decision-stage="0"]').bounding_box()["y"]
+    else:
+        assert not overview.is_visible()
     assert page.locator("#decision-question").input_value() == ""
     assert page.locator("#use-ready-example").is_visible()
     assert page.locator("#open-decision-file").is_visible()
@@ -413,6 +427,9 @@ def decision_flow(page: Page, base: str) -> str:
         page.locator(f"#decision-step-heading-{index + 1}:focus").wait_for(state="attached")
         actual = heading.inner_text()
         assert expected in actual, f"expected {expected!r}; found {actual!r}"
+
+        if expected == "What needs to be true?":
+            assert page.locator('[data-decision-stage="1"] .comparison-model[open]').count() == 0
 
         heading_box = heading.bounding_box()
         assert heading_box is not None, "decision step heading has no layout box"
@@ -689,6 +706,9 @@ def checkpoint_b_semantics_flow(page: Page) -> None:
     page.locator("summary").filter(has_text=re.compile(r"^Choose a decision approach")).click()
     page.locator("#decision-semantic-mode").select_option("sustainability-seer")
     page.locator('[data-decision-stage="0"] [data-stage-next]').click()
+    semantic_model = page.locator('[data-surface="semantic-model"]')
+    assert semantic_model.get_attribute("open") is None
+    semantic_model.locator(":scope > summary").click()
     page.locator('[data-surface="decision-semantics-criteria"]').wait_for(state="visible")
     wait_for_render_settle(page)
     body = page.locator("body").inner_text()
@@ -711,6 +731,9 @@ def checkpoint_b_semantics_flow(page: Page) -> None:
             page.locator(f"#semantic-outcome-{index}").select_option("meets")
     page.locator('[data-decision-stage="1"] [data-stage-next]').click()
     open_stage(page, 4)
+    decision_signature = page.locator('[data-projection="decision-signature"]')
+    assert decision_signature.get_attribute("open") is None
+    decision_signature.locator(":scope > summary").click()
     page.locator('[data-surface="decision-posture"]').wait_for(state="visible")
     results = page.locator("body").inner_text()
     assert "Decision posture" in results

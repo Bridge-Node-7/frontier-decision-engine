@@ -68,8 +68,7 @@ investment approval. A human can apply only a more cautious posture override.
 
 ## Deferred Checkpoint C observations
 
-Record only; not implemented in Checkpoint A: move the mobile Overview action
-closer to first glance, reduce Step 2 and Step 5 default density, avoid making a
-highlighted percentage resemble machine approval, simplify secondary recovery
-actions, and strengthen progressive disclosure. The future doctrine remains:
+Remaining observations: avoid making a highlighted percentage resemble machine
+approval, simplify secondary recovery actions, and continue strengthening
+progressive disclosure. The future doctrine remains:
 simple on the surface, rigorous underneath; meaning before numbers; human decides.

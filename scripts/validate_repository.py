@@ -83,6 +83,10 @@ if str(package_lock.get("packages", {}).get("", {}).get("version", "")) != appli
     errors.append("package-lock root package version mismatch")
 if str(facts.get("applicationVersion", "")) != application_version:
     errors.append("project-facts application version mismatch")
+if facts.get("schemaVersions", {}).get("decision") != "0.2.10":
+    errors.append("project-facts decision schema version mismatch")
+if facts.get("schemaVersions", {}).get("semanticDecision") != "0.3.0":
+    errors.append("project-facts semantic decision schema version mismatch")
 release_notes_path = ROOT / "docs" / "RELEASE_NOTES.md"
 if not release_notes_path.is_file():
     errors.append("current release notes file is missing")

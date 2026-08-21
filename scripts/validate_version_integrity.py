@@ -83,8 +83,11 @@ def main() -> int:
         fail("decision example schema does not match project-facts", errors)
     if schema != "0.2.10":
         fail(f"unexpected decision schema change: {schema}", errors)
-    if semantic_schema.get("properties", {}).get("schema_version", {}).get("const") != "0.3.0":
+    semantic_schema_version = semantic_schema.get("properties", {}).get("schema_version", {}).get("const")
+    if semantic_schema_version != "0.3.0":
         fail("parallel semantic decision schema 0.3.0 is missing or invalid", errors)
+    if facts.get("schemaVersions", {}).get("semanticDecision") != semantic_schema_version:
+        fail("project-facts semantic decision schema does not match schema 0.3.0", errors)
     if semantic_schema != deployed_semantic_schema:
         fail("source and deployed semantic decision schemas differ", errors)
     if errors:

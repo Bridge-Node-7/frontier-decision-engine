@@ -52,6 +52,15 @@ jobs:
           test "$TAG_OBJECT_TYPE" = "tag"
           test "$(gh api "repos/$GITHUB_REPOSITORY/git/tags/$TAG_OBJECT_SHA" --jq '.verification.verified')" = "true"
           test "$(gh api "repos/$GITHUB_REPOSITORY/git/tags/$TAG_OBJECT_SHA" --jq '.verification.reason')" = "valid"
+      - name: Verify tagged commit identity
+        id: commit
+        run: |
+          TAG_COMMIT="$(git rev-list -n 1 "$GITHUB_REF_NAME")"
+          CHECKOUT_COMMIT="$(git rev-parse HEAD)"
+          test "$TAG_COMMIT" = "$CHECKOUT_COMMIT"
+          git fetch --no-tags origin main
+          git merge-base --is-ancestor "$TAG_COMMIT" origin/main
+          echo "release_commit=$TAG_COMMIT" >> "$GITHUB_OUTPUT"
       - name: Run complete release gate
         run: |
           npm run check
@@ -71,6 +80,7 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
           RELEASE_KIND: ${{ steps.identity.outputs.release_kind }}
+          RELEASE_COMMIT: ${{ steps.commit.outputs.release_commit }}
         run: |
           release_flags=(--verify-tag)
           if [ "$RELEASE_KIND" = "prerelease" ]; then
@@ -82,6 +92,7 @@ jobs:
             "dist/frontier-decision-engine-${GITHUB_REF_NAME}.zip" \
             "dist/frontier-decision-engine-${GITHUB_REF_NAME}.zip.sha256" \
             "${release_flags[@]}" \
+            --target "$RELEASE_COMMIT" \
             --title "Frontier Decision Engine ${GITHUB_REF_NAME}" \
             --notes-file "${{ steps.identity.outputs.notes_file }}"
       - name: Download and verify hosted release assets

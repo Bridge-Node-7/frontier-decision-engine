@@ -62,6 +62,16 @@ def verify_repository_identity(identity: dict[str, str]) -> None:
             f"{schema_version}"
         )
 
+    semantic_schema = json.loads(
+        (ROOT / "schemas/decision-0.3.0.schema.json").read_text(encoding="utf-8")
+    )
+    semantic_schema_version = semantic_schema["properties"]["schema_version"]["const"]
+    if facts.get("schemaVersions", {}).get("semanticDecision") != semantic_schema_version:
+        raise ValueError(
+            "project-facts semantic decision schema version does not match the semantic "
+            f"decision schema {semantic_schema_version}"
+        )
+
     example = json.loads(
         (ROOT / "examples/phenomena-second-station/decision.fde.json").read_text(
             encoding="utf-8"
@@ -116,7 +126,9 @@ def main() -> None:
         facts = json.loads((ROOT / "project-facts.json").read_text(encoding="utf-8"))
         print(
             f"release tag verified: {identity['tag']} "
-            f"({identity['release_kind']}, schema {facts['schemaVersions']['decision']})"
+            f"({identity['release_kind']}, decision schemas "
+            f"{facts['schemaVersions']['decision']} and "
+            f"{facts['schemaVersions']['semanticDecision']})"
         )
 
 

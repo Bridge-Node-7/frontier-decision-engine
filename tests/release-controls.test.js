@@ -7,7 +7,8 @@ import { fileURLToPath } from 'node:url';
 const read = (path) => readFile(new URL(`../${path}`, import.meta.url), 'utf8');
 
 function classify(tag) {
-  const result = spawnSync('python3', [
+  const result = spawnSync(process.execPath, [
+    fileURLToPath(new URL('../scripts/run-python.mjs', import.meta.url)),
     fileURLToPath(new URL('../scripts/verify_release_tag.py', import.meta.url)),
     tag,
     '--classify-only',
@@ -39,6 +40,10 @@ test('production release workflow remains tag-only and classifies RC publication
   assert.match(workflow, /Verify required release notes/);
   assert.ok(workflow.indexOf('Verify required release notes') < workflow.indexOf('Verify npm lockfile'));
   assert.match(workflow, /group: release-\$\{\{ github\.ref \}\}/);
+  assert.match(workflow, /Verify tagged commit identity/);
+  assert.match(workflow, /git rev-list -n 1 "\$GITHUB_REF_NAME"/);
+  assert.match(workflow, /git merge-base --is-ancestor "\$TAG_COMMIT" origin\/main/);
+  assert.match(workflow, /--target "\$RELEASE_COMMIT"/);
 });
 
 test('release preflight is minimally privileged and never publishes', async () => {
@@ -52,7 +57,9 @@ test('release preflight is minimally privileged and never publishes', async () =
 
 test('stable current release notes keep the decision boundary explicit', async () => {
   const notes = await read('docs/RELEASE_NOTES.md');
-  assert.match(notes, /^# v0\.3\.1$/m);
+  const packageData = JSON.parse(await read('package.json'));
+  const version = packageData.version.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  assert.match(notes, new RegExp(`^# v${version}$`, 'm'));
   assert.match(notes, /human judgment/i);
   assert.match(notes, /browser-local storage is not encrypted confidential storage/i);
 });

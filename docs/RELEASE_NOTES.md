@@ -1,22 +1,18 @@
-# v0.3.1
+# v0.3.2
 
-## Complete decision authoring and recording lifecycle
+## Verification, interface, and release integrity
 
-Application version is 0.3.1. The compatible decision schema 0.2.10 remains available alongside the explicitly versioned 0.3.0 semantic decision schema.
+Application version is 0.3.2. The compatible decision schema 0.2.10 remains available alongside the explicitly versioned 0.3.0 semantic decision schema.
 
-This corrective release completes the bounded blank-to-recorded Decision Lab workflow while preserving the existing decision model, human authority, and published schema contracts.
+This patch release improves cross-platform verification, focused progressive disclosure, and release commit identity while preserving the decision model, human authority, and published schema contracts.
 
 ### Changes
 
-- Makes the bounded goals, choices, thresholds, comparison values, futures, and future effects visibly authorable from a true blank decision.
-- Separates Required to Continue, Required to Compare, and Required to Record so optional planning fields do not block truthful analysis.
-- Preserves blank, unknown, and explicit numeric zero as distinct states; No Modeled Change is an explicit human declaration.
-- Separates a selected human choice from a recorded human decision.
-- Adds a browser-local Decision Record with an immutable snapshot and deterministic substantive-state fingerprint.
-- Marks material edits after recording as Changed since recording and requires explicit re-recording for a current recorded output.
-- Preserves legacy completed imports without inventing a v0.3.1 recording event.
-- Strengthens validation routing, keyboard focus, mobile workflow coverage, import preservation, and recorded-output consistency while keeping internal IDs and raw validator detail out of normal views.
-- Keeps schemas 0.2.10 and 0.3.0 unchanged.
+- Adds a portable Python launcher for npm verification on Windows and POSIX systems without adding dependencies.
+- Reports both decision schema identities in generated project and release metadata.
+- Places a mobile Overview action at the working-interface heading and keeps secondary Step 2 and Step 5 detail collapsed until requested.
+- Verifies that a release tag resolves to the checked-out commit, that the commit is on `main`, and that GitHub Release publication targets that exact commit.
+- Keeps schemas 0.2.10 and 0.3.0, ranking, thresholds, decision fingerprints, browser-local operation, and human decision authority unchanged.
 
 ### Evidence boundary
 
@@ -24,4 +20,4 @@ FDE provides transparent software decision support. Recording documents human ju
 
 ### Release-candidate date
 
-2026-08-15
+2026-08-20

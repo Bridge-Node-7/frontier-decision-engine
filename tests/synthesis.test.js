@@ -61,6 +61,8 @@ test('public source exposes progressive projections and truthful traceability', 
   assert.match(source, /data-projection="brief"/);
   assert.match(source, /data-projection="review"/);
   assert.match(source, /data-projection="inspect"/);
+  assert.match(source, /data-projection="decision-signature"/);
+  assert.match(source, /data-surface="semantic-model"/);
   assert.match(source, /not an arithmetic conversion/);
   const noJs = await readFile(new URL('../site/index.html', import.meta.url), 'utf8');
   assert.match(noJs, /Six stages/);
