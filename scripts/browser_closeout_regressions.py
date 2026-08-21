@@ -19,6 +19,20 @@ ROOT = Path(__file__).resolve().parents[1]
 SITE = ROOT / "site"
 
 
+def browser_executable() -> str | None:
+    explicit = os.environ.get("CHROME_BIN")
+    if explicit:
+        return explicit
+    if os.name == "nt":
+        roots = [os.environ.get("PROGRAMFILES"), os.environ.get("PROGRAMFILES(X86)"), os.environ.get("LOCALAPPDATA")]
+        for root in filter(None, roots):
+            for relative in ("Google/Chrome/Application/chrome.exe", "Microsoft/Edge/Application/msedge.exe"):
+                candidate = Path(root, relative)
+                if candidate.is_file():
+                    return str(candidate)
+    return None
+
+
 class QuietHandler(http.server.SimpleHTTPRequestHandler):
     def log_message(self, *_args):
         pass
@@ -154,7 +168,11 @@ def assert_live_invalid(page, base):
 def main():
     live_base = os.environ.get("FDE_BASE_URL", "").strip()
     with sync_playwright() as p:
-        browser = p.chromium.launch(headless=True)
+        launch_kwargs = {"headless": True}
+        executable = browser_executable()
+        if executable:
+            launch_kwargs["executable_path"] = executable
+        browser = p.chromium.launch(**launch_kwargs)
         try:
             if live_base:
                 page = browser.new_page(viewport={"width": 390, "height": 844})

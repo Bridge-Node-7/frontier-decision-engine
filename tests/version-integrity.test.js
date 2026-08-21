@@ -6,6 +6,7 @@ import { spawnSync } from "node:child_process";
 import test from "node:test";
 const root = path.resolve(import.meta.dirname, "..");
 const validator = path.join(root, "scripts", "validate_version_integrity.py");
+const pythonLauncher = path.join(root, "scripts", "run-python.mjs");
 async function fixture() {
   const dir = await mkdtemp(path.join(os.tmpdir(), "fde-version-"));
   for (const item of [
@@ -14,7 +15,7 @@ async function fixture() {
   ]) await cp(path.join(root, item), path.join(dir, item), { recursive: true });
   return dir;
 }
-function run(dir) { return spawnSync("python3", [validator, "--root", dir], { encoding: "utf8" }); }
+function run(dir) { return spawnSync(process.execPath, [pythonLauncher, validator, "--root", dir], { encoding: "utf8" }); }
 async function fixtureVersion(dir) {
   const packageData = JSON.parse(await readFile(path.join(dir, "package.json"), "utf8"));
   return packageData.version;
@@ -42,6 +43,13 @@ test("stale generated facts fail", async () => {
   const dir = await fixture();
   const p = path.join(dir, "project-facts.json");
   const obj = JSON.parse(await readFile(p, "utf8")); obj.applicationVersion = "0.2.12";
+  await writeFile(p, JSON.stringify(obj, null, 2) + "\n");
+  assert.notEqual(run(dir).status, 0);
+});
+test("stale semantic schema facts fail", async () => {
+  const dir = await fixture();
+  const p = path.join(dir, "project-facts.json");
+  const obj = JSON.parse(await readFile(p, "utf8")); obj.schemaVersions.semanticDecision = "0.0.0";
   await writeFile(p, JSON.stringify(obj, null, 2) + "\n");
   assert.notEqual(run(dir).status, 0);
 });

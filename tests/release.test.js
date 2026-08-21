@@ -8,6 +8,7 @@ test('application version retains the compatible v0.2.10 decision schema', async
   const packageData = JSON.parse(await read('package.json'));
   const citation = await read('CITATION.cff');
   const schema = JSON.parse(await read('schemas/decision.schema.json'));
+  const semanticSchema = JSON.parse(await read('schemas/decision-0.3.0.schema.json'));
   const example = JSON.parse(await read('examples/phenomena-second-station/decision.fde.json'));
   const facts = JSON.parse(await read('project-facts.json'));
   assert.match(packageData.version, /^\d+\.\d+\.\d+$/);
@@ -18,6 +19,7 @@ test('application version retains the compatible v0.2.10 decision schema', async
   assert.equal(example.schema_version, '0.2.10');
   assert.equal(facts.applicationVersion, packageData.version);
   assert.equal(facts.schemaVersions.decision, schema.properties.schema_version.const);
+  assert.equal(facts.schemaVersions.semanticDecision, semanticSchema.properties.schema_version.const);
   assert.ok(Number.isInteger(facts.testCount) && facts.testCount > 0);
   const readme = await read('README.md');
   assert.match(readme, /project-facts\.json/);
@@ -71,10 +73,12 @@ test('browser end-to-end harness covers the retained Decision Lab surface', asyn
   assert.match(runner, /ThreadingHTTPServer/);
   assert.match(runner, /native-http/);
   assert.match(runner, /sandbox-fallback/);
+  assert.match(runner, /PROGRAMFILES\(X86\)/);
+  assert.match(runner, /Microsoft\/Edge\/Application\/msedge\.exe/);
   assert.match(runner, /page\.keyboard\.press\("Enter"\)/);
   assert.match(requirements, /playwright==1\.57\.0/);
-  assert.equal(packageData.scripts['test:e2e'], 'python3 scripts/browser_e2e.py');
-  assert.equal(packageData.scripts['capture:screenshots'], 'python3 scripts/capture_screenshots.py');
+  assert.equal(packageData.scripts['test:e2e'], 'node scripts/run-python.mjs scripts/browser_e2e.py');
+  assert.equal(packageData.scripts['capture:screenshots'], 'node scripts/run-python.mjs scripts/capture_screenshots.py');
   assert.match(capture, /OUTPUT = ROOT \/ "docs" \/ "screenshots" \/ "reference"/);
   assert.equal(capture.includes('f"v{VERSION}"'), false);
   assert.equal(runner.includes('wait_for_function'), false);
@@ -97,6 +101,7 @@ test('one-page FDE stages and incomplete-analysis state provide focusable headin
   for (let index = 0; index < 6; index += 1) assert.match(decision, new RegExp(`decision-step-heading-${index}`));
   assert.match(decision, /data-decision-stage/);
   assert.match(decision, /toggle-all-stages/);
+  assert.match(decision, /mobile-overview-action/);
   assert.equal(app.includes('case-step-heading'), false);
   assert.match(decision, /scrollIntoView\(\{ block: 'start', behavior: 'auto' \}\)/);
 });
@@ -145,6 +150,8 @@ test('tag-driven release workflow verifies identity and publishes deterministic 
   assert.match(workflow, /npm run package:release/);
   assert.match(workflow, /cd dist[\s\S]*sha256sum --check/);
   assert.match(workflow, /gh release create/);
+  assert.match(workflow, /release_commit=\$TAG_COMMIT/);
+  assert.match(workflow, /--target "\$RELEASE_COMMIT"/);
   assert.match(workflow, /actions\/attest@508db95dd578ae2727ebd6217d5ba78e4fbda05d/);
   assert.match(workflow, /persist-credentials: false/);
   assert.match(verifier, /tag .* does not match package version/);
@@ -195,6 +202,8 @@ test('Release workflow requires a verified signature and hosted immutable verifi
   assert.match(release, /verification\.verified/);
   assert.match(release, /verification\.reason/);
   assert.match(release, /test "\$TAG_OBJECT_TYPE" = "tag"/);
+  assert.match(release, /test "\$TAG_COMMIT" = "\$CHECKOUT_COMMIT"/);
+  assert.match(release, /git merge-base --is-ancestor/);
   assert.equal(release.includes('RELEASE_ADMIN_TOKEN'), false);
   assert.match(release, /gh release download "\$GITHUB_REF_NAME"/);
   assert.match(release, /hosted-verification/);

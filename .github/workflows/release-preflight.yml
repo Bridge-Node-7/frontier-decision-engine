@@ -10,6 +10,7 @@ on:
       - '.github/workflows/release-preflight.yml'
       - 'docs/RELEASE_NOTES.md'
       - 'scripts/package_release.py'
+      - 'scripts/run-python.mjs'
       - 'scripts/verify_release_tag.py'
       - 'scripts/*project-facts.mjs'
       - 'project-facts.json'
