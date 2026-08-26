@@ -5,7 +5,7 @@
     "semanticDecision": "0.3.0",
     "opvCase": "0.1.0"
   },
-  "testCount": 142,
+  "testCount": 143,
   "discoveredHashRouteLiteralCount": 6,
   "browserModes": [
     "desktop-light",
