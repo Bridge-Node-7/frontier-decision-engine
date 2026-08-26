@@ -65,10 +65,8 @@ def run() -> None:
                     page.get_by_role('button', name="I'm not sure").first.click()
                     page.get_by_role('button', name='Continue →').click()
                     assert 'What choice actually needs to be made?' in page.locator('#rescue-question').inner_text()
-                    page.get_by_role('button', name='Keep going without a clear decision yet').click()
-                    page.get_by_role('button', name="I'm not sure yet — keep going").click()
-                    page.get_by_role('button', name="I'm not sure yet — keep going").click()
-                    page.get_by_role('button', name="I'm not sure yet — build what we have").click()
+                    for _ in range(4):
+                        page.locator('[data-rescue-skip]').click()
                     assert 'taking shape' in page.locator('#rescue-question').inner_text()
                     assert page.locator('#rescue-open-lab').is_disabled()
                     assert 'No recommendation has been made' in page.locator('body').inner_text()
