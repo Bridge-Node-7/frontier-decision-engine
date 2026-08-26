@@ -46,9 +46,10 @@ def run() -> None:
                     page = context.new_page()
                     page.goto(base, wait_until="networkidle")
 
-                    headline = page.locator('main h1').inner_text()
+                    hero = page.locator('[data-surface="fde-hero"]')
+                    headline = hero.locator('h1').inner_text()
                     assert headline.startswith('Bring the whole mess. Find the decision.')
-                    assert 'Frontier Decision Engine' in headline
+                    assert page.locator('[data-surface="fde-hero"] .eyebrow').inner_text() == 'Frontier Decision Engine'
                     assert page.locator('#universal-input').is_visible()
                     assert page.locator('#universal-input').get_attribute('aria-describedby') == 'universal-help'
                     assert page.locator('#universal-response-title').inner_text()
