@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { draftFromInput, responseFor } from '../site/src/universal-ui.js';
 
 test('Universal Response always returns a useful response for any text', () => {
-  for (const input of ['', 'I do not know what to do.', 'Should we stay or go?', 'banana moon 777', '<script>alert(1)</script>']) {
+  for (const input of ['', 'I do not know what to do.', 'Should we stay or go?', 'banana moon 777', '<script>alert(1)</script>', 'How much does this cost?', 'How does this work?', 'We need to hire someone and decide whether to expand too.']) {
     const draft = draftFromInput(input);
     const response = responseFor(draft);
     assert.ok(response.title.trim());
@@ -22,6 +22,17 @@ test('Universal Response preserves messy human input as inert starting context',
 test('Universal Response extracts explicit alternatives without inventing fallback choices', () => {
   const draft = draftFromInput('Should we build internally or partner externally?');
   assert.deepEqual(draft.choices, ['Should we build internally', 'partner externally']);
+});
+
+test('Universal Response distinguishes information requests and multiple decisions', () => {
+  const information = draftFromInput('How much does a new MRI machine cost?');
+  assert.equal(information.intent, 'information');
+  assert.match(responseFor(information).title, /information question/i);
+
+  const multiple = draftFromInput('Should we hire someone? Should we expand next year?');
+  assert.equal(multiple.intent, 'multi');
+  assert.equal(multiple.possibleDecision, '');
+  assert.match(responseFor(multiple).title, /more than one possible decision/i);
 });
 
 test('Universal Response leaves incomplete decisions incomplete', () => {
