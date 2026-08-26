@@ -208,8 +208,15 @@
   overflow:hidden;
 }
 .rescue-frame-head{
+  display:flex;
+  align-items:start;
+  justify-content:space-between;
+  gap:1rem;
   padding:1.2rem 1.25rem 1rem;
   border-bottom:1px solid var(--line);
+}
+.rescue-reset{
+  flex:0 0 auto;
 }
 .rescue-frame-head h2{
   margin:.25rem 0 0;
@@ -225,7 +232,7 @@
 .rescue-frame h3{
   margin:0 0 .3rem;
   color:var(--accent-strong);
-  font-size:.74rem;
+  font-size:.8rem;
   letter-spacing:.1em;
   text-transform:uppercase;
 }
@@ -279,7 +286,8 @@
 }
 @media(max-width:900px){
   .rescue-layout{grid-template-columns:minmax(0,1fr)}
-  .rescue-frame{position:static;order:-1}
+  .rescue-focus{order:0}
+  .rescue-frame{position:static;order:1}
   .rescue-method{grid-template-columns:1fr}
   .rescue-method h2{padding:1rem 0}
   .rescue-method>div{border-left:0;border-top:1px solid var(--line);padding:1rem 0}
@@ -297,8 +305,47 @@
   .rescue-inline-add{grid-template-columns:minmax(0,1fr)}
   .rescue-inline-add button{width:100%}
 }
+.rescue-focus h2{scroll-margin-top:6rem}
+.rescue-nav-hint{
+  flex-basis:100%;
+  margin:.35rem 0 0;
+  color:var(--muted);
+  font-size:.85rem;
+}
+.rescue-nav [data-rescue-next]:not([disabled]) ~ .rescue-nav-hint{display:none}
+.rescue-collision{
+  margin:1rem 0 0;
+  padding:1rem 1.05rem;
+  border:1px solid var(--warning);
+  border-radius:16px;
+  background:var(--surface-2);
+}
+.rescue-collision p{margin:.35rem 0 .8rem;color:var(--muted)}
+.rescue-starting-context{margin-bottom:1rem}
+.rescue-context-text{white-space:pre-wrap;overflow-wrap:anywhere}
+:root{--focus-ring:#fff0b3}
+[data-theme="light"]{
+  --success:#176b52;
+  --warning:#7a4e0b;
+  --danger:#9d3030;
+  --focus-ring:#235a74;
+}
+[data-theme="light"] .eyebrow,
+[data-theme="light"] .bn7-path-card small{color:var(--accent-strong)}
+[data-theme="light"] .bn7-footer a{color:var(--accent-strong)}
+a:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible{
+  outline:3px solid var(--focus-ring);
+  outline-offset:3px;
+}
 @media(forced-colors:active){
   .rescue-chip.is-selected,
   .rescue-guidance,
   .rescue-callout{outline:2px solid CanvasText}
 }
+[data-theme="light"] h1 .gradient-text{
+  background:none;
+  color:var(--text);
+  -webkit-text-fill-color:var(--text);
+}
+[data-theme="light"] .metric,
+[data-theme="light"] .result{background:var(--surface)}
