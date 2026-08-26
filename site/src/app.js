@@ -47,12 +47,12 @@ function showRescueContext() {
 async function router() {
   const path = location.hash.slice(1) || '/';
   let rescueHandoff = false;
-  if (path === '/' || path === '/method') {
+  if (path === '/') {
     document.title = 'Frontier Decision Engine';
     const { renderDecisionRescue } = await import('./rescue-ui.js');
-    renderDecisionRescue(main, { focusMethod: path === '/method' });
+    renderDecisionRescue(main);
   } else {
-    const decisionRoute = ['/decision', '/decision/new', '/decision/example', '/decision/open'].includes(path);
+    const decisionRoute = ['/decision', '/decision/new', '/decision/example', '/decision/open', '/method'].includes(path);
     if (decisionRoute) {
       document.title = 'Frontier Decision Engine';
       const { renderDecisionLab } = await import('./decision-ui.js');
@@ -60,6 +60,7 @@ async function router() {
       renderDecisionLab(main, {
         openFile: path === '/decision/open',
         entryMode: path === '/decision/new' ? 'blank' : path === '/decision/example' ? 'ready-example' : null,
+        focusMethod: path === '/method',
       });
       if (rescueHandoff) {
         main.querySelector('#resume-browser-draft')?.click();
@@ -71,7 +72,7 @@ async function router() {
     }
   }
   main.dataset.route = path;
-  if (!rescueHandoff && path !== '/method') main.focus({ preventScroll: true });
+  if (!rescueHandoff) main.focus({ preventScroll: true });
   if (path !== '/method') window.scrollTo({ top: 0, behavior: 'auto' });
 }
 
