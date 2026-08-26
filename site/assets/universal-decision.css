@@ -28,8 +28,8 @@
 .universal-next{margin:1rem;border:1px solid var(--line-strong);border-radius:18px;padding:1rem;background:var(--surface-glow)}
 .universal-next p{margin:.35rem 0 1rem;color:var(--muted);line-height:1.55}
 .universal-confirm-row{display:flex;gap:.55rem;flex-wrap:wrap}
-.universal-confirm-row button{min-height:44px}
+.universal-confirm-row button,.universal-confirm-row .button{min-height:44px}
 .universal-truth{padding:0 1.25rem 1.25rem;margin:0;color:var(--muted);font-size:.82rem;line-height:1.5}
 @media(max-width:900px){.universal-layout{grid-template-columns:1fr}.universal-surface{position:static;order:2}.universal-entry{order:1}.universal-hero{text-align:left}.universal-hero h1{max-width:700px}.universal-subtitle{margin:0}}
-@media(max-width:620px){.universal-entry,.universal-surface{border-radius:18px}.universal-actions,.universal-confirm-row{align-items:stretch;flex-direction:column}.universal-actions button,.universal-confirm-row button{width:100%}#universal-input{min-height:220px}.universal-hero{margin-top:2.5rem}}
+@media(max-width:620px){.universal-entry,.universal-surface{border-radius:18px}.universal-actions,.universal-confirm-row{align-items:stretch;flex-direction:column}.universal-actions button,.universal-confirm-row button,.universal-confirm-row .button{width:100%}#universal-input{min-height:220px}.universal-hero{margin-top:2.5rem}}
 @media(forced-colors:active){.universal-entry,.universal-surface,.universal-response,.universal-next{box-shadow:none;border:1px solid CanvasText}.universal-badge{border-color:CanvasText}}

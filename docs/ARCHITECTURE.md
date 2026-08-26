@@ -2,55 +2,54 @@
 
 Frontier Decision Engine is a static browser application served from `site/`. There is no backend or account service.
 
-## Runtime
+## Human-first runtime
 
-- Decision Rescue is the human-language front door.
-- Decision Lab is the structured six-stage comparison workflow.
-- The ranking engine is deterministic and runs in the browser.
-- Portable decision schemas remain versioned under `schemas/`.
-- Validation and release checks run from `scripts/` and GitHub Actions.
+The public root is a one-input response experience. A person can write a problem, question, worry, idea, decision, or incomplete thought without knowing decision-science vocabulary. FDE immediately returns a useful response and a provisional Decision Surface.
 
-## Human-first entry
+The Decision Surface can show:
 
-The root experience accepts bounded inert text and asks for the smallest useful human contribution next. It does not claim to understand arbitrary prose, retrieve external facts, infer evidence, assign probabilities, create scores, or recommend an action.
+- a possible decision;
+- choices mentioned explicitly;
+- things that may matter;
+- conditions that could change the answer; and
+- the most useful next step.
 
-A Decision Frame can remain incomplete and still be useful. Full comparison is available only after the person has confirmed a decision, at least two goals, two choices, and two plausible futures.
+Possible elements are not silently promoted into facts. The surface is a draft until a person confirms the information that belongs in the formal decision model.
 
-Guided comparison supports:
+## Minimum necessary human contribution
 
-- 2–4 objectives
-- 2–3 strategies
-- 2–4 scenarios
+FDE follows this interaction rule at the surface layer:
 
-The ready example remains a larger synthetic reference case. Missing thresholds, scores, modifiers, critical flags, and evidence stay missing until a person supplies them.
+> Continue without bothering the person when the system can proceed safely; otherwise ask for the smallest human contribution that materially advances the decision.
+
+No normal input is treated as a dead end. Empty, vague, messy, ambiguous, and non-decision input receive a useful orientation response rather than an error-only state.
+
+## Formal Decision Lab
+
+Once enough explicit structure exists, the confirmed information is handed into the existing deterministic Decision Lab. Guided comparison supports 2–4 objectives, 2–3 strategies, and 2–4 scenarios. The minimum comparison is a true 2 × 2 × 2 model.
+
+The comparison core is isolated from the surface layer so UX changes do not silently alter ranking semantics. Missing analytical values are not fabricated.
+
+## Epistemic boundaries
+
+The public experience separates:
+
+1. **You said** — the original human input.
+2. **FDE organized** — a provisional structure derived from safe, explicit textual patterns.
+3. **You confirmed** — information promoted into the formal model by a human.
+4. **FDE calculated** — deterministic output from confirmed model inputs.
+5. **You decided** — the human-owned choice, rationale, and next action.
+
+The default runtime does not use a remote AI provider, retrieve external facts, infer evidence, assign probabilities, or make the final decision.
 
 ## Browser storage
 
-Decision Rescue uses tab-scoped session storage for accidental-refresh recovery. The original starting context remains context only and is not scored or promoted into model evidence.
+The universal response surface uses bounded tab-scoped session storage for accidental-refresh recovery. Decision Lab uses bounded browser autosave for structured work. Browser storage is a convenience, not encrypted confidential storage.
 
-Decision Lab uses bounded browser autosave for in-progress structured work. If a browser draft already exists, Decision Rescue does not replace it silently; replacement requires an explicit human choice.
+## Privacy and security
 
-Browser storage is not encrypted confidential storage. Local files are processed in the browser and are not uploaded by the default application.
+The public application has no backend, account system, analytics, telemetry, cookies, remote AI provider, or default upload endpoint. User input is rendered as text, not executable markup. Local files remain in the browser unless the person explicitly downloads or shares them.
 
-## Decision result
+## Long-term direction
 
-The engine evaluates explicit human-supplied inputs across the same named futures. It preserves honest outcomes including:
-
-- a unique leader under the tested model;
-- tied leaders;
-- no acceptable strategy under declared boundaries; and
-- insufficient data.
-
-The result is advisory. A person selects the strategy and records the rationale and next action.
-
-## Compatibility
-
-Legacy completed decision schema `0.2.10` remains supported. Optional decision-semantics state uses schema `0.3.0`. The guided browser editor is intentionally bounded even though portable schemas may permit broader cases.
-
-The deterministic ranking core is isolated from the human-entry layer so UX changes do not silently alter comparison semantics.
-
-## Security and privacy boundaries
-
-The public runtime has no account system, analytics, telemetry, remote AI provider, or default upload endpoint. User-entered text is rendered as text rather than executable markup.
-
-Generated visualizations and software calculations are not evidence. FDE does not provide legal approval, organizational authorization, certification, qualification, consent, or investment approval.
+The architecture intentionally leaves room for an optional assisted-understanding adapter and later Decision Memory without making either a dependency of the deterministic core. Any future semantic provider must produce provisional output that passes through the same human-confirmation boundary.
