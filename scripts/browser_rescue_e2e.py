@@ -14,6 +14,7 @@ from playwright.sync_api import sync_playwright
 ROOT = Path(__file__).resolve().parents[1]
 SITE = ROOT / "site"
 SESSION_KEY = "fde.universal.session.v1"
+DECISION_KEY = "fde.decision.autosave.v0.2.11"
 
 
 class QuietHandler(http.server.SimpleHTTPRequestHandler):
@@ -71,6 +72,17 @@ def run() -> None:
                     assert page.locator('script').filter(has_text='alert(1)').count() == 0
                     assert page.locator('#universal-confirm').count() == 0
                     assert page.get_by_role('link', name='Help me shape the missing pieces →').is_visible()
+
+                    page.locator('#universal-input').fill('Should we build internally or partner externally? Time, quality, and cost matter. The supplier may be late and demand changes.')
+                    page.locator('#universal-analyze').click()
+                    page.locator('#universal-confirm').wait_for(state='visible')
+
+                    # Saved-work regression / rescue-collision: never silently replace an existing Lab draft.
+                    page.evaluate(f"localStorage.setItem('{DECISION_KEY}', JSON.stringify({{sentinel:'keep-me'}}))")
+                    page.locator('#universal-confirm').click()
+                    assert page.evaluate(f"localStorage.getItem('{DECISION_KEY}')") == '{"sentinel":"keep-me"}'
+                    assert 'A saved FDE decision already exists' in page.locator('#universal-next-title').locator('..').inner_text()
+                    assert page.url.endswith('/') and '#/decision' not in page.url
 
                     page.locator('#universal-input').fill('banana moon 777')
                     page.locator('#universal-analyze').click()
