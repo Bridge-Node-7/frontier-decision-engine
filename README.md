@@ -1,28 +1,38 @@
 # Frontier Decision Engine
 
-Browser-local, human-governed decision support for choices under deep uncertainty.
+**Bring a messy situation. Find the decision. Test choices when useful. Keep the final judgment human-owned.**
 
 [Open the live application](https://bridgenode7.com/frontier-decision-engine/)
 
 ![Frontier Decision Engine](docs/screenshots/reference/desktop-decision-frame.png)
 
-## What it does
+## Start with Decision Rescue
 
-- Frames decisions, objectives, uncertainties, strategies, and plausible futures.
-- Evaluates choices across explicit goals and named future conditions.
-- Shows unmet goals, ties, incomplete outcomes, and conditions to watch.
+Decision Rescue accepts ordinary language first. A visitor can put down what is happening, choose one useful next action, and build a Decision Frame without knowing decision-science terminology.
+
+FDE preserves what the person confirms and does not pretend browser JavaScript inferred evidence, probabilities, thresholds, scores, or a recommendation. A partial Decision Frame is a valid stopping point.
+
+Decision Rescue uses tab-scoped session storage so an accidental refresh can recover in-progress framing. It does not treat the original brain dump as model evidence. When a complete frame continues into the Decision Lab, existing browser-saved Lab work is never replaced without an explicit human choice.
+
+## What the Decision Lab does
+
+- Frames the decision, goals, choices, and plausible futures.
+- Evaluates the same choices across explicit goals and named conditions.
+- Shows unmet goals, ties, incomplete outcomes, and vulnerabilities.
 - Keeps final selection, rationale, and next action human-owned.
-- Exports an editable decision file and a readable decision summary.
-The application is static and browser-local. It has no backend, account system,
-analytics, cookies, or default upload endpoint.
+- Exports a portable decision file and a readable decision summary.
 
-## Ready reference case
+Guided work supports 2–4 objectives, 2–3 choices, and 2–4 plausible futures. The minimum comparison is a real 2 × 2 × 2 model. FDE never fills missing analytical inputs on the person's behalf.
 
-The default public workflow uses a clearly labeled synthetic critical-material source-qualification case. It demonstrates the interface and does not certify a supplier, qualify a material, confirm production capacity, guarantee compliance, recommend an investment, or predict commodity prices.
+The included ready example is a **synthetic critical-material source-qualification case**. It does not describe or certify a real supplier, material, capacity, compliance status, or investment.
 
-The Decision Lab autosaves in-progress work in the local browser and asks before reopening a structurally safe draft on return. Anyone with access to that browser profile may be able to reopen it; browser storage is not encrypted confidential storage. An incomplete draft can be downloaded and reopened as an explicitly labeled draft backup. Completed legacy schema `0.2.10` decisions remain supported. Explicit use of Sustainability · SEER-informed or Decision-posture semantics uses schema `0.3.0`; both published schema contracts remain unchanged. A recorded output requires a decision owner, human choice, rationale, and next action, and recording remains distinct from approval or authorization. Legacy completed files without verified recording metadata open without inventing a recording event. The application supports recorded editable-file and readable-summary export without an account or default upload endpoint.
+## Privacy and authority
 
-SEER-informed is an optional lens inside the same six-stage workflow. People, Planet, Profits, and Product remain independent; there is no composite sustainability score. The existing comparison and the separately derived Decision posture are advisory, and a human owns the final decision.
+The application is static and browser-local. It has no backend, account system, analytics, telemetry, cookies, or default upload endpoint.
+
+Browser storage is a convenience, not encrypted confidential storage. Do not enter information that requires an approved confidential or controlled-data environment.
+
+FDE provides decision support. It does not approve, authorize, certify, qualify, consent, or make an investment decision. The comparison informs; a person decides.
 
 ## Run locally
 
@@ -34,8 +44,7 @@ Open `http://localhost:8000`.
 
 ## Verify
 
-Requirements: Node.js 22+, Python 3.11+, and Chromium or Google Chrome. The npm
-commands locate `python3`, `python`, or `py -3` as appropriate for the platform.
+Requirements: Node.js 22+, Python 3.11+, and Chromium or Google Chrome.
 
 ```bash
 node scripts/run-python.mjs -m pip install -r requirements-dev.txt
@@ -44,26 +53,19 @@ npm ci --ignore-scripts --no-audit --no-fund
 npm run check
 ```
 
-Current generated counts and versions are recorded in
-[`project-facts.json`](project-facts.json). Its discovered hash-route count is a
-count of route literals in HTML/JavaScript, and its retained-reference counts
-describe repository artifacts rather than active Decision Lab datasets.
+`npm run check` runs the repository's unit, version, integrity, browser, Decision Rescue, and release-closeout gates. Current generated counts and versions are recorded in [`project-facts.json`](project-facts.json).
 
 ## Documentation
 
 - [Architecture](docs/ARCHITECTURE.md)
 - [Methodology](docs/METHODOLOGY.md)
-- [Data](docs/DATA_DICTIONARY.md)
 - [Privacy](docs/PRIVACY.md)
-- [Releasing](docs/RELEASING.md)
+- [Releases](docs/RELEASING.md)
 
 ## Project
 
-Contributions must preserve evidence boundaries, human decision authority,
-privacy, accessibility, and the complete validation gate. See
-[CONTRIBUTING.md](CONTRIBUTING.md).
+Changes must preserve human decision authority, privacy, accessibility, and the complete validation gate. See [CONTRIBUTING.md](CONTRIBUTING.md).
 
-Report vulnerabilities through GitHub private vulnerability reporting as
-described in [SECURITY.md](SECURITY.md).
+Report vulnerabilities through GitHub private vulnerability reporting as described in [SECURITY.md](SECURITY.md).
 
 Apache-2.0 licensed. See [LICENSE](LICENSE).

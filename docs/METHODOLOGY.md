@@ -1,33 +1,17 @@
 # Methodology
 
-The engine uses a small, transparent scenario matrix rather than a hidden
-prediction model.
+Frontier Decision Engine uses a transparent scenario comparison rather than a hidden prediction model.
 
-1. Define the decision, stakeholders, objectives, and thresholds.
-2. Record uncertainties and plausible futures.
-3. Enter strategy performance assumptions.
-4. Apply strategy-specific future modifiers.
-5. Evaluate threshold passes and critical failures.
-6. Review vulnerabilities and monitoring triggers.
+1. State the decision.
+2. Define what needs to go well and what counts as good enough.
+3. Name realistic choices.
+4. Name plausible futures that could change the answer.
+5. Enter explicit performance assumptions and future-specific changes.
+6. Compare threshold passes, critical failures, and vulnerabilities.
 7. Record the human-owned decision, rationale, and next action.
 
-Scores are analyst-assigned desirability inputs, not probabilities or empirical
-forecasts. The interface preserves each value so the result can be inspected
-and challenged.
+Scores are user- or analyst-assigned desirability inputs. They are not probabilities or empirical forecasts. Inputs remain inspectable so results can be challenged and revised.
 
-## SEER-informed decision semantics
+Software validation proves deterministic behavior against declared inputs. It does not prove that a user's evidence is true, complete, or sufficient.
 
-The optional lens uses the Four-P source concept—People, Planet, Profits, and
-Product—as independent dimensions. Frontier Decision Engine's contract,
-validation rules, and Decision-posture derivation are a BN7 synthesis and the
-actual implemented behavior is defined by the versioned schema and tested pure
-functions. Automated tests establish deterministic software behavior; they do
-not establish the truth, adequacy, or completeness of a user's evidence.
-
-This is SEER-informed decision support. It is not curriculum reproduction,
-certification, a mastery claim, Pepperdine endorsement, an official Pepperdine
-implementation, or an institutional partnership. Limitations include
-human-entered evidence/outcomes, no composite sustainability score, no legal or
-organizational approval authority, and no automatic Materials-to-Mission data
-transfer. Materials-to-Mission remains conceptually the evidence/pathway layer;
-FDE remains the decision layer.
+The comparison informs. A person decides.

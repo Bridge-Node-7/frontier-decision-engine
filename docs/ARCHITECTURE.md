@@ -1,74 +1,56 @@
 # Architecture
 
-Frontier Decision Engine is a static browser application served from `site/`.
-There is no backend or account service.
+Frontier Decision Engine is a static browser application served from `site/`. There is no backend or account service.
 
-## Main components
+## Runtime
 
-- `site/src/decision-ui.js`: decision workflow and exports.
-- `site/src/app.js`: public hash-route states and page-level copy.
-- `site/src/lib/decision.js`: scenario evaluation and robust-candidate logic.
-- `site/src/lib/semantics.js`: optional Four-P summaries, proceed-condition validation, and deterministic Decision posture; it does not participate in comparative ranking.
-- `site/src/lib/case.js`: case validation, hashing, and export.
-- `site/src/lib/case.js`, `site/src/lib/calculations.js`, and `site/src/lib/datasets.js`: retained compatibility/reference modules covered by validation; they are not primary navigation surfaces.
-- `schemas/`: portable JSON contracts.
-- `scripts/`: validation, browser tests, packaging, and release verification.
+- Decision Rescue is the human-language front door.
+- Decision Lab is the structured six-stage comparison workflow.
+- The ranking engine is deterministic and runs in the browser.
+- Portable decision schemas remain versioned under `schemas/`.
+- Validation and release checks run from `scripts/` and GitHub Actions.
 
-## Decision ranking
+## Human-first entry
 
-The reference candidate ranking is transparent and deterministic:
+The root experience accepts bounded inert text and asks for the smallest useful human contribution next. It does not claim to understand arbitrary prose, retrieve external facts, infer evidence, assign probabilities, create scores, or recommend an action.
 
-1. Minimize scenarios containing critical-objective failures.
-2. Maximize worst-case critical-objective pass rate.
-3. Maximize worst-case overall pass rate.
-4. Maximize overall pass rate.
-5. Minimize total critical failures.
+A Decision Frame can remain incomplete and still be useful. Full comparison is available only after the person has confirmed a decision, at least two goals, two choices, and two plausible futures.
 
-The result is advisory. A human selects the strategy and records the rationale
-and next action.
+Guided comparison supports:
 
-## Boundaries
+- 2–4 objectives
+- 2–3 strategies
+- 2–4 scenarios
 
-All source data and assumptions remain visible. Generated visualizations are
-not evidence. Local files are processed in the browser and are not uploaded by
-the default application.
+The ready example remains a larger synthetic reference case. Missing thresholds, scores, modifiers, critical flags, and evidence stay missing until a person supplies them.
 
-Browser autosave is a recovery convenience, not confidential storage. A valid
-saved draft is presented for an explicit resume/download/clear/start choice on
-return. Blank, ready-example, restored-draft, and imported-file entry modes use
-one bounded decision shape and replace state explicitly.
+## Browser storage
 
-Draft lifecycle validation is separate from analysis readiness and completed
-portable-decision validation. Browser autosave and the small in-progress backup
-wrapper preserve a bounded partial state without claiming that it is a completed
-schema `0.2.10` decision. Analysis remains blocked until its inputs are complete;
-portable decision and readable-summary export remain blocked until the human
-selection, rationale, and next action are complete.
+Decision Rescue uses tab-scoped session storage for accidental-refresh recovery. The original starting context remains context only and is not scored or promoted into model evidence.
 
-## Optional decision semantics
+Decision Lab uses bounded browser autosave for in-progress structured work. If a browser draft already exists, Decision Rescue does not replace it silently; replacement requires an explicit human choice.
 
-Legacy portable schema `0.2.10` remains available and is not silently migrated.
-Explicit use of the optional Sustainability · SEER-informed lens or Decision
-posture creates schema `0.3.0` state under `decision_semantics`; the top-level
-`profile` retains its domain/reference meaning. The draft wrapper remains the
-same three-field contract and dispatches its bounded inner decision by schema
-version.
+Browser storage is not encrypted confidential storage. Local files are processed in the browser and are not uploaded by the default application.
 
-Four-P criteria persist evidence state separately from criterion outcome.
-People, Planet, Profits, and Product summaries consider every criterion in the
-dimension and are never averaged. `must_be_true` drives only Decision posture;
-existing objective `critical` drives only comparative robustness. Calculated
-Four-P summaries, posture, explanations, and next-evidence output are recomputed
-and are not persisted. Next evidence is emitted only from an explicit
-`evidence_need`.
+## Decision result
 
-Decision posture is software decision support, not legal approval,
-organizational authorization, certification, qualification, consent, or
-investment approval. A human can apply only a more cautious posture override.
+The engine evaluates explicit human-supplied inputs across the same named futures. It preserves honest outcomes including:
 
-## Deferred Checkpoint C observations
+- a unique leader under the tested model;
+- tied leaders;
+- no acceptable strategy under declared boundaries; and
+- insufficient data.
 
-Remaining observations: avoid making a highlighted percentage resemble machine
-approval, simplify secondary recovery actions, and continue strengthening
-progressive disclosure. The future doctrine remains:
-simple on the surface, rigorous underneath; meaning before numbers; human decides.
+The result is advisory. A person selects the strategy and records the rationale and next action.
+
+## Compatibility
+
+Legacy completed decision schema `0.2.10` remains supported. Optional decision-semantics state uses schema `0.3.0`. The guided browser editor is intentionally bounded even though portable schemas may permit broader cases.
+
+The deterministic ranking core is isolated from the human-entry layer so UX changes do not silently alter comparison semantics.
+
+## Security and privacy boundaries
+
+The public runtime has no account system, analytics, telemetry, remote AI provider, or default upload endpoint. User-entered text is rendered as text rather than executable markup.
+
+Generated visualizations and software calculations are not evidence. FDE does not provide legal approval, organizational authorization, certification, qualification, consent, or investment approval.
