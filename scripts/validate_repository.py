@@ -38,7 +38,7 @@ for item in required:
         errors.append(f"required public/release path missing: {item}")
 
 root_markdown = {str(path.relative_to(ROOT)).replace("\\", "/") for path in ROOT.glob("*.md")}
-expected_root_markdown = {"CONTRIBUTING.md", "LICENSE.md", "README.md", "SECURITY.md"}
+expected_root_markdown = {"CODE_OF_CONDUCT.md", "CONTRIBUTING.md", "README.md", "SECURITY.md"}
 if root_markdown != expected_root_markdown:
     errors.append("root Markdown surface mismatch: " + ", ".join(sorted(root_markdown)))
 
@@ -58,7 +58,6 @@ for required_text in ["project-facts.json", "browser-local", "no backend", "Deci
     if required_text.lower() not in readme_normalized.lower():
         errors.append(f"README missing required boundary: {required_text}")
 
-# Generic public-surface OPSEC checks avoid embedding confidential source phrases in public code.
 scan_roots = [ROOT / "README.md", ROOT / "docs", ROOT / "examples", ROOT / "site" / "src"]
 path_patterns = [
     re.compile(r"[A-Za-z]:\\\\Users\\\\[^\\\s]+", re.I),
