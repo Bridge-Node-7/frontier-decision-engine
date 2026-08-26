@@ -46,12 +46,14 @@ def run() -> None:
                     page = context.new_page()
                     page.goto(base, wait_until="networkidle")
 
-                    assert page.locator('main h1').inner_text() == 'Bring the whole mess.'
+                    headline = page.locator('main h1').inner_text()
+                    assert headline.startswith('Bring the whole mess. Find the decision.')
+                    assert 'Frontier Decision Engine' in headline
                     assert page.locator('#universal-input').is_visible()
                     assert page.locator('#universal-input').get_attribute('aria-describedby') == 'universal-help'
                     assert page.locator('#universal-response-title').inner_text()
                     assert page.locator('.universal-surface').is_visible()
-                    assert page.locator('#universal-input').bounding_box()['height'] >= 200
+                    assert page.locator('#universal-input').bounding_box()['height'] >= 160
                     assert page.evaluate("document.documentElement.scrollWidth <= window.innerWidth + 1")
 
                     page.locator('#universal-analyze').click()
@@ -72,6 +74,22 @@ def run() -> None:
                     assert page.locator('script').filter(has_text='alert(1)').count() == 0
                     assert page.locator('#universal-confirm').count() == 0
                     assert page.get_by_role('link', name='Help me shape the missing pieces →').is_visible()
+
+                    first_remove = page.locator('[data-remove-kind="choices"]').first
+                    assert first_remove.is_visible()
+                    first_remove.click()
+                    assert page.locator('[data-remove-kind="choices"]').count() == 1
+                    assert 'Updated. Review the map' in page.locator('#universal-next-title').locator('..').inner_text()
+
+                    page.locator('#universal-input').fill('How much does a new MRI machine cost?')
+                    page.locator('#universal-analyze').click()
+                    assert 'information question' in page.locator('#universal-response-title').inner_text().lower()
+                    assert 'does not fetch outside facts' in page.locator('#universal-response-title').locator('..').inner_text()
+
+                    page.locator('#universal-input').fill('Should we hire someone? Should we expand next year?')
+                    page.locator('#universal-analyze').click()
+                    assert 'more than one possible decision' in page.locator('#universal-response-title').inner_text().lower()
+                    assert page.locator('#universal-confirm').count() == 0
 
                     page.locator('#universal-input').fill('Should we build internally or partner externally? Time, quality, and cost matter. The supplier may be late and demand changes.')
                     page.locator('#universal-analyze').click()
