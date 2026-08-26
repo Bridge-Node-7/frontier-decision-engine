@@ -32,6 +32,10 @@ When a person confirms enough structure, FDE can hand the work into its existing
 
 The comparison informs. A person decides.
 
+## Synthetic reference
+
+The repository includes a synthetic critical-material source-qualification case to demonstrate the formal Decision Lab without making claims about a real supplier, material, capacity, compliance status, or investment.
+
 ## Privacy and authority
 
 The application is static and browser-local. It has no backend, account system, analytics, telemetry, cookies, remote AI provider, or default upload endpoint. Session recovery and browser autosave are convenience features, not encrypted confidential storage.
