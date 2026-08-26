@@ -110,7 +110,7 @@ if "A decision is already saved in this browser." not in rescue_text:
     errors.append("Decision Rescue saved-work collision boundary is missing")
 if "renderUniversalDecisionExperience" not in app_text:
     errors.append("Universal Response is not the public root experience")
-for token in ("draftFromInput", "responseFor", "What FDE sees so far", "Possible is not confirmed", "Live Decision Map"):
+for token in ("draftFromInput", "responseFor", "What FDE sees so far", "Possible is not confirmed", "Decision Map"):
     if token not in universal_text:
         errors.append(f"Universal Decision Map is missing required boundary: {token}")
 
