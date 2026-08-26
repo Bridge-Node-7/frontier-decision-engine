@@ -15,6 +15,7 @@ ROOT = Path(__file__).resolve().parents[1]
 SITE = ROOT / "site"
 SESSION_KEY = "fde.universal.session.v1"
 DECISION_KEY = "fde.decision.autosave.v0.2.11"
+RESCUE_SESSION_KEY = "fde.rescue.session.v1"
 
 
 class QuietHandler(http.server.SimpleHTTPRequestHandler):
@@ -113,7 +114,10 @@ def run() -> None:
                     page.reload(wait_until='networkidle')
                     assert page.locator('#universal-input').input_value() == 'Refresh should not erase this situation.'
 
+                    # Rescue route starts from a deterministic empty session for this isolated browser case.
+                    page.evaluate(f"sessionStorage.removeItem('{RESCUE_SESSION_KEY}')")
                     page.goto(f'{base}#/rescue', wait_until='networkidle')
+                    page.locator('#rescue-question').wait_for(state='visible')
                     assert page.locator('#rescue-intake').is_visible()
                     assert 'What’s going on?' in page.locator('#rescue-question').inner_text()
 
