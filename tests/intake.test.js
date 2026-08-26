@@ -76,3 +76,14 @@ test('Decision Frame is useful when incomplete and never claims a recommendation
   assert.match(text, /No recommendation has been made/);
   assert.match(text, /A person decides/);
 });
+
+test('Decision Frame uses human-readable urgency and reversibility labels', () => {
+  const text = frameAsText(buildDecisionFrame({
+    urgency: 'today',
+    reversibility: 'partly',
+  }));
+  assert.match(text, /URGENCY\nToday/);
+  assert.match(text, /REVERSIBILITY\nPartly reversible/);
+  assert.equal(text.includes('\ntoday\n'), false);
+  assert.equal(text.includes('\npartly\n'), false);
+});
