@@ -8,15 +8,15 @@
 
 ## Start with one input
 
-The FDE front door starts with one free-form input. Put down a problem, question, worry, idea, decision, or a complete mess. FDE responds immediately with a provisional Decision Surface showing only what can be safely organized from the words provided.
+The FDE front door starts with one free-form input. Put down a problem, question, worry, idea, decision, or a complete mess. FDE responds immediately with a provisional Decision Map showing only what can be safely organized from the words provided.
 
-The surface is a draft, not a hidden machine decision. Possible signals stay possible until a person confirms them. When enough explicit structure exists, the surface can continue into the deterministic Decision Lab. Otherwise, it offers a simple path to shape the missing pieces without pretending the missing information is known.
+The map is a draft, not a hidden machine decision. Possible signals stay possible until a person confirms them. When enough explicit structure exists, the map can continue into the deterministic Decision Lab. Otherwise, it offers a simple path to shape the missing pieces without pretending the missing information is known.
 
 The experience is designed around a simple rule: **every meaningful input receives a useful response, and questions are used only when human judgment is actually needed to move the decision forward.**
 
-## Decision Surface
+## Decision Map
 
-The surface can show:
+The map can show:
 
 - a possible decision;
 - choices mentioned explicitly;
