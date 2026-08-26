@@ -5,7 +5,7 @@
     "semanticDecision": "0.3.0",
     "opvCase": "0.1.0"
   },
-  "testCount": 136,
+  "testCount": 142,
   "discoveredHashRouteLiteralCount": 6,
   "browserModes": [
     "desktop-light",
@@ -16,7 +16,7 @@
     "reflow-400-equivalent",
     "forced-colors"
   ],
-  "manifestEntryCount": 34,
+  "manifestEntryCount": 35,
   "retainedReferenceArtifactItemCounts": {
     "profiles/phenomena/profile.json": 5,
     "site/data/experiences.json": 41,

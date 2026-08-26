@@ -45,6 +45,12 @@ test('selection normalization removes blanks and duplicates without inventing ch
   assert.deepEqual(uniqueSelections(['Time', '', 'Time', 'Reliability']), ['Time', 'Reliability']);
 });
 
+test('selection normalization preserves explicit human selections instead of silently truncating them', () => {
+  const values = Array.from({ length: 14 }, (_, index) => `Item ${index + 1}`);
+  assert.deepEqual(uniqueSelections(values), values);
+  assert.deepEqual(buildDecisionFrame({ goals: values }).goals, values);
+});
+
 test('full-comparison handoff requires a confirmed decision and a 2 by 2 by 2 frame', () => {
   assert.equal(decisionFrameReady(buildDecisionFrame({
     decision: 'Should we move now or test first?',

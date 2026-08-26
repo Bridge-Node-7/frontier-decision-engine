@@ -10,7 +10,9 @@
 
 The public front door accepts ordinary human language first. A visitor can brain-dump what is happening, choose one useful next action, and build a calm Decision Frame without knowing decision-science terminology.
 
-Decision Rescue is deliberately conservative: it preserves what the person typed, offers tap-first prompts, and never pretends browser JavaScript semantically inferred evidence, probabilities, thresholds, or a recommendation. A partial Decision Frame is a valid stopping point. When a confirmed frame is ready, the visitor can continue into the existing deterministic Decision Lab.
+Decision Rescue is deliberately conservative: it preserves what the person typed, offers tap-first prompts, and never pretends browser JavaScript semantically inferred evidence, probabilities, thresholds, or a recommendation. A partial Decision Frame is a valid stopping point.
+
+When a confirmed frame is ready, the visitor can continue into the deterministic Decision Lab with the exact bounded comparison they confirmed. Guided work can use 2–4 objectives, 2–3 choices, and 2–4 plausible futures, so the minimum comparison is a true 2 × 2 × 2 model rather than a larger hidden form. FDE does not silently discard confirmed items or fabricate the remaining analytical inputs.
 
 ## What the Decision Lab does
 

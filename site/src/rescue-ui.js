@@ -1,4 +1,4 @@
-import { createBlankDecisionCase } from './lib/decision.js';
+import { createGuidedDecisionCase, DRAFT_TOPOLOGY_BOUNDS } from './lib/decision.js';
 import { downloadText, safeFilename } from './lib/case.js';
 import { getBrowserStorage, saveDecision } from './lib/persistence.js';
 import {
@@ -41,16 +41,56 @@ const intentCopy = {
   unsure: 'That is enough to start. We will keep the next step small.',
 };
 
-function toggleSelection(list, value) {
+const selectionLimits = Object.freeze({
+  goal: DRAFT_TOPOLOGY_BOUNDS.objectives.max,
+  choice: DRAFT_TOPOLOGY_BOUNDS.strategies.max,
+  future: DRAFT_TOPOLOGY_BOUNDS.scenarios.max,
+});
+
+const decisionPromptByIntent = Object.freeze({
+  'find-decision': {
+    question: 'What choice actually needs to be made?',
+    help: 'Name one decision first. It can be rough.',
+  },
+  untangle: {
+    question: 'Which part needs a decision first?',
+    help: 'Pick the first choice that would make the rest easier to work through.',
+  },
+  compare: {
+    question: 'What choice are you trying to compare?',
+    help: 'Name the decision that contains the alternatives you already see.',
+  },
+  missing: {
+    question: 'What decision is blocked by missing information?',
+    help: 'Name the choice that cannot move forward until something is learned.',
+  },
+  urgent: {
+    question: 'What decision needs action soon?',
+    help: 'Name the choice that matters most right now.',
+  },
+  unsure: {
+    question: 'If one choice had to be made first, what would it be?',
+    help: 'A rough question is enough. You can refine it later.',
+  },
+});
+
+function toggleSelection(list, value, limit = Number.POSITIVE_INFINITY) {
   const index = list.indexOf(value);
-  if (index >= 0) list.splice(index, 1);
-  else list.push(value);
+  if (index >= 0) {
+    list.splice(index, 1);
+    return { changed: true, reason: '' };
+  }
+  if (list.length >= limit) {
+    return { changed: false, reason: `This comparison supports up to ${limit} ${limit === 1 ? 'item' : 'items'} here.` };
+  }
+  list.push(value);
+  return { changed: true, reason: '' };
 }
 
-function chip(label, selected, kind, value = label) {
+function chip(label, selected, kind, value = label, disabled = false) {
   return `<button class="rescue-chip ${selected ? 'is-selected' : ''}" type="button"
     data-rescue-kind="${escapeHtml(kind)}" data-rescue-value="${escapeHtml(value)}"
-    aria-pressed="${selected ? 'true' : 'false'}">${escapeHtml(label)}</button>`;
+    aria-pressed="${selected ? 'true' : 'false'}" ${disabled ? 'disabled' : ''}>${escapeHtml(label)}</button>`;
 }
 
 function frame() {
@@ -81,7 +121,11 @@ function framePanel() {
 
 function optionChips(options, selected, kind) {
   const extras = selected.filter((item) => !options.includes(item));
-  return [...options, ...extras].map((item) => chip(item, selected.includes(item), kind)).join('');
+  const limit = selectionLimits[kind];
+  const atLimit = selected.length >= limit;
+  return [...options, ...extras]
+    .map((item) => chip(item, selected.includes(item), kind, item, atLimit && !selected.includes(item)))
+    .join('');
 }
 
 function quickMeta() {
@@ -116,7 +160,6 @@ function currentPrompt() {
       <label class="rescue-textarea-label" for="rescue-intake">What’s on your mind?</label>
       <textarea id="rescue-intake" rows="8" maxlength="12000" placeholder="Put everything that’s on your mind here…">${escapeHtml(rescue.startingPoint)}</textarea>
       <p id="rescue-intake-help" class="help">One brain dump is enough. FDE will not execute pasted code or silently turn your words into model facts.</p>
-      ${rescue.error ? `<p class="rescue-error" role="alert">${escapeHtml(rescue.error)}</p>` : ''}
       <button id="rescue-start" class="primary rescue-primary" type="button">Help me make sense of this →</button>
       <div class="rescue-secondary-actions">
         <a href="#/decision">I already know exactly what I’m deciding</a>
@@ -143,10 +186,11 @@ function currentPrompt() {
   }
 
   if (rescue.stage === 2) {
+    const prompt = decisionPromptByIntent[rescue.intent] || decisionPromptByIntent.unsure;
     return `<section class="rescue-focus" aria-labelledby="rescue-question">
       <span class="eyebrow">Most useful thing now</span>
-      <h2 id="rescue-question" tabindex="-1">What choice actually needs to be made?</h2>
-      <p>Use a short question or phrase. It does not need to be perfect.</p>
+      <h2 id="rescue-question" tabindex="-1">${escapeHtml(prompt.question)}</h2>
+      <p>${escapeHtml(prompt.help)}</p>
       <label class="rescue-textarea-label" for="rescue-decision">Decision</label>
       <input id="rescue-decision" type="text" maxlength="500" value="${escapeHtml(rescue.decision)}" placeholder="Example: Should we move now or test first?">
       <details class="rescue-help">
@@ -166,10 +210,10 @@ function currentPrompt() {
     return `<section class="rescue-focus" aria-labelledby="rescue-question">
       <span class="eyebrow">Most useful thing now</span>
       <h2 id="rescue-question" tabindex="-1">What needs to go well?</h2>
-      <p>Choose at least two. These are starting points, not assumptions about your situation.</p>
+      <p>Choose 2–${selectionLimits.goal}. These are starting points, not assumptions about your situation. <strong>${rescue.goals.length}/${selectionLimits.goal}</strong> selected.</p>
       <div class="rescue-chips">${optionChips(RESCUE_GOALS, rescue.goals, 'goal')}</div>
       <label class="rescue-inline-label" for="rescue-custom-goal">Something else</label>
-      <div class="rescue-inline-add"><input id="rescue-custom-goal" type="text" maxlength="80" placeholder="Add your own"><button type="button" data-rescue-add="goal">Add</button></div>
+      <div class="rescue-inline-add"><input id="rescue-custom-goal" type="text" maxlength="80" placeholder="Add your own" ${rescue.goals.length >= selectionLimits.goal ? 'disabled' : ''}><button type="button" data-rescue-add="goal" ${rescue.goals.length >= selectionLimits.goal ? 'disabled' : ''}>Add</button></div>
       <button class="text-action rescue-skip" type="button" data-rescue-skip>I’m not sure yet — keep going</button>
       <div class="rescue-nav">
         <button class="quiet" data-rescue-back type="button">← Back</button>
@@ -182,10 +226,10 @@ function currentPrompt() {
     return `<section class="rescue-focus" aria-labelledby="rescue-question">
       <span class="eyebrow">Most useful thing now</span>
       <h2 id="rescue-question" tabindex="-1">What could you realistically do?</h2>
-      <p>Choose at least two. Rename or add something specific when the generic path is not enough.</p>
+      <p>Choose 2–${selectionLimits.choice}. Rename or add something specific when the generic path is not enough. <strong>${rescue.choices.length}/${selectionLimits.choice}</strong> selected.</p>
       <div class="rescue-chips">${optionChips(RESCUE_CHOICES, rescue.choices, 'choice')}</div>
       <label class="rescue-inline-label" for="rescue-custom-choice">Something else</label>
-      <div class="rescue-inline-add"><input id="rescue-custom-choice" type="text" maxlength="100" placeholder="Add a real choice"><button type="button" data-rescue-add="choice">Add</button></div>
+      <div class="rescue-inline-add"><input id="rescue-custom-choice" type="text" maxlength="100" placeholder="Add a real choice" ${rescue.choices.length >= selectionLimits.choice ? 'disabled' : ''}><button type="button" data-rescue-add="choice" ${rescue.choices.length >= selectionLimits.choice ? 'disabled' : ''}>Add</button></div>
       <button class="text-action rescue-skip" type="button" data-rescue-skip>I’m not sure yet — keep going</button>
       <div class="rescue-nav">
         <button class="quiet" data-rescue-back type="button">← Back</button>
@@ -198,10 +242,10 @@ function currentPrompt() {
     return `<section class="rescue-focus" aria-labelledby="rescue-question">
       <span class="eyebrow">Most useful thing now</span>
       <h2 id="rescue-question" tabindex="-1">What could happen that might change the answer?</h2>
-      <p>Choose at least two plausible futures. Nothing here is treated as a prediction.</p>
+      <p>Choose 2–${selectionLimits.future} plausible futures. Nothing here is treated as a prediction. <strong>${rescue.futures.length}/${selectionLimits.future}</strong> selected.</p>
       <div class="rescue-chips">${optionChips(RESCUE_FUTURES, rescue.futures, 'future')}</div>
       <label class="rescue-inline-label" for="rescue-custom-future">Something else</label>
-      <div class="rescue-inline-add"><input id="rescue-custom-future" type="text" maxlength="100" placeholder="Add a plausible future"><button type="button" data-rescue-add="future">Add</button></div>
+      <div class="rescue-inline-add"><input id="rescue-custom-future" type="text" maxlength="100" placeholder="Add a plausible future" ${rescue.futures.length >= selectionLimits.future ? 'disabled' : ''}><button type="button" data-rescue-add="future" ${rescue.futures.length >= selectionLimits.future ? 'disabled' : ''}>Add</button></div>
       <button class="text-action rescue-skip" type="button" data-rescue-skip>I’m not sure yet — build what we have</button>
       <div class="rescue-nav">
         <button class="quiet" data-rescue-back type="button">← Back</button>
@@ -237,7 +281,22 @@ function handoffToDecisionLab() {
     renderActive();
     return;
   }
-  const decision = createBlankDecisionCase();
+  const overCapacity = [
+    ['things that matter', current.goals.length, selectionLimits.goal],
+    ['choices', current.choices.length, selectionLimits.choice],
+    ['futures', current.futures.length, selectionLimits.future],
+  ].find(([, count, limit]) => count > limit);
+  if (overCapacity) {
+    rescue.error = `The current Decision Lab can carry up to ${overCapacity[2]} ${overCapacity[0]}. Refine the frame before continuing so nothing is lost.`;
+    renderActive();
+    return;
+  }
+
+  const decision = createGuidedDecisionCase({
+    objectiveCount: current.goals.length,
+    strategyCount: current.choices.length,
+    scenarioCount: current.futures.length,
+  });
   decision.question = current.decision || current.startingPoint;
   decision.title = (current.decision || current.startingPoint).slice(0, 120);
   decision.urgency = current.urgency === 'today' ? 'immediate'
@@ -247,13 +306,13 @@ function handoffToDecisionLab() {
     : current.reversibility === 'partly' ? 'partially-reversible'
       : current.reversibility === 'hard' ? 'irreversible' : '';
 
-  current.goals.slice(0, decision.objectives.length).forEach((label, index) => {
+  current.goals.forEach((label, index) => {
     decision.objectives[index].label = label;
   });
-  current.choices.slice(0, decision.strategies.length).forEach((label, index) => {
+  current.choices.forEach((label, index) => {
     decision.strategies[index].label = label;
   });
-  current.futures.slice(0, decision.scenarios.length).forEach((label, index) => {
+  current.futures.forEach((label, index) => {
     decision.scenarios[index].label = label;
   });
 
@@ -263,6 +322,7 @@ function handoffToDecisionLab() {
     renderActive();
     return;
   }
+  rescue.error = '';
   try { globalThis.sessionStorage?.setItem('fde.rescue.handoff', '1'); } catch { /* handoff still works through saved draft */ }
   history.replaceState(null, '', `${location.pathname}${location.search}#/decision`);
   location.reload();
@@ -293,13 +353,14 @@ function bind(root) {
     button.addEventListener('click', () => {
       const kind = button.dataset.rescueKind;
       const value = button.dataset.rescueValue;
+      rescue.error = '';
       if (kind === 'intent') rescue.intent = value;
-      if (kind === 'goal') toggleSelection(rescue.goals, value);
-      if (kind === 'choice') toggleSelection(rescue.choices, value);
-      if (kind === 'future') toggleSelection(rescue.futures, value);
+      if (kind === 'goal') rescue.error = toggleSelection(rescue.goals, value, selectionLimits.goal).reason;
+      if (kind === 'choice') rescue.error = toggleSelection(rescue.choices, value, selectionLimits.choice).reason;
+      if (kind === 'future') rescue.error = toggleSelection(rescue.futures, value, selectionLimits.future).reason;
       if (kind === 'urgency') rescue.urgency = rescue.urgency === value ? '' : value;
       if (kind === 'reversibility') rescue.reversibility = rescue.reversibility === value ? '' : value;
-      renderActive();
+      renderActive({ focusKind: kind, focusValue: value });
     });
   });
 
@@ -310,12 +371,16 @@ function bind(root) {
       const value = String(input?.value || '').trim();
       if (!value) return;
       const target = kind === 'goal' ? rescue.goals : kind === 'choice' ? rescue.choices : rescue.futures;
-      if (!target.includes(value)) target.push(value);
-      renderActive();
+      const result = target.includes(value)
+        ? { changed: false, reason: '' }
+        : toggleSelection(target, value, selectionLimits[kind]);
+      rescue.error = result.reason;
+      renderActive({ focusKind: kind, focusValue: value });
     });
   });
 
   root.querySelector('[data-rescue-skip]')?.addEventListener('click', () => {
+    rescue.error = '';
     rescue.stage = Math.min(6, rescue.stage + 1);
     renderActive();
   });
@@ -326,11 +391,13 @@ function bind(root) {
     if (rescue.stage === 3 && rescue.goals.length < 2) return;
     if (rescue.stage === 4 && rescue.choices.length < 2) return;
     if (rescue.stage === 5 && rescue.futures.length < 2) return;
+    rescue.error = '';
     rescue.stage = Math.min(6, rescue.stage + 1);
     renderActive();
   });
 
   root.querySelector('[data-rescue-back]')?.addEventListener('click', () => {
+    rescue.error = '';
     rescue.stage = Math.max(0, rescue.stage - 1);
     renderActive();
   });
@@ -344,7 +411,7 @@ function bind(root) {
   root.querySelector('#rescue-open-lab')?.addEventListener('click', handoffToDecisionLab);
 }
 
-function renderActive() {
+function renderActive({ focusKind = '', focusValue = '', focusId = '', focusHeading = true } = {}) {
   if (!activeRoot) return;
   activeRoot.innerHTML = `<section class="rescue-hero fde-hero" data-surface="fde-hero" aria-labelledby="fde-title">
     <span class="eyebrow">Frontier Decision Engine</span>
@@ -353,7 +420,10 @@ function renderActive() {
     <p class="lede">FDE helps you find the decision, make uncertainty visible, and move forward without pretending to know what you have not established.</p><p class="rescue-privacy">No account. No default upload. This public browser tool is not presented as a confidential-data environment.</p>
   </section>
   <div class="rescue-layout">
-    <div>${currentPrompt()}</div>
+    <div>
+      ${currentPrompt()}
+      ${rescue.error ? `<p id="rescue-status" class="rescue-error" role="alert" aria-live="assertive">${escapeHtml(rescue.error)}</p>` : ''}
+    </div>
     ${framePanel()}
   </div>
   <section id="how-it-works" class="rescue-method" data-surface="integrated-method" tabindex="-1" aria-labelledby="rescue-method-title">
@@ -363,7 +433,18 @@ function renderActive() {
     <div><strong>Test when useful</strong><span>Use the full comparison only when the decision needs it.</span></div>
   </section>`;
   bind(activeRoot);
-  activeRoot.querySelector('#rescue-question, #fde-title')?.focus({ preventScroll: true });
+
+  if (focusKind) {
+    const target = [...activeRoot.querySelectorAll('[data-rescue-kind]')]
+      .find((element) => element.dataset.rescueKind === focusKind && element.dataset.rescueValue === focusValue);
+    target?.focus({ preventScroll: true });
+    return;
+  }
+  if (focusId) {
+    activeRoot.querySelector(`#${focusId}`)?.focus({ preventScroll: true });
+    return;
+  }
+  if (focusHeading) activeRoot.querySelector('#rescue-question, #fde-title')?.focus({ preventScroll: true });
 }
 
 export function renderDecisionRescue(root) {

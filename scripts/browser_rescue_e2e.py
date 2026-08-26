@@ -27,6 +27,27 @@ def browser_executable() -> str | None:
     return None
 
 
+def complete_frame(page) -> None:
+    page.locator('#rescue-intake').fill('We need to decide whether to move now or test first.')
+    page.locator('#rescue-start').click()
+    page.get_by_role('button', name='Compare choices I already have').click()
+    page.get_by_role('button', name='Continue →').click()
+    page.locator('#rescue-decision').fill('Should we move now or test first?')
+    page.get_by_role('button', name='Continue →').click()
+    page.get_by_role('button', name='Time').click()
+    assert page.evaluate("document.activeElement?.textContent.trim()") == 'Time'
+    page.get_by_role('button', name='Reliability').click()
+    page.get_by_role('button', name='Continue →').click()
+    page.get_by_role('button', name='Keep things as they are').click()
+    page.get_by_role('button', name='Test or pilot first').click()
+    page.get_by_role('button', name='Continue →').click()
+    page.get_by_role('button', name='Things stay roughly the same').click()
+    page.get_by_role('button', name='A key dependency fails').click()
+    page.get_by_role('button', name='Build my Decision Frame →').click()
+    assert 'Decision Frame is ready' in page.locator('#rescue-question').inner_text()
+    assert page.locator('#rescue-open-lab').is_enabled()
+
+
 def run() -> None:
     handler = functools.partial(QuietHandler, directory=str(SITE))
     with socketserver.TCPServer(("127.0.0.1", 0), handler) as server:
@@ -64,37 +85,22 @@ def run() -> None:
 
                     page.get_by_role('button', name="I'm not sure").first.click()
                     page.get_by_role('button', name='Continue →').click()
-                    assert 'What choice actually needs to be made?' in page.locator('#rescue-question').inner_text()
+                    assert 'If one choice had to be made first' in page.locator('#rescue-question').inner_text()
                     for _ in range(4):
                         page.locator('[data-rescue-skip]').click()
                     assert 'taking shape' in page.locator('#rescue-question').inner_text()
                     assert page.locator('#rescue-open-lab').is_disabled()
                     assert 'No recommendation has been made' in page.locator('body').inner_text()
 
-                    # Start a complete frame and prove the 2 × 2 × 2 handoff into the unchanged Decision Lab.
                     page.goto(base, wait_until="networkidle")
-                    page.locator('#rescue-intake').fill('We need to decide whether to move now or test first.')
-                    page.locator('#rescue-start').click()
-                    page.get_by_role('button', name='Compare choices I already have').click()
-                    page.get_by_role('button', name='Continue →').click()
-                    page.locator('#rescue-decision').fill('Should we move now or test first?')
-                    page.get_by_role('button', name='Continue →').click()
-                    page.get_by_role('button', name='Time').click()
-                    page.get_by_role('button', name='Reliability').click()
-                    page.get_by_role('button', name='Continue →').click()
-                    page.get_by_role('button', name='Keep things as they are').click()
-                    page.get_by_role('button', name='Test or pilot first').click()
-                    page.get_by_role('button', name='Continue →').click()
-                    page.get_by_role('button', name='Things stay roughly the same').click()
-                    page.get_by_role('button', name='A key dependency fails').click()
-                    page.get_by_role('button', name='Build my Decision Frame →').click()
-                    assert 'Decision Frame is ready' in page.locator('#rescue-question').inner_text()
-                    assert page.locator('#rescue-open-lab').is_enabled()
-
+                    complete_frame(page)
                     page.locator('#rescue-open-lab').click()
                     page.wait_for_load_state('networkidle')
                     page.locator('#decision-question').wait_for(state='visible')
                     assert page.locator('#decision-question').input_value() == 'Should we move now or test first?'
+                    assert page.locator('[id^="objective-label-"]').count() == 2
+                    assert page.locator('[id^="strategy-label-"]').count() == 2
+                    assert page.locator('[id^="scenario-label-"]').count() == 2
                     assert page.locator('#objective-label-0').input_value() == 'Time'
                     assert page.locator('#objective-label-1').input_value() == 'Reliability'
                     assert page.locator('#strategy-label-0').input_value() == 'Keep things as they are'
@@ -105,6 +111,17 @@ def run() -> None:
 
                     assert not remote_requests, f"Decision Rescue made unexpected remote requests: {remote_requests}"
                     context.close()
+
+                    blocked = browser.new_context(viewport={"width": 390, "height": 844})
+                    blocked.add_init_script("Storage.prototype.setItem = function(){ throw new Error('blocked by test'); };")
+                    blocked_page = blocked.new_page()
+                    blocked_page.goto(base, wait_until="networkidle")
+                    complete_frame(blocked_page)
+                    blocked_page.locator('#rescue-open-lab').click()
+                    assert blocked_page.locator('#rescue-status').is_visible()
+                    assert 'Autosave unavailable' in blocked_page.locator('#rescue-status').inner_text()
+                    assert 'Decision Frame is ready' in blocked_page.locator('#rescue-question').inner_text()
+                    blocked.close()
                 finally:
                     browser.close()
         finally:

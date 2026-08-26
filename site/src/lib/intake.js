@@ -49,7 +49,7 @@ export function validateIntakeText(value) {
   return { ok: true, text, error: '' };
 }
 
-export function uniqueSelections(values, allowed = null, limit = 12) {
+export function uniqueSelections(values, allowed = null) {
   const seen = new Set();
   const output = [];
   for (const raw of values || []) {
@@ -58,7 +58,6 @@ export function uniqueSelections(values, allowed = null, limit = 12) {
     if (allowed && !allowed.includes(value)) continue;
     seen.add(value);
     output.push(value);
-    if (output.length >= limit) break;
   }
   return output;
 }
