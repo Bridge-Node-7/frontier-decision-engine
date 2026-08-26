@@ -4,9 +4,11 @@
 
 [Open the live application](https://bridgenode7.com/frontier-decision-engine/)
 
+![Frontier Decision Engine](docs/screenshots/reference/desktop-decision-frame.png)
+
 ## Start with one input
 
-The FDE front door now starts with one free-form input. Put down a problem, question, worry, idea, decision, or a complete mess. FDE responds immediately with a provisional Decision Surface showing only what can be safely organized from the words provided.
+The FDE front door starts with one free-form input. Put down a problem, question, worry, idea, decision, or a complete mess. FDE responds immediately with a provisional Decision Surface showing only what can be safely organized from the words provided.
 
 The surface is a draft, not a hidden machine decision. Possible signals stay possible until a person confirms them. When enough explicit structure exists, the surface can continue into the deterministic Decision Lab. Otherwise, it offers a simple path to shape the missing pieces without pretending the missing information is known.
 
@@ -41,9 +43,13 @@ FDE provides decision support. It does not approve, authorize, certify, qualify,
 Requirements: Node.js 22+, Python 3.11+, and Chromium or Google Chrome.
 
 ```bash
+node scripts/run-python.mjs -m pip install -r requirements-dev.txt
+node scripts/run-python.mjs -m playwright install chromium
 npm ci --ignore-scripts --no-audit --no-fund
 npm run check
 ```
+
+Generated release facts and current application identity are recorded in [`project-facts.json`](project-facts.json). The full verification gate is defined by the repository's `npm run check` command.
 
 ## Documentation
 
