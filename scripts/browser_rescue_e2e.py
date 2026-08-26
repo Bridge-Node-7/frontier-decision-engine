@@ -93,11 +93,11 @@ def run() -> None:
                     assert page.locator('#rescue-status').count() == 1
                     assert not page.locator('#rescue-status').is_visible()
                     assert page.locator('#rescue-start').bounding_box()["height"] >= 44
-                    assert page.evaluate("document.documentElement.scrollWidth <= window.innerWidth + 1")
+                    assert page.locator('html').evaluate("document.documentElement.scrollWidth <= window.innerWidth + 1")
 
                     page.locator('#rescue-start').click()
                     page.locator('#rescue-status').wait_for(state='visible')
-                    page.wait_for_function("document.querySelector('#rescue-status')?.textContent.toLowerCase().includes('few words')")
+                    assert 'few words' in page.locator('#rescue-status').inner_text().lower()
 
                     messy = '<script>alert("no")</script> Supplier is late 🚀 and I do not know what to do.'
                     page.locator('#rescue-intake').fill(messy)
@@ -170,7 +170,7 @@ def run() -> None:
                     complete_frame(blocked_page)
                     blocked_page.locator('#rescue-open-lab').click()
                     blocked_page.locator('#rescue-status').wait_for(state='visible')
-                    blocked_page.wait_for_function("document.querySelector('#rescue-status')?.textContent.includes('Autosave unavailable')")
+                    assert 'Autosave unavailable' in blocked_page.locator('#rescue-status').inner_text()
                     assert 'Decision Frame is ready' in blocked_page.locator('#rescue-question').inner_text()
                     blocked.close()
 
@@ -184,7 +184,7 @@ def run() -> None:
                     danger = theme_page.evaluate("getComputedStyle(document.documentElement).getPropertyValue('--danger').trim()")
                     assert danger.lower() == '#9d3030'
                     theme_page.emulate_media(color_scheme='dark')
-                    theme_page.wait_for_function("document.documentElement.dataset.theme === 'dark'")
+                    theme_page.locator('html[data-theme="dark"]').wait_for(state='attached')
                     assert theme_page.locator('html').get_attribute('data-theme-preference') == 'system'
                     toggle.click()
                     assert theme_page.locator('html').get_attribute('data-theme') == 'dark'
