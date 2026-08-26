@@ -5,11 +5,12 @@ from __future__ import annotations
 import functools
 import http.server
 import os
+import re
 import socketserver
 import threading
 from pathlib import Path
 
-from playwright.sync_api import sync_playwright
+from playwright.sync_api import expect, sync_playwright
 
 ROOT = Path(__file__).resolve().parents[1]
 SITE = ROOT / "site"
@@ -97,8 +98,7 @@ def run() -> None:
 
                     page.locator('#rescue-start').click()
                     page.locator('#rescue-status').wait_for(state='visible')
-                    empty_status = page.locator('#rescue-status').inner_text().strip()
-                    assert empty_status, 'empty intake must produce a visible, useful status message'
+                    expect(page.locator('#rescue-status')).to_have_text(re.compile(r'\S+'))
 
                     messy = '<script>alert("no")</script> Supplier is late 🚀 and I do not know what to do.'
                     page.locator('#rescue-intake').fill(messy)
@@ -171,7 +171,7 @@ def run() -> None:
                     complete_frame(blocked_page)
                     blocked_page.locator('#rescue-open-lab').click()
                     blocked_page.locator('#rescue-status').wait_for(state='visible')
-                    assert 'Autosave unavailable' in blocked_page.locator('#rescue-status').inner_text()
+                    expect(blocked_page.locator('#rescue-status')).to_have_text(re.compile(r'Autosave unavailable'))
                     assert 'Decision Frame is ready' in blocked_page.locator('#rescue-question').inner_text()
                     blocked.close()
 
