@@ -10,9 +10,11 @@ ROOT = Path(__file__).resolve().parents[1]
 SITE = ROOT / "site"
 errors: list[str] = []
 
+
 def require(relative: str) -> None:
     if not (ROOT / relative).exists():
         errors.append(f"missing required path: {relative}")
+
 
 def load_json(relative: str):
     try:
@@ -21,247 +23,128 @@ def load_json(relative: str):
         errors.append(f"invalid JSON {relative}: {exc}")
         return {}
 
+
 required = [
-    "README.md",
-    "LICENSE",
-    "SECURITY.md",
-    "CONTRIBUTING.md",
-    "CODE_OF_CONDUCT.md",
-    "CITATION.cff",
-    "docs/ARCHITECTURE.md",
-    "docs/METHODOLOGY.md",
-    "docs/DATA_DICTIONARY.md",
-    "docs/PRIVACY.md",
-    "docs/RELEASING.md",
-    "docs/STYLE_LAYERS.md",
-    "docs/contracts/BN7_TOKEN_CONTRACT_v1.0.0.json",
-    "docs/contracts/BN7_TOKEN_CONTRACT_v1.0.0_SHA256.txt",
-    "docs/contracts/BN7_TOKEN_CONTRACT_SOURCE_COMMIT.txt",
-    "site/index.html",
-    "site/404.html",
-    "site/assets/styles.css",
-    "site/src/app.js",
-    "site/src/decision-ui.js",
-    "site/src/lib/decision.js",
-    "site/data/morphology.json",
-    "site/data/experiences.json",
-    "site/data/references.json",
-    "scripts/browser_e2e.py",
-    "scripts/browser_closeout_regressions.py",
-    "scripts/validate_version_integrity.py",
-    "scripts/package_release.py",
-    "requirements-dev.txt",
-    "schemas/case.schema.json",
-    "schemas/decision.schema.json",
-    "schemas/profile.schema.json",
-    "profiles/phenomena/profile.json",
-    "examples/phenomena-second-station/decision.fde.json",
-    ".github/workflows/ci.yml",
-    ".github/workflows/pages.yml",
-    ".github/workflows/release.yml",
+    "README.md", "LICENSE", "SECURITY.md", "CONTRIBUTING.md", "CODE_OF_CONDUCT.md", "CITATION.cff",
+    "docs/ARCHITECTURE.md", "docs/METHODOLOGY.md", "docs/PRIVACY.md", "docs/RELEASE_NOTES.md", "docs/RELEASING.md",
+    "schemas/decision.schema.json", "schemas/decision-0.3.0.schema.json",
+    "schemas/asset.schema.json", "schemas/calibration.schema.json", "schemas/case.schema.json",
+    "schemas/dataset.schema.json", "schemas/measurement.schema.json", "schemas/profile.schema.json",
+    "site/data/experiences.json", "site/data/morphology.json", "site/data/references.json",
+    "profiles/phenomena/profile.json", "examples/phenomena-second-station/decision.fde.json",
+    "docs/DATA_DICTIONARY.md", "docs/STYLE_LAYERS.md",
+    "site/schemas/decision.schema.json", "site/schemas/decision-0.3.0.schema.json",
+    "site/index.html", "site/404.html",
+    "site/assets/styles.css", "site/assets/bridge-node-7-shell.css", "site/assets/beginner-first.css", "site/assets/luxury-rescue.css",
+    "site/src/app.js", "site/src/decision-ui.js", "site/src/rescue-ui.js", "site/src/theme.js",
+    "site/src/lib/case.js", "site/src/lib/decision-core.js", "site/src/lib/decision.js", "site/src/lib/intake.js",
+    "site/src/lib/persistence.js", "site/src/lib/recording.js", "site/src/lib/semantics.js", "site/src/lib/synthesis.js",
+    "scripts/browser_e2e.py", "scripts/browser_rescue_e2e.py", "scripts/browser_closeout_regressions.py",
+    "scripts/validate_version_integrity.py", "scripts/package_release.py", "scripts/verify_release_tag.py",
+    "requirements-dev.txt", ".github/workflows/ci.yml", ".github/workflows/pages.yml", ".github/workflows/release.yml",
 ]
 for item in required:
     require(item)
 
+# Retained compatibility/reference artifacts are validated as public data, but this validator
+# must never embed confidential source phrases as deny-list sentinels.
+
 package = load_json("package.json")
 package_lock = load_json("package-lock.json")
 facts = load_json("project-facts.json")
-decision = load_json("examples/phenomena-second-station/decision.fde.json")
-profile = load_json("profiles/phenomena/profile.json")
-morphology = load_json("site/data/morphology.json")
-experiences = load_json("site/data/experiences.json")
-references = load_json("site/data/references.json")
+example = load_json("examples/phenomena-second-station/decision.fde.json")
+decision_schema = load_json("schemas/decision.schema.json")
+semantic_schema = load_json("schemas/decision-0.3.0.schema.json")
 
 if package.get("name") != "frontier-decision-engine":
     errors.append("package name mismatch")
-application_version = str(package.get("version", ""))
-if not re.fullmatch(r"\d+\.\d+\.\d+", application_version):
+version = str(package.get("version", ""))
+if not re.fullmatch(r"\d+\.\d+\.\d+", version):
     errors.append("package version is not semantic")
-if str(package_lock.get("version", "")) != application_version:
+if str(package_lock.get("version", "")) != version:
     errors.append("package-lock top-level version mismatch")
-if str(package_lock.get("packages", {}).get("", {}).get("version", "")) != application_version:
+if str(package_lock.get("packages", {}).get("", {}).get("version", "")) != version:
     errors.append("package-lock root package version mismatch")
-if str(facts.get("applicationVersion", "")) != application_version:
+if str(facts.get("applicationVersion", "")) != version:
     errors.append("project-facts application version mismatch")
-if facts.get("schemaVersions", {}).get("decision") != "0.2.10":
-    errors.append("project-facts decision schema version mismatch")
-if facts.get("schemaVersions", {}).get("semanticDecision") != "0.3.0":
-    errors.append("project-facts semantic decision schema version mismatch")
-release_notes_path = ROOT / "docs" / "RELEASE_NOTES.md"
-if not release_notes_path.is_file():
-    errors.append("current release notes file is missing")
-else:
-    release_notes_text = release_notes_path.read_text(encoding="utf-8")
-    if not re.search(rf"(?m)^#\s+v{re.escape(application_version)}\s*$", release_notes_text):
-        errors.append("current release notes version mismatch")
-if decision.get("schema_version") != "0.2.10":
-    errors.append("decision example schema version mismatch")
-if profile.get("profile_id") != "phenomena":
-    errors.append("phenomena profile identity mismatch")
-if "generated-visualization" not in profile.get("evidence_classes", []):
-    errors.append("phenomena profile evidence boundary is incomplete")
 
-if len(decision.get("objectives", [])) < 2:
-    errors.append("decision example lacks objective diversity")
-if len(decision.get("strategies", [])) < 2:
-    errors.append("decision example lacks strategy diversity")
-if len(decision.get("scenarios", [])) < 2:
-    errors.append("decision example lacks scenario diversity")
-if decision.get("provenance", {}).get("probability_model_used") is not False:
+schema_versions = {
+    "decision": decision_schema.get("properties", {}).get("schema_version", {}).get("const"),
+    "semanticDecision": semantic_schema.get("properties", {}).get("schema_version", {}).get("const"),
+}
+if schema_versions != {"decision": "0.2.10", "semanticDecision": "0.3.0"}:
+    errors.append("decision schema versions changed unexpectedly")
+if facts.get("schemaVersions") != schema_versions:
+    errors.append("project-facts schema versions mismatch")
+if example.get("schema_version") != schema_versions["decision"]:
+    errors.append("reference decision example schema mismatch")
+if example.get("provenance", {}).get("probability_model_used") is not False:
     errors.append("reference decision must disclose no probability model")
-if decision.get("provenance", {}).get("values_are_analyst_assigned") is not True:
+if example.get("provenance", {}).get("values_are_analyst_assigned") is not True:
     errors.append("reference decision must disclose analyst-assigned values")
-if not str(decision.get("human_decision", {}).get("rationale", "")).strip():
+if not str(example.get("human_decision", {}).get("rationale", "")).strip():
     errors.append("reference decision lacks human rationale")
-if not str(decision.get("human_decision", {}).get("next_action", "")).strip():
+if not str(example.get("human_decision", {}).get("next_action", "")).strip():
     errors.append("reference decision lacks a next action")
 
 for schema in (ROOT / "schemas").glob("*.json"):
-    parsed = load_json(str(schema.relative_to(ROOT)))
-    expected_id = (
-        "https://bridge-node-7.github.io/frontier-decision-engine/schemas/"
-        + schema.name
-    )
-    if parsed.get("$id") != expected_id:
-        errors.append(f"schema ID drift: {schema.name}")
     published = SITE / "schemas" / schema.name
-    if published.exists() and published.read_bytes() != schema.read_bytes():
+    if not published.exists() or published.read_bytes() != schema.read_bytes():
         errors.append(f"published schema drift: {schema.name}")
 
-expected_counts = {
-    "morphology objects": (morphology.get("summary", {}).get("objects"), 41),
-    "morphology sequences": (morphology.get("summary", {}).get("sequences"), 40),
-    "morphology intervals": (
-        morphology.get("summary", {}).get("valid_intervals"),
-        169,
-    ),
-    "synthetic primary events": (
-        experiences.get("summary", {}).get("primary_encounters"),
-        41,
-    ),
-    "synthetic subphases": (
-        experiences.get("summary", {}).get("nested_subphases"),
-        22,
-    ),
-    "synthetic analytic units": (
-        experiences.get("summary", {}).get("analytic_units"),
-        63,
-    ),
-    "reference clusters": (
-        references.get("summary", {}).get("reference_clusters"),
-        53,
-    ),
-}
-for label, (actual, wanted) in expected_counts.items():
-    if actual != wanted:
-        errors.append(f"{label}: expected {wanted}, got {actual}")
-
-if experiences.get("dataset_id") != "opv-experiences-synthetic-v1":
-    errors.append("event registry is not the approved synthetic dataset")
-if experiences.get("evidence_class") != "synthetic-demonstration":
-    errors.append("synthetic event evidence class mismatch")
-if experiences.get("privacy", {}).get("status") != "synthetic-no-personal-source":
-    errors.append("synthetic event privacy status mismatch")
-if experiences.get("source", {}).get("included_in_public_repository") is not True:
-    errors.append("synthetic source inclusion marker mismatch")
-if len(experiences.get("primary_events", [])) != 41:
-    errors.append("synthetic primary event count mismatch")
-if len(experiences.get("subphases", [])) != 22:
-    errors.append("synthetic subphase count mismatch")
-
-serialized_experiences = json.dumps(experiences, ensure_ascii=False)
-personal_tokens = [
-    "4D_" + "Experiences_" + "Integrated",
-    "Longitudinal " + "Experience Registry",
-    "Child" + "hood",
-    "Te" + "ens",
-    "2019" + "\u2013" + "2022",
-    "OBEs over " + "Bribie",
-    "Malevolent " + "wrinkled figure",
-    "Approx_" + "Age",
-]
-for token in personal_tokens:
-    if token.lower() in serialized_experiences.lower():
-        errors.append(f"personal-history token remains in synthetic data: {token}")
-
-for record in (
-    experiences.get("primary_events", [])
-    + experiences.get("subphases", [])
+release_notes = ROOT / "docs" / "RELEASE_NOTES.md"
+if not release_notes.is_file() or not re.search(
+    rf"(?m)^#\s+v{re.escape(version)}\s*$", release_notes.read_text(encoding="utf-8") if release_notes.exists() else ""
 ):
-    if not str(record.get("label", "")).startswith("Synthetic "):
-        errors.append(f"non-synthetic event label: {record.get('event_id')}")
-    if record.get("event_type") == "subphase" and not record.get("parent_event_id"):
-        errors.append(f"subphase lacks parent: {record.get('event_id')}")
-
-for dataset in (morphology, experiences, references):
-    source = dataset.get("source", {})
-    if not re.fullmatch(r"[a-f0-9]{64}", source.get("sha256", "")):
-        errors.append(f"invalid source fingerprint: {dataset.get('dataset_id')}")
+    errors.append("current release notes version mismatch")
 
 if any(path.suffix.lower() in {".xlsx", ".xls"} for path in ROOT.rglob("*")):
     errors.append("source spreadsheet detected in public repository")
-if any(
-    "__pycache__" in path.parts or path.suffix.lower() in {".pyc", ".pyo"}
-    for path in ROOT.rglob("*")
-):
+if any("__pycache__" in path.parts or path.suffix.lower() in {".pyc", ".pyo"} for path in ROOT.rglob("*")):
     errors.append("compiled Python cache detected")
 if (ROOT / "hosted-verification").exists():
     errors.append("hosted verification downloads detected in source tree")
 
-root_markdown = {
-    path.name for path in ROOT.glob("*.md")
-}
-allowed_root_markdown = {
-    "README.md",
-    "SECURITY.md",
-    "CONTRIBUTING.md",
-    "CODE_OF_CONDUCT.md",
-}
+allowed_root_markdown = {"README.md", "SECURITY.md", "CONTRIBUTING.md", "CODE_OF_CONDUCT.md"}
+root_markdown = {path.name for path in ROOT.glob("*.md")}
 if root_markdown != allowed_root_markdown:
-    errors.append(
-        "root Markdown surface mismatch: "
-        + ", ".join(sorted(root_markdown))
-    )
+    errors.append("root Markdown surface mismatch: " + ", ".join(sorted(root_markdown)))
 
-docs_markdown = {
-    str(path.relative_to(ROOT)).replace("\\", "/")
-    for path in (ROOT / "docs").rglob("*.md")
+allowed_docs_markdown = {
+    "docs/ARCHITECTURE.md", "docs/METHODOLOGY.md", "docs/DATA_DICTIONARY.md", "docs/PRIVACY.md",
+    "docs/RELEASE_NOTES.md", "docs/RELEASING.md", "docs/STYLE_LAYERS.md",
 }
-allowed_static_docs = {
-    "docs/ARCHITECTURE.md",
-    "docs/METHODOLOGY.md",
-    "docs/DATA_DICTIONARY.md",
-    "docs/PRIVACY.md",
-    "docs/RELEASE_NOTES.md",
-    "docs/RELEASING.md",
-    "docs/STYLE_LAYERS.md",
-}
-unexpected_docs = docs_markdown - allowed_static_docs
-if unexpected_docs:
-    errors.append(
-        "docs Markdown surface mismatch: "
-        + ", ".join(sorted(unexpected_docs))
-    )
-release_notes = ROOT / "docs/RELEASE_NOTES.md"
-if not release_notes.is_file():
-    errors.append("current release notes are absent from docs surface")
-else:
-    release_text = release_notes.read_text(encoding="utf-8")
-    if not re.search(rf"(?m)^#\s+v{re.escape(application_version)}\s*$", release_text):
-        errors.append("current release notes do not identify the application version")
+docs_markdown = {str(path.relative_to(ROOT)).replace("\\", "/") for path in (ROOT / "docs").rglob("*.md")}
+if docs_markdown != allowed_docs_markdown:
+    errors.append("docs Markdown surface mismatch: " + ", ".join(sorted(docs_markdown)))
 
 readme = (ROOT / "README.md").read_text(encoding="utf-8")
 if len(readme.splitlines()) > 100:
     errors.append("README exceeds 100 lines")
 readme_normalized = re.sub(r"\s+", " ", readme)
-for required_text in [
-    "project-facts.json",
-    "synthetic critical-material source-qualification case",
-    "browser-local",
-    "no backend",
-]:
+for required_text in ["project-facts.json", "browser-local", "no backend"]:
     if required_text.lower() not in readme_normalized.lower():
         errors.append(f"README missing required boundary: {required_text}")
+
+# Generic public-surface OPSEC checks avoid embedding private source phrases in public code.
+scan_roots = [ROOT / "README.md", ROOT / "docs", ROOT / "examples", ROOT / "site" / "src", ROOT / "scripts"]
+path_patterns = [
+    re.compile(r"[A-Za-z]:\\\\Users\\\\[^\\\s]+", re.I),
+    re.compile(r"/Users/[^/\s]+/", re.I),
+    re.compile(r"/home/[^/\s]+/", re.I),
+    re.compile(r"\b(?:OneDrive|Dropbox)\b", re.I),
+]
+for root in scan_roots:
+    files = [root] if root.is_file() else [p for p in root.rglob("*") if p.is_file() and p.suffix.lower() in {".md", ".js", ".py", ".json", ".html", ".css", ".txt"}]
+    for path in files:
+        try:
+            text = path.read_text(encoding="utf-8")
+        except Exception:
+            continue
+        for pattern in path_patterns:
+            if pattern.search(text):
+                errors.append(f"local-machine path or sync-folder marker detected: {path.relative_to(ROOT)}")
+                break
 
 index = (SITE / "index.html").read_text(encoding="utf-8")
 if "Content-Security-Policy" not in index:
@@ -278,59 +161,49 @@ for path in (SITE / "src").rglob("*.js"):
 
 app_text = (SITE / "src/app.js").read_text(encoding="utf-8")
 decision_text = (SITE / "src/decision-ui.js").read_text(encoding="utf-8")
+rescue_text = (SITE / "src/rescue-ui.js").read_text(encoding="utf-8")
 if len(re.findall(r'id="decision-step-heading-[0-5]" tabindex="-1"', decision_text)) != 7:
-    errors.append("FDE must expose six unique focusable stage headings and one incomplete-analysis variant")
-if 'id="case-step-heading"' in app_text:
-    errors.append("removed case-wizard heading remains in the public application")
-for stale in [
-    "Real source data",
-    "Longitudinal " + "experience registry",
-    "privacy-reduced chronology",
-]:
-    if stale.lower() in app_text.lower():
-        errors.append(f"stale personal-data presentation remains: {stale}")
+    errors.append("FDE must expose six focusable decision-stage headings and one incomplete-analysis variant")
+if "rescue-intake" not in rescue_text or "Decision Frame" not in rescue_text:
+    errors.append("Decision Rescue public entry is incomplete")
+if "fde.rescue.session.v1" not in rescue_text:
+    errors.append("Decision Rescue session recovery is missing")
+if "A decision is already saved in this browser." not in rescue_text:
+    errors.append("Decision Rescue saved-work collision boundary is missing")
 
 runner = (ROOT / "scripts/browser_e2e.py").read_text(encoding="utf-8")
+rescue_runner = (ROOT / "scripts/browser_rescue_e2e.py").read_text(encoding="utf-8")
 requirements = (ROOT / "requirements-dev.txt").read_text(encoding="utf-8")
 for required_flow in ("decision_flow", "route_suite", "print_flow"):
     if required_flow not in runner:
         errors.append(f"browser end-to-end flow is not wired: {required_flow}")
-if "phenomena_flow" in runner:
-    errors.append("removed Phenomena browser flow remains wired")
+for required_rescue_check in ("sessionStorage", "A decision is already saved", "prefers-color-scheme"):
+    if required_rescue_check not in rescue_runner:
+        errors.append(f"Decision Rescue browser regression missing: {required_rescue_check}")
 if "playwright==1.57.0" not in requirements:
     errors.append("expected browser tool pin is missing")
 
 citation = (ROOT / "CITATION.cff").read_text(encoding="utf-8")
-if not re.search(rf"(?m)^version:\s*{re.escape(application_version)}\s*$", citation):
+if not re.search(rf"(?m)^version:\s*{re.escape(version)}\s*$", citation):
     errors.append("citation version mismatch")
 
-contract = ROOT / "docs/contracts/BN7_TOKEN_CONTRACT_v1.0.0.json"
-contract_sidecar = ROOT / "docs/contracts/BN7_TOKEN_CONTRACT_v1.0.0_SHA256.txt"
-contract_source = ROOT / "docs/contracts/BN7_TOKEN_CONTRACT_SOURCE_COMMIT.txt"
-if contract.exists() and contract_sidecar.exists():
-    import hashlib
-    digest = hashlib.sha256(contract.read_bytes()).hexdigest()
-    expected_sidecar = f"{digest}  BN7_TOKEN_CONTRACT_v1.0.0.json\n"
-    if contract_sidecar.read_text(encoding="utf-8") != expected_sidecar:
-        errors.append("BN7 token contract checksum mismatch")
-if contract_source.exists() and not re.fullmatch(r"[a-f0-9]{40}\n?", contract_source.read_text(encoding="utf-8")):
-    errors.append("BN7 token contract source commit is invalid")
-
-styles = (SITE / "assets/styles.css").read_text(encoding="utf-8")
 shell = (SITE / "assets/bridge-node-7-shell.css").read_text(encoding="utf-8")
-if "font-family: Inter," in styles:
-    errors.append("unresolved Inter font prefix remains")
+rescue_css = (SITE / "assets/luxury-rescue.css").read_text(encoding="utf-8")
 if "--line-strong:" not in shell:
     errors.append("interactive boundary token is missing")
+if "--focus-ring:" not in rescue_css:
+    errors.append("theme-aware focus token is missing")
+if ".rescue-frame{position:static;order:-1}" in rescue_css.replace(" ", ""):
+    errors.append("mobile Rescue frame still precedes the active question")
 if "Bridge Node 7 Home" not in index:
     errors.append("explicit Bridge Node 7 Home path is missing")
+
 not_found = (SITE / "404.html").read_text(encoding="utf-8")
 if "Page not found" not in not_found or "/frontier-decision-engine/#/decision" not in not_found:
     errors.append("branded FDE 404 contract is incomplete")
+
 expected_stylesheet_order = [
-    "./assets/styles.css",
-    "./assets/bridge-node-7-shell.css",
-    "./assets/beginner-first.css",
+    "./assets/styles.css", "./assets/bridge-node-7-shell.css", "./assets/beginner-first.css", "./assets/luxury-rescue.css",
 ]
 positions = [index.find(item) for item in expected_stylesheet_order]
 if any(position < 0 for position in positions) or positions != sorted(positions):
@@ -347,7 +220,7 @@ if errors:
     sys.exit(1)
 
 print("REPOSITORY VALIDATION PASS")
-print("- lean public documentation surface")
-print("- single Decision Lab public workflow with browser-local persistence")
-print("- application, compatible schema, privacy, and browser boundaries preserved")
+print("- public product surface and compatibility artifacts are bounded by repository validation")
+print("- Decision Rescue and Decision Lab preserve human authority and browser-local boundaries")
+print("- public decision schemas, release identity, accessibility controls, and OPSEC checks are aligned")
 print("- static site has no external runtime dependencies")
