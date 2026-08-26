@@ -98,9 +98,9 @@ def run() -> None:
                     page.wait_for_load_state('networkidle')
                     page.locator('#decision-question').wait_for(state='visible')
                     assert page.locator('#decision-question').input_value() == 'Should we move now or test first?'
-                    assert page.locator('[id^="objective-label-"]').count() == 2
-                    assert page.locator('[id^="strategy-label-"]').count() == 2
-                    assert page.locator('[id^="scenario-label-"]').count() == 2
+                    assert page.locator('input[id^="objective-label-"]').count() == 2
+                    assert page.locator('input[id^="strategy-label-"]').count() == 2
+                    assert page.locator('input[id^="scenario-label-"]').count() == 2
                     assert page.locator('#objective-label-0').input_value() == 'Time'
                     assert page.locator('#objective-label-1').input_value() == 'Reliability'
                     assert page.locator('#strategy-label-0').input_value() == 'Keep things as they are'
