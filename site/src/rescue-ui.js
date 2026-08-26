@@ -1,318 +1,70 @@
 import { createGuidedDecisionCase, DRAFT_TOPOLOGY_BOUNDS } from './lib/decision.js';
 import { downloadText, safeFilename } from './lib/case.js';
 import { DECISION_STORAGE_KEY, getBrowserStorage, saveDecision } from './lib/persistence.js';
-import {
-  RESCUE_CHOICES,
-  RESCUE_FUTURES,
-  RESCUE_GOALS,
-  RESCUE_INTENTS,
-  RESCUE_MAX_INPUT_CHARS,
-  buildDecisionFrame,
-  decisionFrameReady,
-  frameAsText,
-  validateIntakeText,
-} from './lib/intake.js';
+import { RESCUE_CHOICES, RESCUE_FUTURES, RESCUE_GOALS, RESCUE_INTENTS, RESCUE_MAX_INPUT_CHARS, buildDecisionFrame, decisionFrameReady, frameAsText, validateIntakeText } from './lib/intake.js';
 
-const escapeHtml = (value) => String(value ?? '')
-  .replaceAll('&', '&amp;')
-  .replaceAll('<', '&lt;')
-  .replaceAll('>', '&gt;')
-  .replaceAll('"', '&quot;')
-  .replaceAll("'", '&#039;');
-
-const rescue = {
-  stage: 0,
-  startingPoint: '',
-  intent: '',
-  decision: '',
-  goals: [],
-  choices: [],
-  futures: [],
-  urgency: '',
-  reversibility: '',
-  error: '',
-  pendingReplace: false,
+const esc=(v)=>String(v??'').replaceAll('&','&amp;').replaceAll('<','&lt;').replaceAll('>','&gt;').replaceAll('"','&quot;').replaceAll("'",'&#039;');
+const limits={goal:DRAFT_TOPOLOGY_BOUNDS.objectives.max,choice:DRAFT_TOPOLOGY_BOUNDS.strategies.max,future:DRAFT_TOPOLOGY_BOUNDS.scenarios.max};
+const SESSION='fde.rescue.session.v1',CONTEXT='fde.rescue.context.v1',VERSION=1;
+const state={stage:0,startingPoint:'',intent:'',decision:'',goals:[],choices:[],futures:[],urgency:'',reversibility:'',error:'',pendingReplace:false};
+const intentCopy={
+  'find-decision':'We will turn the situation into one decision at a time.',
+  untangle:'We will separate what is happening from what actually needs a choice.',
+  compare:'We will capture the choices you already see, then test them only if useful.',
+  missing:'We will make the unknowns visible before forcing a comparison.',
+  urgent:'We will focus on the smallest useful frame for a near-term decision.',
+  unsure:'That is enough to start. We will keep the next step small.',
 };
-
-const intentCopy = {
-  'find-decision': 'We will turn the situation into one decision at a time.',
-  untangle: 'We will separate what is happening from what actually needs a choice.',
-  compare: 'We will capture the choices you already see, then test them only if useful.',
-  missing: 'We will make the unknowns visible before forcing a comparison.',
-  urgent: 'We will focus on the smallest useful frame for a near-term decision.',
-  unsure: 'That is enough to start. We will keep the next step small.',
+const promptByIntent={
+  'find-decision':['What choice actually needs to be made?','Name one decision first. It can be rough.'],
+  untangle:['Which part needs a decision first?','Pick the first choice that would make the rest easier to work through.'],
+  compare:['What choice are you trying to compare?','Name the decision that contains the alternatives you already see.'],
+  missing:['What decision is blocked by missing information?','Name the choice that cannot move forward until something is learned.'],
+  urgent:['What decision needs action soon?','Name the choice that matters most right now.'],
+  unsure:['If one choice had to be made first, what would it be?','A rough question is enough. You can refine it later.'],
 };
+const ss=()=>{try{return globalThis.sessionStorage||null}catch{return null}};
+const frame=()=>buildDecisionFrame(state);
+const snapshot=()=>({version:VERSION,stage:state.stage,...frame()});
+function persist(){try{const s=ss(),v=snapshot();if(!s)return false;if(!v.startingPoint&&v.stage===0)s.removeItem(SESSION);else s.setItem(SESSION,JSON.stringify(v));return true}catch{return false}}
+function restore(){try{const s=ss(),raw=s?.getItem(SESSION);if(!raw)return null;const p=JSON.parse(raw),stage=Number(p?.stage),v=buildDecisionFrame(p||{});const ok=p?.version===VERSION&&Number.isInteger(stage)&&stage>=0&&stage<=6&&v.startingPoint.length<=RESCUE_MAX_INPUT_CHARS&&v.decision.length<=500&&v.goals.length<=limits.goal&&v.choices.length<=limits.choice&&v.futures.length<=limits.future;if(!ok)throw new Error();return {...v,stage,error:'',pendingReplace:false}}catch{try{ss()?.removeItem(SESSION)}catch{}return null}}
+function clearSession(){try{ss()?.removeItem(SESSION)}catch{}}
+function writeContext(v){try{ss()?.setItem(CONTEXT,JSON.stringify({version:1,startingPoint:String(v.startingPoint||'').slice(0,RESCUE_MAX_INPUT_CHARS)}))}catch{}}
+function hasSaved(storage){try{return Boolean(storage?.getItem(DECISION_STORAGE_KEY))}catch{return false}}
+Object.assign(state,restore()||{});
 
-const selectionLimits = Object.freeze({
-  goal: DRAFT_TOPOLOGY_BOUNDS.objectives.max,
-  choice: DRAFT_TOPOLOGY_BOUNDS.strategies.max,
-  future: DRAFT_TOPOLOGY_BOUNDS.scenarios.max,
-});
-
-const RESCUE_SESSION_KEY = 'fde.rescue.session.v1';
-const RESCUE_CONTEXT_KEY = 'fde.rescue.context.v1';
-const RESCUE_SESSION_VERSION = 1;
-
-function getSessionStorage() {
-  try { return globalThis.sessionStorage || null; } catch { return null; }
+function toggle(list,value,limit){const i=list.indexOf(value);if(i>=0){list.splice(i,1);return ''}if(list.length>=limit)return `This comparison supports up to ${limit} items here.`;list.push(value);return ''}
+function chip(label,selected,kind,value=label,disabled=false){return `<button class="rescue-chip ${selected?'is-selected':''}" type="button" data-rescue-kind="${esc(kind)}" data-rescue-value="${esc(value)}" aria-pressed="${selected?'true':'false'}" ${disabled?'disabled':''}>${esc(label)}</button>`}
+function chips(options,selected,kind){const all=[...options,...selected.filter(x=>!options.includes(x))],at=selected.length>=limits[kind];return all.map(x=>chip(x,selected.includes(x),kind,x,at&&!selected.includes(x))).join('')}
+const urgency=(v)=>({today:'Today',soon:'Soon',time:'I have time',unsure:'Not sure'}[v]||'');
+const reverse=(v)=>({easy:'Easy to undo',partly:'Partly reversible',hard:'Hard to undo',unsure:'Not sure'}[v]||'');
+function workingFrame(){if(state.stage<1)return '';const v=frame(),list=(a,e)=>a.length?`<ul>${a.map(x=>`<li>${esc(x)}</li>`).join('')}</ul>`:`<p class="rescue-empty">${e}</p>`;return `<aside class="rescue-frame" aria-labelledby="decision-frame-title"><div class="rescue-frame-head"><div><span class="eyebrow">Your working frame</span><h2 id="decision-frame-title">Decision Frame</h2></div><button class="text-action rescue-reset" type="button" data-rescue-reset>Start over</button></div><section><h3>Starting point</h3><p class="rescue-starting-point">${esc(v.startingPoint)}</p></section><section><h3>Decision</h3>${v.decision?`<p>${esc(v.decision)}</p>`:'<p class="rescue-empty">Not clear yet.</p>'}</section>${v.urgency?`<section><h3>Timing</h3><p>${urgency(v.urgency)}</p></section>`:''}${v.reversibility?`<section><h3>Reversibility</h3><p>${reverse(v.reversibility)}</p></section>`:''}<section><h3>What matters</h3>${list(v.goals,'Not identified yet.')}</section><section><h3>Choices</h3>${list(v.choices,'Not identified yet.')}</section><section><h3>What may change</h3>${list(v.futures,'Not identified yet.')}</section><section><h3>Comparison</h3><p>${decisionFrameReady(v)?'Ready to continue into a structured comparison if useful.':'Not ready yet. No recommendation has been made.'}</p></section></aside>`}
+function meta(){return `<div class="rescue-meta-grid"><fieldset class="rescue-fieldset"><legend>How soon do you need to act?</legend><div class="rescue-chips compact">${chip('Today',state.urgency==='today','urgency','today')}${chip('Soon',state.urgency==='soon','urgency','soon')}${chip('I have time',state.urgency==='time','urgency','time')}${chip("I'm not sure",state.urgency==='unsure','urgency','unsure')}</div></fieldset><fieldset class="rescue-fieldset"><legend>How hard would this be to undo?</legend><div class="rescue-chips compact">${chip('Easy',state.reversibility==='easy','reversibility','easy')}${chip('Partly',state.reversibility==='partly','reversibility','partly')}${chip('Hard',state.reversibility==='hard','reversibility','hard')}${chip("I'm not sure",state.reversibility==='unsure','reversibility','unsure')}</div></fieldset></div>`}
+function nav(enabled,hint,label='Continue →'){return `<div class="rescue-nav"><button class="quiet" data-rescue-back type="button">← Back</button><button class="primary" data-rescue-next type="button" aria-describedby="rescue-next-hint" ${enabled?'':'disabled'}>${label}</button><span id="rescue-next-hint" class="rescue-nav-hint">${hint}</span></div>`}
+function add(kind,label,placeholder,disabled){return `<label class="rescue-inline-label" for="rescue-custom-${kind}">${label}</label><div class="rescue-inline-add"><input id="rescue-custom-${kind}" type="text" maxlength="100" placeholder="${placeholder}" ${disabled?'disabled':''}><button type="button" data-rescue-add="${kind}" ${disabled?'disabled':''}>Add</button></div>`}
+function prompt(){
+  if(state.stage===0)return `<section class="rescue-focus" aria-labelledby="rescue-question"><span class="eyebrow">Start where you are</span><h2 id="rescue-question" tabindex="-1">What’s going on?</h2><p>Tell FDE what you’re dealing with in your own words. It can be messy, incomplete, repetitive, or uncertain. You do not need to organize it first.</p><label class="rescue-textarea-label" for="rescue-intake">What’s on your mind?</label><textarea id="rescue-intake" rows="8" maxlength="12000" aria-describedby="rescue-intake-help" placeholder="Put everything that’s on your mind here…">${esc(state.startingPoint)}</textarea><p id="rescue-intake-help" class="help">One brain dump is enough. FDE will not execute pasted code or silently turn your words into model facts.</p><button id="rescue-start" class="primary rescue-primary" type="button">Help me make sense of this →</button><div class="rescue-secondary-actions"><a href="#/decision">I already know exactly what I’m deciding</a><a href="#/decision/example">Try the ready example</a><a href="#/decision/open">Open a saved decision</a></div></section>`;
+  if(state.stage===1)return `<section class="rescue-focus" aria-labelledby="rescue-question"><span class="eyebrow">One useful action</span><h2 id="rescue-question" tabindex="-1">What would help most?</h2><p>You do not need to solve everything at once.</p><div class="rescue-intent-grid">${RESCUE_INTENTS.map(x=>chip(x.label,state.intent===x.id,'intent',x.id)).join('')}</div>${state.intent?`<p class="rescue-guidance">${esc(intentCopy[state.intent])}</p>`:''}${nav(Boolean(state.intent),'Choose one option to continue.')}</section>`;
+  if(state.stage===2){const [q,h]=promptByIntent[state.intent]||promptByIntent.unsure;return `<section class="rescue-focus" aria-labelledby="rescue-question"><span class="eyebrow">Most useful thing now</span><h2 id="rescue-question" tabindex="-1">${esc(q)}</h2><p>${esc(h)}</p><label class="rescue-textarea-label" for="rescue-decision">Decision</label><input id="rescue-decision" type="text" maxlength="500" value="${esc(state.decision)}" placeholder="Example: Should we move now or test first?"><details class="rescue-help"><summary>I’m not sure yet</summary><p>Which feels closest? Something needs to change · someone needs a yes/no · there are several paths · something may need to stop or wait.</p></details><button class="text-action rescue-skip" type="button" data-rescue-skip>Keep going without a clear decision yet</button>${meta()}${nav(Boolean(state.decision.trim()),'Write the decision in one line to continue.')}</section>`}
+  if(state.stage===3)return `<section class="rescue-focus" aria-labelledby="rescue-question"><span class="eyebrow">Most useful thing now</span><h2 id="rescue-question" tabindex="-1">What needs to go well?</h2><p>Choose 2–${limits.goal}. These are starting points, not assumptions about your situation. <strong>${state.goals.length}/${limits.goal}</strong> selected.</p><div class="rescue-chips">${chips(RESCUE_GOALS,state.goals,'goal')}</div>${add('goal','Something else','Add your own',state.goals.length>=limits.goal)}<button class="text-action rescue-skip" type="button" data-rescue-skip>I’m not sure yet — keep going</button>${nav(state.goals.length>=2,'Choose at least two to continue.')}</section>`;
+  if(state.stage===4)return `<section class="rescue-focus" aria-labelledby="rescue-question"><span class="eyebrow">Most useful thing now</span><h2 id="rescue-question" tabindex="-1">What could you realistically do?</h2><p>Choose 2–${limits.choice}. Rename or add something specific when the generic path is not enough. <strong>${state.choices.length}/${limits.choice}</strong> selected.</p><div class="rescue-chips">${chips(RESCUE_CHOICES,state.choices,'choice')}</div>${add('choice','Something else','Add a real choice',state.choices.length>=limits.choice)}<button class="text-action rescue-skip" type="button" data-rescue-skip>I’m not sure yet — keep going</button>${nav(state.choices.length>=2,'Choose at least two to continue.')}</section>`;
+  if(state.stage===5)return `<section class="rescue-focus" aria-labelledby="rescue-question"><span class="eyebrow">Most useful thing now</span><h2 id="rescue-question" tabindex="-1">What could happen that might change the answer?</h2><p>Choose 2–${limits.future} plausible futures. Nothing here is treated as a prediction. <strong>${state.futures.length}/${limits.future}</strong> selected.</p><div class="rescue-chips">${chips(RESCUE_FUTURES,state.futures,'future')}</div>${add('future','Something else','Add a plausible future',state.futures.length>=limits.future)}<button class="text-action rescue-skip" type="button" data-rescue-skip>I’m not sure yet — build what we have</button>${nav(state.futures.length>=2,'Choose at least two to continue.','Build my Decision Frame →')}</section>`;
+  const ready=decisionFrameReady(frame());return `<section class="rescue-focus rescue-complete" aria-labelledby="rescue-question"><span class="eyebrow">Decision Rescue</span><h2 id="rescue-question" tabindex="-1">${ready?'Your Decision Frame is ready.':'Your Decision Frame is taking shape.'}</h2><p>${ready?'You have enough structure to see the decision more clearly. You can stop here or continue into the full deterministic comparison.':'This is still useful framing. No recommendation has been made.'}</p><div class="rescue-callout"><strong>What FDE did</strong><p>It organized only what you confirmed. FDE has not inferred evidence, assigned probabilities, or made the decision.</p></div>${state.pendingReplace?`<div class="rescue-collision" role="region" aria-labelledby="rescue-collision-title"><strong id="rescue-collision-title">A decision is already saved in this browser.</strong><p>Your existing browser draft has not been changed. You can open it, keep this Decision Frame in this tab, or explicitly replace the browser draft.</p><div class="actions"><a class="button" href="#/decision">Open saved decision</a><button id="rescue-replace-draft" type="button">Replace saved browser draft and continue</button></div></div>`:''}<div class="rescue-finish-actions"><button id="rescue-download-frame" class="primary" type="button">Download Decision Frame</button><button id="rescue-open-lab" type="button" ${ready?'':'disabled'}>Continue to full comparison</button><button class="quiet" data-rescue-back type="button">← Refine the frame</button></div><p class="method-truth">The comparison informs. A person decides.</p></section>`;
 }
-
-function rescueSnapshot() {
-  const current = buildDecisionFrame(rescue);
-  return {
-    version: RESCUE_SESSION_VERSION,
-    stage: rescue.stage,
-    startingPoint: current.startingPoint,
-    intent: current.intent,
-    decision: current.decision,
-    goals: current.goals,
-    choices: current.choices,
-    futures: current.futures,
-    urgency: current.urgency,
-    reversibility: current.reversibility,
-  };
+function handoff({replaceExisting=false}={}){const v=frame();if(!decisionFrameReady(v)){state.error='Confirm a decision, at least two things that matter, two choices, and two futures before the full comparison.';render();return}const d=createGuidedDecisionCase({objectiveCount:v.goals.length,strategyCount:v.choices.length,scenarioCount:v.futures.length});d.question=v.decision||v.startingPoint;d.title=(v.decision||v.startingPoint).slice(0,120);d.urgency=v.urgency==='today'?'immediate':v.urgency==='soon'?'near-term':v.urgency==='time'?'planned':'';d.reversibility=v.reversibility==='easy'?'reversible':v.reversibility==='partly'?'partially-reversible':v.reversibility==='hard'?'irreversible':'';v.goals.forEach((x,i)=>d.objectives[i].label=x);v.choices.forEach((x,i)=>d.strategies[i].label=x);v.futures.forEach((x,i)=>d.scenarios[i].label=x);const storage=getBrowserStorage(globalThis);if(!replaceExisting&&hasSaved(storage)){state.pendingReplace=true;state.error='';persist();render();return}const result=saveDecision(storage,d,null);if(!result.ok){state.error=result.status;render();return}state.pendingReplace=false;state.error='';writeContext(v);clearSession();try{ss()?.setItem('fde.rescue.handoff','1')}catch{}history.replaceState(null,'',`${location.pathname}${location.search}#/decision`);location.reload()}
+let root=null;
+function bind(){
+  root.querySelector('#rescue-intake')?.addEventListener('input',e=>{state.startingPoint=String(e.currentTarget.value||'').slice(0,RESCUE_MAX_INPUT_CHARS);persist()});
+  root.querySelector('#rescue-start')?.addEventListener('click',()=>{const r=validateIntakeText(root.querySelector('#rescue-intake')?.value);state.startingPoint=r.text;state.error=r.error;if(r.ok){state.stage=1;state.error=''}persist();render()});
+  root.querySelector('#rescue-decision')?.addEventListener('input',e=>{state.decision=e.currentTarget.value;const n=root.querySelector('[data-rescue-next]');if(n)n.disabled=!state.decision.trim();persist()});
+  root.querySelectorAll('[data-rescue-kind]').forEach(b=>b.addEventListener('click',()=>{const k=b.dataset.rescueKind,v=b.dataset.rescueValue;state.error='';if(k==='intent')state.intent=v;else if(k==='goal')state.error=toggle(state.goals,v,limits.goal);else if(k==='choice')state.error=toggle(state.choices,v,limits.choice);else if(k==='future')state.error=toggle(state.futures,v,limits.future);else if(k==='urgency')state.urgency=state.urgency===v?'':v;else if(k==='reversibility')state.reversibility=state.reversibility===v?'':v;persist();render({focusKind:k,focusValue:v})}));
+  root.querySelectorAll('[data-rescue-add]').forEach(b=>b.addEventListener('click',()=>{const k=b.dataset.rescueAdd,input=root.querySelector(`#rescue-custom-${k}`),v=String(input?.value||'').trim();if(!v)return;const list=k==='goal'?state.goals:k==='choice'?state.choices:state.futures;state.error=list.includes(v)?'':toggle(list,v,limits[k]);persist();render({focusKind:k,focusValue:v})}));
+  root.querySelector('[data-rescue-skip]')?.addEventListener('click',()=>{state.error='';state.stage=Math.min(6,state.stage+1);persist();render()});
+  root.querySelector('[data-rescue-next]')?.addEventListener('click',()=>{if((state.stage===1&&!state.intent)||(state.stage===2&&!state.decision.trim())||(state.stage===3&&state.goals.length<2)||(state.stage===4&&state.choices.length<2)||(state.stage===5&&state.futures.length<2))return;state.error='';state.stage=Math.min(6,state.stage+1);persist();render()});
+  root.querySelector('[data-rescue-back]')?.addEventListener('click',()=>{state.error='';state.stage=Math.max(0,state.stage-1);persist();render()});
+  root.querySelector('#rescue-download-frame')?.addEventListener('click',()=>{const v=frame();downloadText(safeFilename(v.decision||'decision-frame','txt'),frameAsText(v))});
+  root.querySelector('#rescue-open-lab')?.addEventListener('click',()=>handoff());root.querySelector('#rescue-replace-draft')?.addEventListener('click',()=>handoff({replaceExisting:true}));
+  root.querySelector('[data-rescue-reset]')?.addEventListener('click',()=>{if(!globalThis.confirm?.('Start over? This clears Decision Rescue work in this tab.'))return;Object.assign(state,{stage:0,startingPoint:'',intent:'',decision:'',goals:[],choices:[],futures:[],urgency:'',reversibility:'',error:'',pendingReplace:false});clearSession();render()});
 }
-
-function persistRescueSession() {
-  const storage = getSessionStorage();
-  if (!storage) return false;
-  try {
-    const snapshot = rescueSnapshot();
-    if (!snapshot.startingPoint && snapshot.stage === 0) {
-      storage.removeItem(RESCUE_SESSION_KEY);
-      return true;
-    }
-    storage.setItem(RESCUE_SESSION_KEY, JSON.stringify(snapshot));
-    return true;
-  } catch {
-    return false;
-  }
-}
-
-function restoreRescueSession() {
-  const storage = getSessionStorage();
-  if (!storage) return null;
-  try {
-    const raw = storage.getItem(RESCUE_SESSION_KEY);
-    if (!raw) return null;
-    const parsed = JSON.parse(raw);
-    const stage = Number(parsed?.stage);
-    const current = buildDecisionFrame(parsed || {});
-    const valid = parsed?.version === RESCUE_SESSION_VERSION
-      && Number.isInteger(stage) && stage >= 0 && stage <= 6
-      && current.startingPoint.length <= RESCUE_MAX_INPUT_CHARS
-      && current.decision.length <= 500
-      && current.goals.length <= selectionLimits.goal
-      && current.choices.length <= selectionLimits.choice
-      && current.futures.length <= selectionLimits.future;
-    if (!valid) throw new Error('invalid rescue session');
-    return { ...current, stage, error: '', pendingReplace: false };
-  } catch {
-    try { storage.removeItem(RESCUE_SESSION_KEY); } catch { /* no-op */ }
-    return null;
-  }
-}
-
-function clearRescueSession() {
-  try { getSessionStorage()?.removeItem(RESCUE_SESSION_KEY); } catch { /* no-op */ }
-}
-
-function writeRescueContext(current) {
-  const storage = getSessionStorage();
-  if (!storage) return;
-  try {
-    storage.setItem(RESCUE_CONTEXT_KEY, JSON.stringify({
-      version: 1,
-      startingPoint: String(current.startingPoint || '').slice(0, RESCUE_MAX_INPUT_CHARS),
-    }));
-  } catch { /* context is optional */ }
-}
-
-function existingLabDraft(storage) {
-  if (!storage) return false;
-  try { return Boolean(storage.getItem(DECISION_STORAGE_KEY)); } catch { return false; }
-}
-
-Object.assign(rescue, restoreRescueSession() || {});
-
-const decisionPromptByIntent = Object.freeze({
-  'find-decision': {
-    question: 'What choice actually needs to be made?',
-    help: 'Name one decision first. It can be rough.',
-  },
-  untangle: {
-    question: 'Which part needs a decision first?',
-    help: 'Pick the first choice that would make the rest easier to work through.',
-  },
-  compare: {
-    question: 'What choice are you trying to compare?',
-    help: 'Name the decision that contains the alternatives you already see.',
-  },
-  missing: {
-    question: 'What decision is blocked by missing information?',
-    help: 'Name the choice that cannot move forward until something is learned.',
-  },
-  urgent: {
-    question: 'What decision needs action soon?',
-    help: 'Name the choice that matters most right now.',
-  },
-  unsure: {
-    question: 'If one choice had to be made first, what would it be?',
-    help: 'A rough question is enough. You can refine it later.',
-  },
-});
-
-function toggleSelection(list, value, limit = Number.POSITIVE_INFINITY) {
-  const index = list.indexOf(value);
-  if (index >= 0) {
-    list.splice(index, 1);
-    return { changed: true, reason: '' };
-  }
-  if (list.length >= limit) {
-    return { changed: false, reason: `This comparison supports up to ${limit} ${limit === 1 ? 'item' : 'items'} here.` };
-  }
-  list.push(value);
-  return { changed: true, reason: '' };
-}
-
-function chip(label, selected, kind, value = label, disabled = false) {
-  return `<button class="rescue-chip ${selected ? 'is-selected' : ''}" type="button"
-    data-rescue-kind="${escapeHtml(kind)}" data-rescue-value="${escapeHtml(value)}"
-    aria-pressed="${selected ? 'true' : 'false'}" ${disabled ? 'disabled' : ''}>${escapeHtml(label)}</button>`;
-}
-
-function frame() {
-  return buildDecisionFrame(rescue);
-}
-
-function urgencyDisplay(value) {
-  return { today: 'Today', soon: 'Soon', time: 'I have time', unsure: 'Not sure' }[value] || '';
-}
-
-function reversibilityDisplay(value) {
-  return { easy: 'Easy to undo', partly: 'Partly reversible', hard: 'Hard to undo', unsure: 'Not sure' }[value] || '';
-}
-
-function framePanel() {
-  if (rescue.stage < 1) return '';
-  const current = frame();
-  const list = (items, empty) => items.length
-    ? `<ul>${items.map((item) => `<li>${escapeHtml(item)}</li>`).join('')}</ul>`
-    : `<p class="rescue-empty">${escapeHtml(empty)}</p>`;
-  return `<aside class="rescue-frame" aria-labelledby="decision-frame-title">
-    <div class="rescue-frame-head">
-      <div><span class="eyebrow">Your working frame</span>
-      <h2 id="decision-frame-title">Decision Frame</h2></div>
-      <button class="text-action rescue-reset" type="button" data-rescue-reset>Start over</button>
-    </div>
-    <section><h3>Starting point</h3><p class="rescue-starting-point">${escapeHtml(current.startingPoint)}</p></section>
-    <section><h3>Decision</h3>${current.decision ? `<p>${escapeHtml(current.decision)}</p>` : '<p class="rescue-empty">Not clear yet.</p>'}</section>
-    ${current.urgency ? `<section><h3>Timing</h3><p>${escapeHtml(urgencyDisplay(current.urgency))}</p></section>` : ''}
-    ${current.reversibility ? `<section><h3>Reversibility</h3><p>${escapeHtml(reversibilityDisplay(current.reversibility))}</p></section>` : ''}
-    <section><h3>What matters</h3>${list(current.goals, 'Not identified yet.')}</section>
-    <section><h3>Choices</h3>${list(current.choices, 'Not identified yet.')}</section>
-    <section><h3>What may change</h3>${list(current.futures, 'Not identified yet.')}</section>
-    <section><h3>Comparison</h3><p>${decisionFrameReady(current)
-      ? 'Ready to continue into a structured comparison if useful.'
-      : 'Not ready yet. No recommendation has been made.'}</p></section>
-  </aside>`;
-}
-
-function optionChips(options, selected, kind) {
-  const extras = selected.filter((item) => !options.includes(item));
-  const limit = selectionLimits[kind];
-  const at1imit = selected.length >= limit;
-  return [...options, ...extras]
-    .map((item) => chip(item, selected.includes(item), kind, item, atLimit && !selected.includes(item)))
-    .join('');
-}
-
-function quickMeta() {
-  return `<div class="rescue-meta-grid">
-    <fieldset class="rescue-fieldset">
-      <legend>How soon do you need to act?</legend>
-      <div class="rescue-chips compact">
-        ${chip('Today', rescue.urgency === 'today', 'urgency', 'today')}
-        ${chip('Soon', rescue.urgency === 'soon', 'urgency', 'soon')}
-        ${chip('I have time', rescue.urgency === 'time', 'urgency', 'time')}
-        ${chip("I'm not sure", rescue.urgency === 'unsure', 'urgency', 'unsure')}
-      </div>
-    </fieldset>
-    <fieldset class="rescue-fieldset">
-      <legend>How hard would this be to undo?</legend>
-      <div class="rescue-chips compact">
-        ${chip('Easy', rescue.reversibility === 'easy', 'reversibility', 'easy')}
-        ${chip('Partly', rescue.reversibility === 'partly', 'reversibility', 'partly')}
-        ${chip('Hard', rescue.reversibility === 'hard', 'reversibility', 'hard')}
-        ${chip("I'm not sure", rescue.reversibility === 'unsure', 'reversibility', 'unsure')}
-      </div>
-    </fieldset>
-  </div>`;
-}
-
-function currentPrompt() {
-  if (rescue.stage === 0) {
-    return `<section class="rescue-focus" aria-labelledby="rescue-question">
-      <span class="eyebrow">Start where you are</span>
-      <h2 id="rescue-question" tabindex="-1">What’s going on?</h2>
-      <p>Tell FDE what you’re dealing with in your own words. It can be messy, incomplete, repetitive, or uncertain. You do not need to organize it first.</p>
-      <label class="rescue-textarea-label" for="rescue-intake">What’s on your mind?</label>
-      <textarea id="rescue-intake" rows="8" maxlength="12000" aria-describedby="rescue-intake-help" placeholder="Put everything that’s on your mind here…">${escapeHtml(rescue.startingPoint)}</textarea>
-      <p id="rescue-intake-help" class="help">One brain dump is enough. FDE will not execute pasted code or silently turn your words into model facts.</p>
-      <button id="rescue-start" class="primary rescue-primary" type="button">Help me make sense of this –></button>
-      <div class="rescue-secondary-actions">
-        <a href="#/decision">I already know exactly what I’m deciding</a>
-        <a href="#/decision/example">Try the ready example</a>
-        <a href="#/decision/open">Open a saved decision</a>
-      </div>
-    </section>`;
-  }
-
-  if (rescue.stage === 1) {
-    return `<section class="rescue-focus" aria-labelledby="rescue-question">
-      <span class="eyebrow">One useful action</span>
-      <h2 id="rescue-question" tabindex="-1">What would help most?</h2>
-      <p>You do not need to solve everything at once.</p>
-      <div class="rescue-intent-grid">
-        ${RESCUE_INTENTS.map((item) => chip(item.label, rescue.intent === item.id, 'intent', item.id)).join('')}
-      </div>
-      ${rescue.intent ? `<p class="rescue-guidance">${escapeHtml(intentCopy[rescue.intent])}</p>` : ''}
-      <div class="rescue-nav">
-        <button class="quiet" data-rescue-back type="button">← Back</button>
-        <button class="primary" data-rescue-next type="button" aria-describedby="rescue-next-hint" ${rescue.intent ? '' : 'disabled'}>Continue →</button>
-        <span id="rescue-next-hint" class="rescue-nav-hint">Choose one option to continue.</span>
-      </div>
-    </section>`;
-  }
-
-  if (rescue.stage === 2) {
-    const prompt = decisionPromptByIntent[rescue.intent] || decisionPromptByIntent.unsure;
-    return `<section class="rescue-focus" aria-labelledby="rescue-question">
-      <span class="eyebrow">Most useful thing now</span>
-      <h2 id="rescue-question" tabindex="-1">${escapeHtml(prompt.question)}</h2>
-      <p>${escapeHtml(prompt.help)}</p>
-      <label class="rescue-textarea-label" for="rescue-decision">Decision</label>
-      <input id="rescue-decision" type="text" maxlength="500" value="${escapeHtml(rescue.decision)}" placeholder="Example: Should we move now or test first?">
-      <details class="rescue-help">
-        <summary>I’m not sure yet</summary>
-        <p>Which feels closest? Something needs to change · someone neds a yes/no · there are several paths · something may need to stop or wait.</p>
-      </details>
-      <button class="text-action rescue-skip" type="button" data-rescue-skip>Keep going without a clear decision yet</button>
-      ${quickMeta()}
-      <div class="rescue-nav">
-        <button class="quiet" data-rescue-back type="button">← Back</button>
-        <button class="primary" data-rescue-next type="button" aria-describedby="rescue-next-hint" ${rescue.decision.trim() ? '' : 'disabled'}>Continue →</button>
-        <span id="rescue-next-hint" class="rescue-nav-hint">Write the decision in one line to continue.</span>
-      </div>
-    </section>`;
-  }
-
-  if (rescue.stage === 3) {
-    return `<section class="rescue-focus" aria-labelledby="rescue-question">
-      <span class="eyebrow">Most useful thing now</span>
-      <h2 id="rescue-question" tabindex="-1">What needs to go well?</h2>
-      <p>Choose 2–${selectionLimits.goal}. These are starting points, not assumptions about your situation. <strong>${rescue.goals.length}/${selectionLimits.goal}</strong> selected.</p>
-      <div class="rescue-chips">${optionChips(RESCUE_GOALS, rescue.goals, 'goal')}</div>
-      <label class="rescue-inline-label" for="rescue-custom-goal">Something else</label>
-      <div class="rescue-inline-add"><input id="rescue-custom-goal" type="text" maxlength="80" placeholder="Add your own" ${rescue.goals.length >= selectionLimits.goal ? 'disabled' : ''}><button type="button" data-rescue-add="goal" ${rescue.goals.length >= selectionLimits.goal ? 'disabled' : ''}>Add</button></div>
-      <button class="text-action rescue-skip" type="button" data-rescue-skip>I’m not sure yet —"��ƭy
+function render({focusKind='',focusValue='',focusHeading=true}={}){if(!root)return;root.innerHTML=`<section class="rescue-hero fde-hero" data-surface="fde-hero" aria-labelledby="fde-title"><span class="eyebrow">Frontier Decision Engine</span><h1 id="fde-title" tabindex="-1">Frontier Decision Engine</h1><p class="hero-line">Bring whatever is on your mind.</p><p class="lede">FDE helps you find the decision, make uncertainty visible, and move forward without pretending to know what you have not established.</p><p class="rescue-privacy">No account. No default upload. Decision Rescue uses this tab’s session storage so an accidental refresh can recover your work. It is not encrypted confidential storage.</p></section><div class="rescue-layout"><div>${prompt()}<p id="rescue-status" class="rescue-error" role="status" aria-live="polite" aria-atomic="true" hidden></p></div>${workingFrame()}</div><section id="how-it-works" class="rescue-method" data-surface="integrated-method" tabindex="-1" aria-labelledby="rescue-method-title"><h2 id="rescue-method-title">How it works</h2><div><strong>Bring the mess</strong><span>Start in your own words.</span></div><div><strong>Find the decision</strong><span>Confirm only what matters.</span></div><div><strong>Test when useful</strong><span>Use the full comparison only when the decision needs it.</span></div></section>`;bind();const status=root.querySelector('#rescue-status');if(status&&state.error){status.hidden=false;requestAnimationFrame(()=>status.textContent=state.error)}if(focusKind){[...root.querySelectorAll('[data-rescue-kind]')].find(x=>x.dataset.rescueKind===focusKind&&x.dataset.rescueValue===focusValue)?.focus({preventScroll:true});return}if(focusHeading){const h=root.querySelector('#rescue-question,#fde-title');h?.focus({preventScroll:true});h?.scrollIntoView({block:'start',behavior:'auto'})}}
+export function renderDecisionRescue(target,{focusMethod=false}={}){root=target;render({focusHeading:!focusMethod});if(focusMethod)requestAnimationFrame(()=>{const m=root.querySelector('#how-it-works');m?.focus({preventScroll:true});m?.scrollIntoView({block:'start',behavior:'auto'})})}
