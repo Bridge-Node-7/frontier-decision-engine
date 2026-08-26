@@ -66,12 +66,12 @@ def run() -> None:
                     page.locator('#universal-input').fill(messy)
                     page.locator('#universal-analyze').click()
                     assert 'decision forming' in page.locator('#universal-response-title').inner_text().lower()
-                    assert page.get_by_text('Should we build internally').is_visible()
-                    assert page.get_by_text('partner externally').is_visible()
-                    assert page.get_by_text('Time').is_visible()
-                    assert page.get_by_text('Quality').is_visible()
-                    assert page.get_by_text('Timing gets worse').is_visible()
-                    assert page.get_by_text('Possible is not confirmed.').is_visible()
+                    assert page.get_by_text('Should we build internally', exact=True).is_visible()
+                    assert page.get_by_text('partner externally', exact=True).is_visible()
+                    assert page.get_by_text('Time', exact=True).is_visible()
+                    assert page.get_by_text('Quality', exact=True).is_visible()
+                    assert page.get_by_text('Timing gets worse', exact=True).is_visible()
+                    assert page.get_by_text('Possible is not confirmed.', exact=True).is_visible()
                     assert page.locator('script').filter(has_text='alert(1)').count() == 0
                     assert page.locator('#universal-confirm').count() == 0
                     assert page.get_by_role('link', name='Help me shape the missing pieces →').is_visible()
