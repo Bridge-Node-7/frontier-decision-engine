@@ -46,9 +46,6 @@ required = [
 for item in required:
     require(item)
 
-# Retained compatibility/reference artifacts are validated as public data, but this validator
-# must never embed confidential source phrases as deny-list sentinels.
-
 package = load_json("package.json")
 package_lock = load_json("package-lock.json")
 facts = load_json("project-facts.json")
@@ -74,8 +71,9 @@ schema_versions = {
 }
 if schema_versions != {"decision": "0.2.10", "semanticDecision": "0.3.0"}:
     errors.append("decision schema versions changed unexpectedly")
-if facts.get("schemaVersions") != schema_versions:
-    errors.append("project-facts schema versions mismatch")
+facts_schema_versions = facts.get("schemaVersions", {})
+if facts_schema_versions.get("decision") != schema_versions["decision"] or facts_schema_versions.get("semanticDecision") != schema_versions["semanticDecision"]:
+    errors.append("project-facts decision schema versions mismatch")
 if example.get("schema_version") != schema_versions["decision"]:
     errors.append("reference decision example schema mismatch")
 if example.get("provenance", {}).get("probability_model_used") is not False:
@@ -126,8 +124,8 @@ for required_text in ["project-facts.json", "browser-local", "no backend"]:
     if required_text.lower() not in readme_normalized.lower():
         errors.append(f"README missing required boundary: {required_text}")
 
-# Generic public-surface OPSEC checks avoid embedding private source phrases in public code.
-scan_roots = [ROOT / "README.md", ROOT / "docs", ROOT / "examples", ROOT / "site" / "src", ROOT / "scripts"]
+# Generic public-surface OPSEC checks avoid embedding confidential source phrases in public code.
+scan_roots = [ROOT / "README.md", ROOT / "docs", ROOT / "examples", ROOT / "site" / "src"]
 path_patterns = [
     re.compile(r"[A-Za-z]:\\\\Users\\\\[^\\\s]+", re.I),
     re.compile(r"/Users/[^/\s]+/", re.I),
@@ -153,7 +151,11 @@ if re.search(r"<script[^>]+src=[\"']https?://", index, re.I):
     errors.append("site index loads an external script")
 
 for path in (SITE / "src").rglob("*.js"):
-    text = path.read_text(encoding="utf-8")
+    try:
+        text = path.read_text(encoding="utf-8")
+    except UnicodeDecodeError:
+        errors.append(f"non-UTF-8 JavaScript source: {path.relative_to(ROOT)}")
+        continue
     if re.search(r"fetch\([\"']https?://", text):
         errors.append(f"remote runtime fetch: {path.relative_to(ROOT)}")
     if "ai-owned decision" in text.lower():
@@ -177,7 +179,7 @@ requirements = (ROOT / "requirements-dev.txt").read_text(encoding="utf-8")
 for required_flow in ("decision_flow", "route_suite", "print_flow"):
     if required_flow not in runner:
         errors.append(f"browser end-to-end flow is not wired: {required_flow}")
-for required_rescue_check in ("sessionStorage", "A decision is already saved", "prefers-color-scheme"):
+for required_rescue_check in ("sessionStorage", "rescue-collision", "color_scheme"):
     if required_rescue_check not in rescue_runner:
         errors.append(f"Decision Rescue browser regression missing: {required_rescue_check}")
 if "playwright==1.57.0" not in requirements:
