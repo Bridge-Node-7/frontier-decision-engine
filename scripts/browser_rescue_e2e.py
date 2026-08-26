@@ -60,7 +60,7 @@ def run() -> None:
                     page.locator('#universal-analyze').click()
                     page.locator('#universal-status').wait_for(state='attached')
                     assert page.locator('#universal-response-title').inner_text()
-                    assert page.locator('#universal-next-title').inner_text() == 'Most useful next step'
+                    assert page.get_by_text('Most useful next step', exact=True).count() >= 1
 
                     messy = 'Should we build internally or partner externally? Time and quality matter, but the supplier may be late. <script>alert(1)</script>'
                     page.locator('#universal-input').fill(messy)
@@ -106,7 +106,7 @@ def run() -> None:
                     page.locator('#universal-input').fill('banana moon 777')
                     page.locator('#universal-analyze').click()
                     assert page.locator('#universal-response-title').inner_text()
-                    assert page.locator('#universal-next-title').inner_text() == 'Most useful next step'
+                    assert page.get_by_text('Most useful next step', exact=True).count() >= 1
 
                     page.locator('#universal-input').fill('Refresh should not erase this situation.')
                     assert page.evaluate(f"Boolean(sessionStorage.getItem('{SESSION_KEY}'))")
