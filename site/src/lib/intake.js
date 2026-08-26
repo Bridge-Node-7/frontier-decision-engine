@@ -30,6 +30,7 @@ export const RESCUE_FUTURES = Object.freeze([
   'Demand changes',
   'A key dependency fails',
   'Requirements change',
+  'A key constraint improves',
 ]);
 
 export function normalizeIntakeText(value) {
@@ -82,6 +83,20 @@ export function buildDecisionFrame({ startingPoint = '', intent = '', decision =
   };
 }
 
+const urgencyLabel = (value) => ({
+  today: 'Today',
+  soon: 'Soon',
+  time: 'I have time',
+  unsure: 'Not sure',
+}[value] || 'Not specified.');
+
+const reversibilityLabel = (value) => ({
+  easy: 'Easy to undo',
+  partly: 'Partly reversible',
+  hard: 'Hard to undo',
+  unsure: 'Not sure',
+}[value] || 'Not specified.');
+
 export function frameAsText(frame) {
   const safe = buildDecisionFrame(frame);
   const lines = [
@@ -103,10 +118,10 @@ export function frameAsText(frame) {
     safe.futures.length ? safe.futures.map((item) => `- ${item}`).join('\n') : 'Not identified yet.',
     '',
     'URGENCY',
-    safe.urgency || 'Not specified.',
+    urgencyLabel(safe.urgency),
     '',
     'REVERSIBILITY',
-    safe.reversibility || 'Not specified.',
+    reversibilityLabel(safe.reversibility),
     '',
     'STATUS',
     decisionFrameReady(safe)
