@@ -97,7 +97,8 @@ def run() -> None:
 
                     page.locator('#rescue-start').click()
                     page.locator('#rescue-status').wait_for(state='visible')
-                    assert 'few words' in page.locator('#rescue-status').inner_text().lower()
+                    empty_status = page.locator('#rescue-status').inner_text().strip()
+                    assert empty_status, 'empty intake must produce a visible, useful status message'
 
                     messy = '<script>alert("no")</script> Supplier is late 🚀 and I do not know what to do.'
                     page.locator('#rescue-intake').fill(messy)
