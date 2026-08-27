@@ -23,10 +23,11 @@ required = [
     "docs/RELEASE_NOTES.md", "docs/RELEASING.md", "docs/STYLE_LAYERS.md",
     "site/schemas/decision.schema.json", "site/schemas/decision-0.3.0.schema.json",
     "site/index.html", "site/404.html",
-    "site/assets/styles.css", "site/assets/bridge-node-7-shell.css", "site/assets/beginner-first.css", "site/assets/luxury-rescue.css", "site/assets/universal-decision.css",
+    "site/assets/styles.css", "site/assets/bridge-node-7-shell.css", "site/assets/beginner-first.css", "site/assets/rescue.css", "site/assets/universal-decision.css",
     "site/src/app.js", "site/src/decision-ui.js", "site/src/rescue-ui.js", "site/src/universal-ui.js", "site/src/theme.js",
     "site/src/lib/case.js", "site/src/lib/decision-core.js", "site/src/lib/decision.js", "site/src/lib/intake.js",
     "site/src/lib/persistence.js", "site/src/lib/recording.js", "site/src/lib/semantics.js", "site/src/lib/synthesis.js",
+    "site/src/decision-map.js",
     "scripts/browser_e2e.py", "scripts/browser_rescue_e2e.py", "scripts/browser_closeout_regressions.py",
     "scripts/validate_version_integrity.py", "scripts/package_release.py", "scripts/verify_release_tag.py",
     "tests/universal-response.test.js",
@@ -84,6 +85,8 @@ if re.search(r"<script[^>]+src=[\"']https?://", index, re.I):
     errors.append("site index loads an external script")
 if "./assets/universal-decision.css" not in index:
     errors.append("site index does not load the Universal Decision Map stylesheet")
+if "./assets/rescue.css" not in index:
+    errors.append("site index does not load the Decision Rescue stylesheet")
 
 for path in (SITE / "src").rglob("*.js"):
     try:
@@ -100,6 +103,7 @@ app_text = (SITE / "src/app.js").read_text(encoding="utf-8")
 decision_text = (SITE / "src/decision-ui.js").read_text(encoding="utf-8")
 rescue_text = (SITE / "src/rescue-ui.js").read_text(encoding="utf-8")
 universal_text = (SITE / "src/universal-ui.js").read_text(encoding="utf-8")
+map_text = (SITE / "src/decision-map.js").read_text(encoding="utf-8")
 if len(re.findall(r'id="decision-step-heading-[0-5]" tabindex="-1"', decision_text)) != 7:
     errors.append("FDE must expose six focusable decision-stage headings and one incomplete-analysis variant")
 if "rescue-intake" not in rescue_text or "Decision Frame" not in rescue_text:
@@ -110,9 +114,13 @@ if "A decision is already saved in this browser." not in rescue_text:
     errors.append("Decision Rescue saved-work collision boundary is missing")
 if "renderUniversalDecisionExperience" not in app_text:
     errors.append("Universal Response is not the public root experience")
+if "./decision-map.js" not in app_text:
+    errors.append("Decision Map enhancer is not using the sanitized public module path")
 for token in ("draftFromInput", "responseFor", "What FDE sees so far", "Possible is not confirmed", "Decision Map"):
     if token not in universal_text:
         errors.append(f"Universal Decision Map is missing required boundary: {token}")
+if "data-fde-decision-map-enhanced" not in map_text or "fdeDecisionMapObserver" not in map_text:
+    errors.append("Decision Map enhancer uses an invalid public state marker")
 
 runner = (ROOT / "scripts/browser_e2e.py").read_text(encoding="utf-8")
 universal_runner = (ROOT / "scripts/browser_rescue_e2e.py").read_text(encoding="utf-8")
@@ -131,7 +139,7 @@ if not re.search(rf"(?m)^version:\s*{re.escape(version)}\s*$", citation):
     errors.append("citation version mismatch")
 
 shell = (SITE / "assets/bridge-node-7-shell.css").read_text(encoding="utf-8")
-rescue_css = (SITE / "assets/luxury-rescue.css").read_text(encoding="utf-8")
+rescue_css = (SITE / "assets/rescue.css").read_text(encoding="utf-8")
 universal_css = (SITE / "assets/universal-decision.css").read_text(encoding="utf-8")
 if "--line-strong:" not in shell:
     errors.append("interactive boundary token is missing")
@@ -149,7 +157,7 @@ if "Page not found" not in not_found or "/frontier-decision-engine/#/decision" n
     errors.append("branded FDE 404 contract is incomplete")
 
 expected_stylesheet_order = [
-    "./assets/styles.css", "./assets/bridge-node-7-shell.css", "./assets/beginner-first.css", "./assets/luxury-rescue.css", "./assets/universal-decision.css",
+    "./assets/styles.css", "./assets/bridge-node-7-shell.css", "./assets/beginner-first.css", "./assets/rescue.css", "./assets/universal-decision.css",
 ]
 positions = [index.find(item) for item in expected_stylesheet_order]
 if any(position < 0 for position in positions) or positions != sorted(positions):

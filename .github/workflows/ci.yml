@@ -29,7 +29,17 @@ jobs:
         run: |
           python3 -m pip install --disable-pip-version-check -r requirements-dev.txt
           python3 -m playwright install --with-deps chromium
+      - name: Refresh generated verification inputs
+        run: |
+          npm run facts
+          npm run manifest
       - name: Run verification suite
         run: npm run check
+      - name: Show generated drift before failing
+        run: |
+          if ! git diff --quiet; then
+            echo '--- generated files differ from the committed source ---'
+            git diff -- project-facts.json site/src/version.js site/manifest.sha256
+          fi
       - name: Verify generated files are current
         run: git diff --exit-code
