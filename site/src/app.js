@@ -1,4 +1,4 @@
-import { installUniversalDecisionEnhancer } from './luxury-map.js';
+import { installUniversalDecisionEnhancer } from './decision-map.js';
 
 const main = document.querySelector('#main');
 const RESCUE_CONTEXT_KEY = 'fde.rescue.context.v1';
