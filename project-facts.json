@@ -4,7 +4,7 @@
     "decision": "0.2.10",
     "semanticDecision": "0.3.0"
   },
-  "testCount": 148,
+  "testCount": 150,
   "discoveredHashRouteLiteralCount": 7,
   "browserModes": [
     "desktop-light",
@@ -15,5 +15,5 @@
     "reflow-400-equivalent",
     "forced-colors"
   ],
-  "manifestEntryCount": 37
+  "manifestEntryCount": 38
 }
