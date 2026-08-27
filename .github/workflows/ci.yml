@@ -31,5 +31,13 @@ jobs:
           python3 -m playwright install --with-deps chromium
       - name: Run verification suite
         run: npm run check
+      - name: Show generated site manifest on drift
+        run: |
+          if ! git diff --quiet -- site/manifest.sha256; then
+            echo '--- generated site/manifest.sha256 ---'
+            cat site/manifest.sha256
+            echo '--- manifest diff ---'
+            git diff -- site/manifest.sha256
+          fi
       - name: Verify generated files are current
         run: git diff --exit-code
