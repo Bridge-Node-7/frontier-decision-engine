@@ -43,5 +43,9 @@ test('Decision Map readiness uses a minimum explicit model, not a completion per
 test('Decision Map readiness explanations reduce effort instead of demanding more work', () => {
   assert.match(whyThisMatters({ state: 'start' }), /start with whatever you have/i);
   assert.match(whyThisMatters({ state: 'clarify' }), /before doing more work/i);
-  assert.match(whyThisMatters({ state: 'ready' }), /enough explicit choices, priorities, and changing conditions/i);
+  const ready = whyThisMatters({ state: 'ready' });
+  assert.match(ready, /possible decision/i);
+  assert.match(ready, /explicit choices, priorities, and changing conditions/i);
+  assert.match(ready, /enough structure/i);
+  assert.match(ready, /bounded comparison/i);
 });
