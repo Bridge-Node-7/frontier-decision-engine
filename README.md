@@ -1,46 +1,46 @@
 # Frontier Decision Engine
 
-**Bring a messy situation. Find the decision. Test choices when useful. Keep the final judgment human-owned.**
+**Bring the whole mess. FDE gives you something useful back, helps make uncertainty visible, and keeps the final decision human-owned.**
 
 [Open the live application](https://bridgenode7.com/frontier-decision-engine/)
 
 ![Frontier Decision Engine](docs/screenshots/reference/desktop-decision-frame.png)
 
-## Start with Decision Rescue
+## Start with one input
 
-Decision Rescue accepts ordinary language first. A visitor can put down what is happening, choose one useful next action, and build a Decision Frame without knowing decision-science terminology.
+The FDE front door starts with one free-form input. Put down a problem, question, worry, idea, decision, or a complete mess. FDE responds immediately with a provisional Decision Map showing only what can be safely organized from the words provided.
 
-FDE preserves what the person confirms and does not pretend browser JavaScript inferred evidence, probabilities, thresholds, scores, or a recommendation. A partial Decision Frame is a valid stopping point.
+The map is a draft, not a hidden machine decision. Possible signals stay possible until a person confirms them. When enough explicit structure exists, the map can continue into the deterministic Decision Lab. Otherwise, it offers a simple path to shape the missing pieces without pretending the missing information is known.
 
-Decision Rescue uses tab-scoped session storage so an accidental refresh can recover in-progress framing. It does not treat the original brain dump as model evidence. When a complete frame continues into the Decision Lab, existing browser-saved Lab work is never replaced without an explicit human choice.
+The experience is designed around a simple rule: **every meaningful input receives a useful response, and questions are used only when human judgment is actually needed to move the decision forward.**
 
-## What the Decision Lab does
+## Decision Map
 
-- Frames the decision, goals, choices, and plausible futures.
-- Evaluates the same choices across explicit goals and named conditions.
-- Shows unmet goals, ties, incomplete outcomes, and vulnerabilities.
-- Keeps final selection, rationale, and next action human-owned.
-- Exports a portable decision file and a readable decision summary.
+The map can show:
 
-Guided work supports 2–4 objectives, 2–3 choices, and 2–4 plausible futures. The minimum comparison is a real 2 × 2 × 2 model. FDE never fills missing analytical inputs on the person's behalf.
+- a possible decision;
+- choices mentioned explicitly;
+- things that may matter;
+- conditions that could change the answer; and
+- the smallest useful next step.
 
-The included ready example is a **synthetic critical-material source-qualification case**. It does not describe or certify a real supplier, material, capacity, compliance status, or investment.
+This is deliberately conservative. The browser does not call a remote AI service, retrieve outside facts, invent probabilities, or promote provisional text into verified evidence.
+
+## Decision Lab
+
+When a person confirms enough structure, FDE can hand the work into its existing deterministic comparison engine. Guided work supports 2–4 objectives, 2–3 choices, and 2–4 plausible futures. The minimum comparison is a true 2 × 2 × 2 model.
+
+The comparison informs. A person decides.
+
+## Synthetic reference
+
+The repository includes a synthetic critical-material source-qualification case to demonstrate the formal Decision Lab without making claims about a real supplier, material, capacity, compliance status, or investment.
 
 ## Privacy and authority
 
-The application is static and browser-local. It has no backend, account system, analytics, telemetry, cookies, or default upload endpoint.
+The application is static and browser-local. It has no backend, account system, analytics, telemetry, cookies, remote AI provider, or default upload endpoint. Session recovery and browser autosave are convenience features, not encrypted confidential storage.
 
-Browser storage is a convenience, not encrypted confidential storage. Do not enter information that requires an approved confidential or controlled-data environment.
-
-FDE provides decision support. It does not approve, authorize, certify, qualify, consent, or make an investment decision. The comparison informs; a person decides.
-
-## Run locally
-
-```bash
-node scripts/run-python.mjs -m http.server 8000 --directory site
-```
-
-Open `http://localhost:8000`.
+FDE provides decision support. It does not approve, authorize, certify, qualify, consent, or make an investment decision.
 
 ## Verify
 
@@ -53,14 +53,14 @@ npm ci --ignore-scripts --no-audit --no-fund
 npm run check
 ```
 
-`npm run check` runs the repository's unit, version, integrity, browser, Decision Rescue, and release-closeout gates. Current generated counts and versions are recorded in [`project-facts.json`](project-facts.json).
+Generated release facts and current application identity are recorded in [`project-facts.json`](project-facts.json). The full verification gate is defined by the repository's `npm run check` command.
 
 ## Documentation
 
 - [Architecture](docs/ARCHITECTURE.md)
 - [Methodology](docs/METHODOLOGY.md)
 - [Privacy](docs/PRIVACY.md)
-- [Releases](docs/RELEASING.md)
+- [Releasing](docs/RELEASING.md)
 
 ## Project
 

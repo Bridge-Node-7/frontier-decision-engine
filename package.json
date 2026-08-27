@@ -6,6 +6,7 @@
   "description": "Browser-local, human-governed decision support for choices under deep uncertainty.",
   "scripts": {
     "test": "node --test",
+    "test:universal": "node --test tests/universal-response.test.js",
     "facts": "node scripts/generate-project-facts.mjs",
     "facts:check": "node scripts/validate-project-facts.mjs",
     "validate": "node scripts/run-python.mjs scripts/validate_repository.py",
@@ -18,8 +19,6 @@
     "validate:version": "node scripts/run-python.mjs scripts/validate_version_integrity.py",
     "test:closeout": "node scripts/run-python.mjs scripts/browser_closeout_regressions.py"
   },
-  "engines": {
-    "node": ">=22"
-  },
+  "engines": { "node": ">=22" },
   "license": "Apache-2.0"
 }

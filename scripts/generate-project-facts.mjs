@@ -1,5 +1,5 @@
 import { readdir, readFile, writeFile } from 'node:fs/promises';
-import { join, relative, resolve } from 'node:path';
+import { join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const root = fileURLToPath(new URL('../', import.meta.url));
@@ -27,31 +27,11 @@ function countTests(text) {
   return (text.match(/(?:^|\s)test\s*\(/gm) || []).length;
 }
 
-async function collectRetainedReferenceArtifactItemCounts() {
-  const candidates = [join(root, 'site', 'data'), join(root, 'profiles', 'phenomena')];
-  const counts = {};
-  for (const directory of candidates) {
-    let files = [];
-    try { files = await walk(directory); } catch { continue; }
-    for (const path of files.filter((file) => file.endsWith('.json'))) {
-      let value;
-      try { value = await readJson(path); } catch { continue; }
-      const arrays = [];
-      if (Array.isArray(value)) arrays.push(value.length);
-      else if (value && typeof value === 'object') {
-        for (const item of Object.values(value)) if (Array.isArray(item)) arrays.push(item.length);
-      }
-      counts[relative(root, path).replaceAll('\\', '/')] = arrays.length ? Math.max(...arrays) : 1;
-    }
-  }
-  return Object.fromEntries(Object.entries(counts).sort(([a], [b]) => a.localeCompare(b)));
-}
-
 export async function collectProjectFacts() {
   const packageData = await readJson(join(root, 'package.json'));
   const decisionSchema = await readJson(join(root, 'schemas', 'decision.schema.json'));
   const semanticDecisionSchema = await readJson(join(root, 'schemas', 'decision-0.3.0.schema.json'));
-  const caseSchema = await readJson(join(root, 'schemas', 'case.schema.json'));
+
   const testFiles = (await walk(join(root, 'tests'))).filter((path) => path.endsWith('.test.js'));
   let testCount = 0;
   for (const path of testFiles) testCount += countTests(await readFile(path, 'utf8'));
@@ -86,13 +66,11 @@ export async function collectProjectFacts() {
     schemaVersions: {
       decision: schemaVersion(decisionSchema),
       semanticDecision: schemaVersion(semanticDecisionSchema),
-      opvCase: schemaVersion(caseSchema),
     },
     testCount,
     discoveredHashRouteLiteralCount: routes.size,
     browserModes,
     manifestEntryCount,
-    retainedReferenceArtifactItemCounts: await collectRetainedReferenceArtifactItemCounts(),
   };
 }
 
