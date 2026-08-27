@@ -1,3 +1,5 @@
+import { installUniversalDecisionEnhancer } from './luxury-map.js';
+
 const main = document.querySelector('#main');
 const RESCUE_CONTEXT_KEY = 'fde.rescue.context.v1';
 const UNIVERSAL_CONTEXT_KEY = 'fde.universal.context.v1';
@@ -84,5 +86,6 @@ async function router() {
   if (path !== '/method') window.scrollTo({ top: 0, behavior: 'auto' });
 }
 
+installUniversalDecisionEnhancer(main);
 window.addEventListener('hashchange', router);
 router();
