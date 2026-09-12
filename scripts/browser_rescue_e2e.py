@@ -57,8 +57,8 @@ def run() -> None:
                     assert page.locator(".universal-surface").count() == 0
                     assert "Decision Map" not in page.locator("main").inner_text()
                     assert "Bring the whole mess" not in page.locator("body").inner_text()
-                    assert page.get_by_role("button", name="Appearance").is_visible()
-                    assert "Current:" in (page.get_by_role("button", name=lambda name: name.startswith("Appearance.")).get_attribute("aria-label") or "")
+                    assert page.locator("#theme-toggle").inner_text() == "Appearance"
+                    assert "Current:" in (page.locator("#theme-toggle").get_attribute("aria-label") or "")
                     assert page.evaluate("document.documentElement.scrollWidth <= window.innerWidth + 1")
 
                     # Sparse input yields one question, not an invalid state or empty structural cards.
@@ -88,10 +88,7 @@ def run() -> None:
 
                     # Confirmation requests only the next required input.
                     page.get_by_role("button", name="Yes").click()
-                    assert page.locator("#universal-response-title").inner_text() == "What is one other option to compare?" or page.locator("#universal-response-title").inner_text() == "What else could change the choice?"
-                    # Choices and goals are already sufficient; one more changing condition is the actual missing input.
-                    if "option" in page.locator("#universal-response-title").inner_text().lower():
-                        raise AssertionError("Clear input unexpectedly lost explicit options")
+                    assert page.locator("#universal-response-title").inner_text() == "What else could change the choice?"
                     page.locator("#universal-input").fill("Requirements change")
 
                     # Saved-work protection: never silently replace a Decision Lab draft.
@@ -103,7 +100,6 @@ def run() -> None:
 
                     # Information requests receive a capability boundary with a useful next action.
                     page.evaluate(f"localStorage.removeItem('{DECISION_KEY}')")
-                    page.get_by_role("button", name="Adjust").click() if page.get_by_role("button", name="Adjust").count() else None
                     page.goto(base, wait_until="networkidle")
                     page.locator("#universal-input").fill("How much does a new MRI machine cost?")
                     page.get_by_role("button", name="Continue").click()
