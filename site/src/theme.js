@@ -42,9 +42,11 @@ function apply(preference = read()) {
   if (themeColor) themeColor.setAttribute('content', resolved === 'dark' ? '#050914' : '#f4f6fb');
   if (button) {
     const next = nextPreference(chosen);
-    const visible = `${label(next)} appearance`;
-    button.textContent = visible;
-    button.setAttribute('aria-label', `${visible}. Current appearance: ${label(chosen)}${chosen === 'system' ? ` (${label(resolved)} now)` : ''}.`);
+    button.textContent = 'Appearance';
+    button.setAttribute(
+      'aria-label',
+      `Appearance. Current: ${label(chosen)}${chosen === 'system' ? ` (${label(resolved)} now)` : ''}. Activate to use ${label(next)}.`,
+    );
   }
 }
 
