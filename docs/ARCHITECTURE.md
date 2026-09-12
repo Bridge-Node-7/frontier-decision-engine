@@ -49,7 +49,3 @@ The universal response experience uses bounded tab-scoped session storage for ac
 ## Privacy and security
 
 The public application has no backend, account system, analytics, telemetry, cookies, remote AI provider, or default upload endpoint. User input is rendered as text, not executable markup. Local files remain in the browser unless the person explicitly downloads or shares them.
-
-## Long-term direction
-
-The architecture intentionally leaves room for an optional assisted-understanding adapter and later Decision Memory without making either a dependency of the deterministic core. Any future semantic provider must produce provisional output that passes through the same human-confirmation boundary.
