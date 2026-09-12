@@ -98,8 +98,10 @@ def run() -> None:
                     assert page.locator("#universal-response-title").inner_text() == "A saved FDE decision already exists."
                     assert page.get_by_role("link", name="Open Decision Lab →").is_visible()
 
-                    # Information requests receive a capability boundary with a useful next action.
+                    # Information-request UAT is a separate first-run scenario. Clear only the
+                    # tab-scoped intake session; the persistence behavior itself is tested below.
                     page.evaluate(f"localStorage.removeItem('{DECISION_KEY}')")
+                    page.evaluate(f"sessionStorage.removeItem('{SESSION_KEY}')")
                     page.goto(base, wait_until="networkidle")
                     page.locator("#universal-input").fill("How much does a new MRI machine cost?")
                     page.get_by_role("button", name="Continue").click()
