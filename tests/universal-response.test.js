@@ -2,42 +2,47 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { draftFromInput, responseFor } from '../site/src/universal-ui.js';
 
-test('Universal Response always returns a useful response for any text', () => {
-  for (const input of ['', 'I do not know what to do.', 'Should we stay or go?', 'banana moon 777', '<script>alert(1)</script>', 'How much does this cost?', 'How does this work?', 'We need to hire someone and decide whether to expand too.']) {
-    const draft = draftFromInput(input);
-    const response = responseFor(draft);
-    assert.ok(response.title.trim());
-    assert.ok(response.body.trim());
+test('clear decision input produces only supportable deterministic structure', () => {
+  const draft = draftFromInput('Should we build internally or partner externally? Time and quality matter, but the supplier may be late.');
+  assert.equal(draft.intent, 'decision');
+  assert.equal(draft.possibleDecision, 'Should we build internally or partner externally');
+  assert.deepEqual(draft.choices, ['build internally', 'partner externally']);
+  assert.deepEqual(draft.goals, ['Time', 'Quality']);
+  assert.deepEqual(draft.futures, ['Timing gets worse']);
+  assert.equal(responseFor(draft).kind, 'structure');
+});
+
+test('sparse input produces exactly one useful clarification question', () => {
+  for (const input of ['', 'banana moon 777', 'I have a complicated situation.']) {
+    const response = responseFor(draftFromInput(input));
+    assert.equal(response.kind, 'question');
+    assert.match(response.question, /which decision or question/i);
+    assert.equal(Object.keys(response).filter((key) => key === 'question').length, 1);
   }
 });
 
-test('Universal Response preserves messy human input as inert starting context', () => {
-  const input = '<script>alert("x")</script> Our supplier is late and quality matters.';
+test('information request returns an honest capability boundary and useful next action', () => {
+  const response = responseFor(draftFromInput('How much does a new MRI machine cost?'));
+  assert.equal(response.kind, 'boundary');
+  assert.match(response.title, /does not retrieve outside facts/i);
+  assert.match(response.body, /gather the fact|state the decision/i);
+});
+
+test('multiple decisions ask for one focus instead of fabricating a combined model', () => {
+  const draft = draftFromInput('Should we hire someone? Should we expand next year?');
+  assert.equal(draft.intent, 'multi');
+  assert.equal(draft.possibleDecision, '');
+  const response = responseFor(draft);
+  assert.equal(response.kind, 'question');
+  assert.match(response.question, /focus on first/i);
+});
+
+test('human input remains inert context and extracted fields remain explicit', () => {
+  const input = '<script>alert("x")</script> Should we stay or go? Safety matters.';
   const draft = draftFromInput(input);
   assert.equal(draft.startingPoint, input);
-  assert.ok(draft.goals.includes('Quality'));
-  assert.ok(draft.futures.includes('Timing gets worse'));
-});
-
-test('Universal Response extracts explicit alternatives without inventing fallback choices', () => {
-  const draft = draftFromInput('Should we build internally or partner externally?');
-  assert.deepEqual(draft.choices, ['Should we build internally', 'partner externally']);
-});
-
-test('Universal Response distinguishes information requests and multiple decisions', () => {
-  const information = draftFromInput('How much does a new MRI machine cost?');
-  assert.equal(information.intent, 'information');
-  assert.match(responseFor(information).title, /information question/i);
-
-  const multiple = draftFromInput('Should we hire someone? Should we expand next year?');
-  assert.equal(multiple.intent, 'multi');
-  assert.equal(multiple.possibleDecision, '');
-  assert.match(responseFor(multiple).title, /more than one possible decision/i);
-});
-
-test('Universal Response leaves incomplete decisions incomplete', () => {
-  const draft = draftFromInput('Everything is a mess and I am not sure what to do.');
-  assert.equal(draft.possibleDecision, '');
-  assert.equal(draft.choices.length, 0);
-  assert.match(responseFor(draft).title, /organize this first|start from here/i);
+  assert.equal(draft.choices.length, 2);
+  assert.equal(draft.choices[1], 'go');
+  assert.match(draft.choices[0], /stay/i);
+  assert.ok(draft.goals.includes('Safety'));
 });

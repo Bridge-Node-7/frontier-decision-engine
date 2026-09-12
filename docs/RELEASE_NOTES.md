@@ -1,33 +1,32 @@
 # v0.3.3
 
-## Human-first Universal Response and Decision Map
+## Frictionless First-Run Decision UX
 
 Application version is 0.3.3. The compatible decision schema 0.2.10 remains available alongside the explicitly versioned 0.3.0 semantic decision schema.
 
-This release completes a low-friction public front door for people who arrive with a messy, unclear, urgent, or already-structured situation. A single free-form input now produces an immediate useful response and a provisional Decision Map before the person is asked for additional structure. Decision Rescue remains available as the bounded fallback when important structure is still missing, and the deterministic Decision Lab remains the formal comparison engine underneath.
+This release completes the first-run FDE experience around one natural input while preserving the deterministic Decision Lab, browser-local architecture, saved-work protections, published schemas, and human final decision authority.
 
 ### Changes
 
-- Makes Universal Response plus the provisional Decision Map the canonical public front door.
-- Accepts ordinary-language problems, questions, worries, ideas, decisions, and incomplete thoughts without requiring decision-science vocabulary first.
-- Shows only conservative provisional structure from explicit input: a possible decision, choices mentioned, things that may matter, conditions that could change the answer, and the smallest useful next step.
-- Keeps provisional organization visibly distinct from confirmed model inputs: possible is not confirmed; the comparison informs; a person decides.
-- Adds Decision Map readiness states — Start anywhere, One useful step at a time, and Ready to compare — without using a misleading completion percentage.
-- Adds contextual Why this matters guidance and explicitly permits stopping with a useful partial map rather than forcing unnecessary completion.
-- Uses Decision Rescue as the bounded fallback when human judgment is still needed to shape missing pieces.
-- Supports true 2 × 2 × 2 minimum guided comparisons while retaining bounded larger guided topologies.
-- Recovers in-progress Universal Response and Rescue work after accidental refresh using bounded tab-scoped session storage.
-- Protects existing browser-saved Decision Lab work from silent replacement and requires an explicit human choice before replacement.
-- Carries original starting context forward as context only; it is not scored or treated as evidence.
-- Improves mobile hierarchy, keyboard and screen-reader semantics, live status/help relationships, reflow, forced-colors handling, and Light/Dark/System appearance behavior.
+- Starts with the single first-timer question: “What are you considering?”
+- Uses one large natural-language input with a clear Continue action, Ctrl/Cmd + Enter support, a direct Decision Lab path, and a concise browser-local privacy statement.
+- Removes the pre-input Decision Map, empty structural cards, conversational response bubble, workflow narration, readiness decoration, and working-header sales action.
+- After Continue, produces exactly one of three truthful outcomes: supportable decision structure, one useful clarification question, or an explicit capability boundary with a useful next action.
+- Shows only supportable first-run fields under the human-facing labels Decision, What matters, Options, and What may change.
+- Keeps provisional structure separate from confirmed model inputs and asks for human confirmation before any handoff to the formal comparison.
+- Requests only the next missing explicit input required for the bounded deterministic comparison; no hidden defaults or fabricated topology are introduced.
+- Preserves saved Decision Lab work and refuses silent replacement when browser-local work already exists.
+- Keeps the Appearance control stable by name while exposing current and next appearance state accessibly.
+- Moves Strategic Inquiry out of the working application header and keeps it available in the footer.
+- Strengthens first-run browser regression coverage for mobile layout, sparse input, clear input, capability boundaries, keyboard activation, saved-work collision protection, refresh recovery, appearance behavior, and absence of remote requests.
 - Keeps the application browser-local with no backend, account system, analytics, telemetry, cookies, remote AI provider, or default upload endpoint.
 - Keeps published decision schemas 0.2.10 and 0.3.0 unchanged and preserves deterministic ranking semantics and human final decision authority.
-- Hardens public repository naming so user-facing implementation paths do not expose internal design terminology unnecessarily.
-- Strengthens generated-artifact integrity verification so stale or malformed manifests cannot silently pass release validation.
 
-### What FDE does not do
+### Decision boundary
 
-FDE does not invent evidence, probabilities, thresholds, scores, modifiers, or recommendations from arbitrary prose. Software calculations do not establish that user-supplied evidence is true, complete, or sufficient. The comparison informs; a person decides.
+FDE does not turn arbitrary prose into verified facts, evidence, probabilities, scores, thresholds, scenario modifiers, or recommendations. It structures only what its deterministic browser-local intake can support from explicit words, and a person confirms what enters the canonical decision model.
+
+FDE structures and calculates; it does not approve, authorize, certify, qualify, consent, or make an investment decision. Browser-local storage is a convenience, not encrypted confidential storage.
 
 ### Demonstration boundary
 

@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Focused browser verification for the universal FDE response surface."""
+"""Focused browser verification for the frictionless FDE first-run surface."""
 from __future__ import annotations
 
 import functools
@@ -47,91 +47,100 @@ def run() -> None:
                     page = context.new_page()
                     page.goto(base, wait_until="networkidle")
 
-                    hero = page.locator('[data-surface="fde-hero"]')
-                    headline = hero.locator('h1').inner_text()
-                    assert headline.startswith('Bring the whole mess. Find the decision.')
-                    assert page.title() == 'Frontier Decision Engine'
-                    assert page.locator('#universal-input').is_visible()
-                    assert page.locator('#universal-input').get_attribute('aria-describedby') == 'universal-help'
-                    assert page.locator('#universal-response-title').inner_text()
-                    assert page.locator('.universal-surface').is_visible()
-                    assert page.locator('#universal-input').bounding_box()['height'] >= 160
+                    assert page.title() == "Frontier Decision Engine"
+                    assert page.locator("h1").inner_text() == "What are you considering?"
+                    assert page.get_by_text("Share a situation, decision, question, or context in your own words.", exact=True).is_visible()
+                    assert page.get_by_role("button", name="Continue").is_visible()
+                    assert page.get_by_role("link", name="Already know the decision and options? Open Decision Lab →").is_visible()
+                    assert page.get_by_text("Private by design. Your working decision stays in this browser unless you choose to export it.", exact=True).is_visible()
+                    assert page.locator("#universal-input").get_attribute("placeholder") == "Decision, question, options, constraints, notes, or other context…"
+                    assert page.locator(".universal-surface").count() == 0
+                    assert "Decision Map" not in page.locator("main").inner_text()
+                    assert "Bring the whole mess" not in page.locator("body").inner_text()
+                    assert page.locator("#theme-toggle").inner_text() == "Appearance"
+                    assert "Current:" in (page.locator("#theme-toggle").get_attribute("aria-label") or "")
                     assert page.evaluate("document.documentElement.scrollWidth <= window.innerWidth + 1")
 
-                    page.locator('#universal-analyze').click()
-                    page.locator('#universal-status').wait_for(state='attached')
-                    assert page.locator('#universal-response-title').inner_text()
-                    assert page.get_by_text('Most useful next step', exact=True).count() >= 1
+                    # Sparse input yields one question, not an invalid state or empty structural cards.
+                    page.locator("#universal-input").fill("banana moon 777")
+                    page.get_by_role("button", name="Continue").click()
+                    assert page.locator("#universal-response-title").inner_text() == "Which decision or question should we focus on?"
+                    assert page.locator("[data-fde-field='next_required_input']").count() == 1
+                    assert page.locator("[data-fde-field='decision']").count() == 0
+                    assert "Invalid input" not in page.locator("body").inner_text()
 
-                    messy = 'Should we build internally or partner externally? Time and quality matter, but the supplier may be late. <script>alert(1)</script>'
-                    page.locator('#universal-input').fill(messy)
-                    page.locator('#universal-analyze').click()
-                    assert 'decision forming' in page.locator('#universal-response-title').inner_text().lower()
-                    assert page.get_by_text('Should we build internally', exact=True).is_visible()
-                    assert page.get_by_text('partner externally', exact=True).is_visible()
-                    assert page.get_by_text('Time', exact=True).is_visible()
-                    assert page.get_by_text('Quality', exact=True).is_visible()
-                    assert page.get_by_text('Timing gets worse', exact=True).is_visible()
-                    assert page.get_by_text('Possible is not confirmed.', exact=True).is_visible()
-                    assert page.locator('script').filter(has_text='alert(1)').count() == 0
-                    assert page.locator('#universal-confirm').count() == 0
-                    assert page.get_by_role('link', name='Help me shape the missing pieces →').is_visible()
+                    page.get_by_role("button", name="Adjust original input").click()
+                    clear_input = "Should we build internally or partner externally? Time and quality matter, but the supplier may be late. <script>alert(1)</script>"
+                    page.locator("#universal-input").fill(clear_input)
+                    page.get_by_role("button", name="Continue").click()
+                    assert page.locator("#universal-response-title").inner_text() == "Decision structure"
+                    assert page.get_by_text("Needs confirmation", exact=True).is_visible()
+                    assert page.locator("[data-fde-field='decision']").is_visible()
+                    assert page.locator("[data-fde-field='what_matters']").is_visible()
+                    assert page.locator("[data-fde-field='options']").is_visible()
+                    assert page.locator("[data-fde-field='what_may_change']").is_visible()
+                    assert page.get_by_text("build internally", exact=True).is_visible()
+                    assert page.get_by_text("partner externally", exact=True).is_visible()
+                    assert page.get_by_text("Time", exact=True).is_visible()
+                    assert page.get_by_text("Quality", exact=True).is_visible()
+                    assert page.get_by_text("Timing gets worse", exact=True).is_visible()
+                    assert page.locator("script").filter(has_text="alert(1)").count() == 0
 
-                    first_remove = page.locator('[data-remove-kind="choices"]').first
-                    assert first_remove.is_visible()
-                    first_remove.click()
-                    assert page.locator('[data-remove-kind="choices"]').count() == 1
-                    assert 'Updated. Review the map' in page.locator('#universal-next-title').locator('..').inner_text()
+                    # Confirmation requests only the next required input.
+                    page.get_by_role("button", name="Yes").click()
+                    assert page.locator("#universal-response-title").inner_text() == "What else could change the choice?"
+                    page.locator("#universal-input").fill("Requirements change")
 
-                    page.locator('#universal-input').fill('How much does a new MRI machine cost?')
-                    page.locator('#universal-analyze').click()
-                    assert 'information question' in page.locator('#universal-response-title').inner_text().lower()
-                    assert 'does not fetch outside facts' in page.locator('#universal-response-title').locator('..').inner_text()
-
-                    page.locator('#universal-input').fill('Should we hire someone? Should we expand next year?')
-                    page.locator('#universal-analyze').click()
-                    assert 'more than one possible decision' in page.locator('#universal-response-title').inner_text().lower()
-                    assert page.locator('#universal-confirm').count() == 0
-
-                    page.locator('#universal-input').fill('Should we build internally or partner externally? Time, quality, and cost matter. The supplier may be late and demand changes.')
-                    page.locator('#universal-analyze').click()
-                    page.locator('#universal-confirm').wait_for(state='visible')
-
-                    # Saved-work regression / rescue-collision: never silently replace an existing Lab draft.
+                    # Saved-work protection: never silently replace a Decision Lab draft.
                     page.evaluate(f"localStorage.setItem('{DECISION_KEY}', JSON.stringify({{sentinel:'keep-me'}}))")
-                    page.locator('#universal-confirm').click()
+                    page.get_by_role("button", name="Continue").click()
                     assert page.evaluate(f"localStorage.getItem('{DECISION_KEY}')") == '{"sentinel":"keep-me"}'
-                    assert 'A saved FDE decision already exists' in page.locator('#universal-next-title').locator('..').inner_text()
-                    assert page.url.endswith('/') and '#/decision' not in page.url
+                    assert page.locator("#universal-response-title").inner_text() == "A saved FDE decision already exists."
+                    assert page.get_by_role("link", name="Open Decision Lab →").is_visible()
 
-                    page.locator('#universal-input').fill('banana moon 777')
-                    page.locator('#universal-analyze').click()
-                    assert page.locator('#universal-response-title').inner_text()
-                    assert page.get_by_text('Most useful next step', exact=True).count() >= 1
+                    # Information-request UAT is a separate first-run scenario. Clear only the
+                    # tab-scoped intake session; the persistence behavior itself is tested below.
+                    page.evaluate(f"localStorage.removeItem('{DECISION_KEY}')")
+                    page.evaluate(f"sessionStorage.removeItem('{SESSION_KEY}')")
+                    page.goto(base, wait_until="networkidle")
+                    page.locator("#universal-input").fill("How much does a new MRI machine cost?")
+                    page.get_by_role("button", name="Continue").click()
+                    assert "does not retrieve outside facts" in page.locator("#universal-response-title").inner_text().lower()
+                    assert "Gather the fact first" in page.locator("main").inner_text()
 
-                    page.locator('#universal-input').fill('Refresh should not erase this situation.')
+                    # Ctrl/Cmd + Enter activates Continue.
+                    page.get_by_role("button", name="Adjust").click()
+                    page.locator("#universal-input").fill("Should we stay or go? Safety and cost matter. Delay and demand changes are possible.")
+                    page.locator("#universal-input").press("Control+Enter")
+                    assert page.locator("#universal-response-title").inner_text() == "Decision structure"
+
+                    # Refresh preserves in-progress first-run work.
+                    page.get_by_role("button", name="Adjust").click()
+                    page.locator("#universal-input").fill("Refresh should not erase this situation.")
                     assert page.evaluate(f"Boolean(sessionStorage.getItem('{SESSION_KEY}'))")
-                    page.reload(wait_until='networkidle')
-                    assert page.locator('#universal-input').input_value() == 'Refresh should not erase this situation.'
+                    page.reload(wait_until="networkidle")
+                    assert page.locator("#universal-input").input_value() == "Refresh should not erase this situation."
 
-                    # Rescue route starts from a deterministic empty session for this isolated browser case.
+                    # Decision Rescue remains reachable and intact.
                     page.evaluate(f"sessionStorage.removeItem('{RESCUE_SESSION_KEY}')")
-                    page.goto(f'{base}#/rescue', wait_until='networkidle')
-                    page.locator('#rescue-question').wait_for(state='visible')
-                    assert page.locator('#rescue-intake').is_visible()
-                    assert 'What’s going on?' in page.locator('#rescue-question').inner_text()
+                    page.goto(f"{base}#/rescue", wait_until="networkidle")
+                    page.locator("#rescue-question").wait_for(state="visible")
+                    assert page.locator("#rescue-intake").is_visible()
 
-                    assert not remote_requests, f"Universal FDE made unexpected remote requests: {remote_requests}"
+                    assert not remote_requests, f"FDE made unexpected remote requests: {remote_requests}"
                     context.close()
 
-                    theme = browser.new_context(viewport={"width": 1280, "height": 900}, color_scheme='light')
+                    # Appearance follows system, then remains operable in dark mode.
+                    theme = browser.new_context(viewport={"width": 1280, "height": 900}, color_scheme="light")
                     theme_page = theme.new_page()
-                    theme_page.goto(base, wait_until='networkidle')
-                    assert theme_page.locator('html').get_attribute('data-theme') == 'light'
-                    assert theme_page.locator('html').get_attribute('data-theme-preference') == 'system'
-                    theme_page.emulate_media(color_scheme='dark')
-                    theme_page.locator('html[data-theme="dark"]').wait_for(state='attached')
-                    assert theme_page.locator('html').get_attribute('data-theme-preference') == 'system'
+                    theme_page.goto(base, wait_until="networkidle")
+                    assert theme_page.locator("html").get_attribute("data-theme") == "light"
+                    assert theme_page.locator("html").get_attribute("data-theme-preference") == "system"
+                    assert theme_page.locator("#theme-toggle").inner_text() == "Appearance"
+                    theme_page.emulate_media(color_scheme="dark")
+                    theme_page.locator('html[data-theme="dark"]').wait_for(state="attached")
+                    assert theme_page.locator("html").get_attribute("data-theme-preference") == "system"
+                    assert theme_page.evaluate("document.documentElement.scrollWidth <= window.innerWidth + 1")
                     theme.close()
                 finally:
                     browser.close()
@@ -140,6 +149,6 @@ def run() -> None:
             thread.join(timeout=5)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     run()
-    print('UNIVERSAL RESPONSE E2E PASS')
+    print("FIRST-RUN UX E2E PASS")

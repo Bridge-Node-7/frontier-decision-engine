@@ -16,6 +16,7 @@ def load_json(relative: str):
 
 package = load_json("package.json")
 version = package["version"]
+errors: list[str] = []
 
 required = [
     "CITATION.cff", "CONTRIBUTING.md", "LICENSE", "README.md", "SECURITY.md",
@@ -33,7 +34,6 @@ required = [
     "tests/universal-response.test.js",
     "requirements-dev.txt", ".github/workflows/ci.yml", ".github/workflows/pages.yml", ".github/workflows/release.yml",
 ]
-errors: list[str] = []
 for item in required:
     if not (ROOT / item).exists():
         errors.append(f"required public/release path missing: {item}")
@@ -55,7 +55,7 @@ readme = (ROOT / "README.md").read_text(encoding="utf-8")
 if len(readme.splitlines()) > 100:
     errors.append("README exceeds 100 lines")
 readme_normalized = re.sub(r"\s+", " ", readme)
-for required_text in ["project-facts.json", "browser-local", "no backend", "Decision Map"]:
+for required_text in ["project-facts.json", "browser-local", "no backend", "human"]:
     if required_text.lower() not in readme_normalized.lower():
         errors.append(f"README missing required boundary: {required_text}")
 
@@ -73,20 +73,19 @@ for root in scan_roots:
             text = path.read_text(encoding="utf-8")
         except Exception:
             continue
-        for pattern in path_patterns:
-            if pattern.search(text):
-                errors.append(f"local-machine path or sync-folder marker detected: {path.relative_to(ROOT)}")
-                break
+        if any(pattern.search(text) for pattern in path_patterns):
+            errors.append(f"local-machine path or sync-folder marker detected: {path.relative_to(ROOT)}")
 
 index = (SITE / "index.html").read_text(encoding="utf-8")
 if "Content-Security-Policy" not in index:
     errors.append("site index lacks Content-Security-Policy")
 if re.search(r"<script[^>]+src=[\"']https?://", index, re.I):
     errors.append("site index loads an external script")
-if "./assets/universal-decision.css" not in index:
-    errors.append("site index does not load the Universal Decision Map stylesheet")
-if "./assets/rescue.css" not in index:
-    errors.append("site index does not load the Decision Rescue stylesheet")
+for stylesheet in ["./assets/styles.css", "./assets/bridge-node-7-shell.css", "./assets/beginner-first.css", "./assets/rescue.css", "./assets/universal-decision.css"]:
+    if stylesheet not in index:
+        errors.append(f"site index does not load required stylesheet: {stylesheet}")
+if "Bridge Node 7 Home" not in index:
+    errors.append("explicit Bridge Node 7 Home path is missing")
 
 for path in (SITE / "src").rglob("*.js"):
     try:
@@ -103,24 +102,39 @@ app_text = (SITE / "src/app.js").read_text(encoding="utf-8")
 decision_text = (SITE / "src/decision-ui.js").read_text(encoding="utf-8")
 rescue_text = (SITE / "src/rescue-ui.js").read_text(encoding="utf-8")
 universal_text = (SITE / "src/universal-ui.js").read_text(encoding="utf-8")
-map_text = (SITE / "src/decision-map.js").read_text(encoding="utf-8")
+theme_text = (SITE / "src/theme.js").read_text(encoding="utf-8")
+
 if len(re.findall(r'id="decision-step-heading-[0-5]" tabindex="-1"', decision_text)) != 7:
     errors.append("FDE must expose six focusable decision-stage headings and one incomplete-analysis variant")
-if "rescue-intake" not in rescue_text or "Decision Frame" not in rescue_text:
-    errors.append("Decision Rescue public entry is incomplete")
-if "fde.rescue.session.v1" not in rescue_text:
-    errors.append("Decision Rescue session recovery is missing")
+if "rescue-intake" not in rescue_text or "Decision Frame" not in rescue_text or "fde.rescue.session.v1" not in rescue_text:
+    errors.append("Decision Rescue public entry/session boundary is incomplete")
 if "A decision is already saved in this browser." not in rescue_text:
     errors.append("Decision Rescue saved-work collision boundary is missing")
 if "renderUniversalDecisionExperience" not in app_text:
-    errors.append("Universal Response is not the public root experience")
-if "./decision-map.js" not in app_text:
-    errors.append("Decision Map enhancer is not using the sanitized public module path")
-for token in ("draftFromInput", "responseFor", "What FDE sees so far", "Possible is not confirmed", "Decision Map"):
+    errors.append("first-run decision intake is not the public root experience")
+
+required_front_door = [
+    "What are you considering?",
+    "Share a situation, decision, question, or context in your own words.",
+    "Decision, question, options, constraints, notes, or other context…",
+    ">Continue<",
+    "Already know the decision and options? Open Decision Lab →",
+    "Private by design. Your working decision stays in this browser unless you choose to export it.",
+    "supportableSection('Decision', 'decision'",
+    "supportableSection('What matters', 'what_matters'",
+    "supportableSection('Options', 'options'",
+    "supportableSection('What may change', 'what_may_change'",
+    "Which decision or question should we focus on?",
+    "Needs confirmation",
+]
+for token in required_front_door:
     if token not in universal_text:
-        errors.append(f"Universal Decision Map is missing required boundary: {token}")
-if "data-fde-decision-map-enhanced" not in map_text or "fdeDecisionMapObserver" not in map_text:
-    errors.append("Decision Map enhancer uses an invalid public state marker")
+        errors.append(f"first-run UX missing required contract: {token}")
+for prohibited in ["Bring the whole mess", "Find the decision", "What FDE sees so far", "Invalid input"]:
+    if prohibited in universal_text or prohibited in index:
+        errors.append(f"first-run UX still contains prohibited pre-input copy: {prohibited}")
+if "button.textContent = 'Appearance'" not in theme_text or "Current:" not in theme_text:
+    errors.append("Appearance control does not preserve a stable visible name plus accessible state")
 
 runner = (ROOT / "scripts/browser_e2e.py").read_text(encoding="utf-8")
 universal_runner = (ROOT / "scripts/browser_rescue_e2e.py").read_text(encoding="utf-8")
@@ -128,9 +142,9 @@ requirements = (ROOT / "requirements-dev.txt").read_text(encoding="utf-8")
 for required_flow in ("decision_flow", "route_suite", "print_flow"):
     if required_flow not in runner:
         errors.append(f"browser end-to-end flow is not wired: {required_flow}")
-for required_rescue_check in ("sessionStorage", "rescue-collision", "color_scheme"):
-    if required_rescue_check not in universal_runner:
-        errors.append(f"Universal/Decision Rescue browser regression missing: {required_rescue_check}")
+for required_check in ("sessionStorage", "Saved-work protection", "color_scheme", "What are you considering?", "Decision Map"):
+    if required_check not in universal_runner:
+        errors.append(f"first-run browser regression missing: {required_check}")
 if "playwright==1.57.0" not in requirements:
     errors.append("expected browser tool pin is missing")
 
@@ -145,23 +159,13 @@ if "--line-strong:" not in shell:
     errors.append("interactive boundary token is missing")
 if "--focus-ring:" not in rescue_css:
     errors.append("theme-aware focus token is missing")
-if ".rescue-frame{position:static;order:-1}" in rescue_css.replace(" ", ""):
-    errors.append("mobile Rescue frame still precedes the active question")
-if "--surface-glow:" not in universal_css or ".universal-layout" not in universal_css:
-    errors.append("Universal Decision Map stylesheet is incomplete")
-if "Bridge Node 7 Home" not in index:
-    errors.append("explicit Bridge Node 7 Home path is missing")
+for token in ["@media(max-width:620px)", "@media(forced-colors:active)", "@media(prefers-reduced-motion:reduce)"]:
+    if token not in universal_css:
+        errors.append(f"first-run stylesheet missing accessibility/responsive contract: {token}")
 
 not_found = (SITE / "404.html").read_text(encoding="utf-8")
 if "Page not found" not in not_found or "/frontier-decision-engine/#/decision" not in not_found:
     errors.append("branded FDE 404 contract is incomplete")
-
-expected_stylesheet_order = [
-    "./assets/styles.css", "./assets/bridge-node-7-shell.css", "./assets/beginner-first.css", "./assets/rescue.css", "./assets/universal-decision.css",
-]
-positions = [index.find(item) for item in expected_stylesheet_order]
-if any(position < 0 for position in positions) or positions != sorted(positions):
-    errors.append("stylesheet ownership order is invalid")
 
 contributing = (ROOT / "CONTRIBUTING.md").read_text(encoding="utf-8")
 if not contributing.startswith("# Contributing to Frontier Decision Engine"):
@@ -173,7 +177,7 @@ if errors:
     sys.exit(1)
 
 print("REPOSITORY VALIDATION PASS")
-print("- Universal Response and Decision Map are part of the public product boundary")
-print("- Decision Rescue and Decision Lab preserve human authority and browser-local boundaries")
+print("- first-run UX provides structure, one clarification, or an explicit capability boundary")
+print("- Decision Rescue and deterministic Decision Lab preserve human authority and browser-local boundaries")
 print("- public decision schemas, release identity, accessibility controls, and OPSEC checks are aligned")
 print("- static site has no external runtime dependencies")
