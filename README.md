@@ -1,48 +1,48 @@
 # Frontier Decision Engine
 
-**Bring the whole mess. FDE gives you something useful back, helps make uncertainty visible, and keeps the final decision human-owned.**
+**Trustworthy decision infrastructure for choices under deep uncertainty.**
 
 [Open the live application](https://bridgenode7.com/frontier-decision-engine/)
 
 ![Frontier Decision Engine Decision Lab reference](docs/screenshots/reference/desktop-decision-frame.png)
 
-*Stable Decision Lab reference surface. The public root begins with Universal Response and a provisional Decision Map before any formal comparison.*
+*Stable Decision Lab reference surface. The public root begins with a single natural-language decision input before any formal comparison.*
 
 ## Start with one input
 
-The FDE front door starts with one free-form input. Put down a problem, question, worry, idea, decision, or a complete mess. FDE responds immediately with a provisional Decision Map showing only what can be safely organized from the words provided.
+The first screen asks one question: **What are you considering?**
 
-The map is a draft, not a hidden machine decision. Possible signals stay possible until a person confirms them. When enough explicit structure exists, the map can continue into the deterministic Decision Lab. Otherwise, it offers a simple path to shape the missing pieces without pretending the missing information is known.
+Share a situation, decision, question, options, constraints, notes, or other context in your own words. FDE then does one of three things:
 
-The experience is designed around a simple rule: **every meaningful input receives a useful response, and questions are used only when human judgment is actually needed to move the decision forward.**
+- shows only decision structure that is supportable from the words provided;
+- asks exactly one useful clarification question when the decision is still too sparse; or
+- states an honest capability boundary and a useful next action when the request is outside the browser-local decision-support scope.
 
-## Decision Map
+Supportable first-run structure uses four human-facing concepts: **Decision, What matters, Options, What may change.** Nothing inferred becomes a canonical model input until a person confirms it.
 
-The map can show:
-
-- a possible decision;
-- choices mentioned explicitly;
-- things that may matter;
-- conditions that could change the answer; and
-- the smallest useful next step.
-
-This is deliberately conservative. The browser does not call a remote AI service, retrieve outside facts, invent probabilities, or promote provisional text into verified evidence.
+The browser does not call a remote AI provider, retrieve outside facts, invent evidence, probabilities, scores, thresholds, scenario effects, or recommendations.
 
 ## Decision Lab
 
-When a person confirms enough structure, FDE can hand the work into its existing deterministic comparison engine. Guided work supports 2–4 objectives, 2–3 choices, and 2–4 plausible futures. The minimum comparison is a true 2 × 2 × 2 model.
+After confirmation, FDE asks only for the additional explicit inputs required for a deterministic comparison. The formal Decision Lab preserves the existing ranking semantics, published schemas, saved-work protections, and truthful alternate outcomes including ties, no acceptable option, and insufficient information.
 
 The comparison informs. A person decides.
 
+## Assurance on demand
+
+Technical users can inspect the underlying inputs, assumptions, evidence state, uncertainty, thresholds, scenario effects, calculations, provenance, and decision record without forcing that depth into the first-run experience.
+
+The internal architecture and exports may still use Decision Map and decision-science terminology where those terms improve technical precision; first-time users do not need to learn that vocabulary before receiving value.
+
 ## Synthetic reference
 
-The repository includes a synthetic critical-material source-qualification case to demonstrate the formal Decision Lab without making claims about a real supplier, material, capacity, compliance status, or investment.
+The repository includes a synthetic critical-material source-qualification case to demonstrate the formal Decision Lab without making claims about a real supplier, material, capacity, compliance status, investment, or forecast.
 
 ## Privacy and authority
 
 The application is static and browser-local. It has no backend, account system, analytics, telemetry, cookies, remote AI provider, or default upload endpoint. Session recovery and browser autosave are convenience features, not encrypted confidential storage.
 
-FDE provides decision support. It does not approve, authorize, certify, qualify, consent, or make an investment decision.
+FDE provides decision support. It does not approve, authorize, certify, qualify, consent, or make an investment decision. Human final decision authority is preserved.
 
 ## Verify
 
