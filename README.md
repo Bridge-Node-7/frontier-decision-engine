@@ -4,7 +4,9 @@
 
 [Open the live application](https://bridgenode7.com/frontier-decision-engine/)
 
-![Frontier Decision Engine](docs/screenshots/reference/desktop-decision-frame.png)
+![Frontier Decision Engine Decision Lab reference](docs/screenshots/reference/desktop-decision-frame.png)
+
+*Stable Decision Lab reference surface. The public root begins with Universal Response and a provisional Decision Map before any formal comparison.*
 
 ## Start with one input
 
