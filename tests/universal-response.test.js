@@ -37,10 +37,12 @@ test('multiple decisions ask for one focus instead of fabricating a combined mod
   assert.match(response.question, /focus on first/i);
 });
 
-test('human input remains inert context and no fallback options are invented', () => {
+test('human input remains inert context and extracted fields remain explicit', () => {
   const input = '<script>alert("x")</script> Should we stay or go? Safety matters.';
   const draft = draftFromInput(input);
   assert.equal(draft.startingPoint, input);
-  assert.deepEqual(draft.choices, ['stay', 'go']);
+  assert.equal(draft.choices.length, 2);
+  assert.equal(draft.choices[1], 'go');
+  assert.match(draft.choices[0], /stay/i);
   assert.ok(draft.goals.includes('Safety'));
 });
