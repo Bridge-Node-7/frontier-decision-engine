@@ -11,7 +11,7 @@
     "facts:check": "node scripts/validate-project-facts.mjs",
     "validate": "node scripts/run-python.mjs scripts/validate_repository.py",
     "manifest": "node scripts/build-manifest.mjs",
-    "test:e2e": "node scripts/run-python.mjs scripts/browser_e2e.py",
+    "test:e2e": "node scripts/run-python.mjs scripts/browser_e2e_release.py",
     "test:rescue": "node scripts/run-python.mjs scripts/browser_rescue_e2e.py",
     "check": "npm run facts:check && npm test && npm run validate:version && npm run validate && npm run manifest && npm run test:e2e && npm run test:rescue && npm run test:closeout",
     "package:release": "node scripts/run-python.mjs scripts/package_release.py",
