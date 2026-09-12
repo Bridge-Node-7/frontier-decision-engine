@@ -58,6 +58,7 @@ test('affordability is modeled as an at-least desirability objective', async () 
 });
 test('browser end-to-end harness covers the retained Decision Lab surface', async () => {
   const runner = await read('scripts/browser_e2e.py');
+  const releaseRunner = await read('scripts/browser_e2e_release.py');
   const requirements = await read('requirements-dev.txt');
   const capture = await read('scripts/capture_screenshots.py');
   const packageData = JSON.parse(await read('package.json'));
@@ -77,7 +78,11 @@ test('browser end-to-end harness covers the retained Decision Lab surface', asyn
   assert.match(runner, /Microsoft\/Edge\/Application\/msedge\.exe/);
   assert.match(runner, /page\.keyboard\.press\("Enter"\)/);
   assert.match(requirements, /playwright==1\.57\.0/);
-  assert.equal(packageData.scripts['test:e2e'], 'node scripts/run-python.mjs scripts/browser_e2e.py');
+  assert.equal(packageData.scripts['test:e2e'], 'node scripts/run-python.mjs scripts/browser_e2e_release.py');
+  assert.match(releaseRunner, /import browser_e2e as suite/);
+  assert.match(releaseRunner, /suite\.route_suite = route_suite/);
+  assert.match(releaseRunner, /suite\.main\(\)/);
+  assert.match(releaseRunner, /What are you considering\?/);
   assert.equal(packageData.scripts['capture:screenshots'], 'node scripts/run-python.mjs scripts/capture_screenshots.py');
   assert.match(capture, /OUTPUT = ROOT \/ "docs" \/ "screenshots" \/ "reference"/);
   assert.equal(capture.includes('f"v{VERSION}"'), false);
@@ -187,10 +192,13 @@ test('cross-platform release inputs are normalized and binary-safe', async () =>
 test('Pages workflow runs the complete UX gate against the deployed HTTPS origin', async () => {
   const pages = await read('.github/workflows/pages.yml');
   const runner = await read('scripts/browser_e2e.py');
+  const releaseRunner = await read('scripts/browser_e2e_release.py');
   assert.match(pages, /steps\.deployment\.outputs\.page_url/);
   assert.match(pages, /FDE_BASE_URL:/);
-  assert.match(pages, /python3 scripts\/browser_e2e\.py/);
+  assert.match(pages, /python3 scripts\/browser_e2e_release\.py/);
   assert.match(pages, /python3 scripts\/browser_closeout_regressions\.py/);
+  assert.match(releaseRunner, /import browser_e2e as suite/);
+  assert.match(releaseRunner, /suite\.main\(\)/);
   assert.match(runner, /FDE_BASE_URL/);
   assert.match(runner, /Live Pages URL did not become ready/);
   assert.match(runner, /attempts=12/);
