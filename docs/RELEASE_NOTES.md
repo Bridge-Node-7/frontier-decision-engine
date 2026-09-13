@@ -1,3 +1,28 @@
+# v0.3.4
+
+## First-Run Boundary Hardening
+
+Application version is 0.3.4. The compatible decision schema 0.2.10 and semantic decision schema 0.3.0 remain unchanged.
+
+This maintenance release hardens clean-adopter setup and first-run truthfulness without changing deterministic Decision Lab ranking semantics or human final decision authority.
+
+### Changes
+
+- Documents an isolated Python virtualenv before development-package installation for PEP 668-safe onboarding.
+- Refuses to present a partial subset when a natural-language input contains an unresolved list of three or more alternatives; the UI asks explicitly for the options instead.
+- Adds deterministic corpus regression coverage across more than 250 multi-option phrasings while preserving binary extraction.
+- Adds a narrow safety boundary for explicit requests to start, stop, skip, or change prescribed treatment; FDE does not recommend a treatment change and can instead structure cost, access, logistics, and questions for a qualified clinician.
+- Makes the current English-only natural-language intake scope explicit.
+- Preserves browser-local privacy, saved-work protection, published schemas, deterministic formal comparison, and human decision authority.
+
+### Decision boundary
+
+FDE remains decision support, not a medical, safety, certification, qualification, authorization, or investment authority.
+
+### Release date
+
+2026-09-12
+
 # v0.3.3
 
 ## Frictionless First-Run Decision UX
