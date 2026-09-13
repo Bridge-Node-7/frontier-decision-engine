@@ -37,3 +37,58 @@ The comparison informs. A person decides.
 ## Assurance on demand
 
 Technical users can inspect the underlying inputs, assumptions, evidence state, uncertainty, thresholds, scenario effects, calculations, provenance, and decision record without forcing that depth into the first-run experience.
+
+The internal architecture and exports may still use Decision Map and decision-science terminology where those terms improve technical precision; first-time users do not need to learn that vocabulary before receiving value.
+
+## Synthetic reference
+
+The repository includes a synthetic critical-material source-qualification case to demonstrate the formal Decision Lab without making claims about a real supplier, material, capacity, compliance status, investment, or forecast.
+
+## Privacy and authority
+
+The application is static and browser-local. It has no backend, account system, analytics, telemetry, cookies, remote AI provider, or default upload endpoint. Session recovery and browser autosave are convenience features for ordinary FDE drafts, not encrypted confidential storage. Governed Mission Graph context uses a separate memory-only path.
+
+FDE provides decision support. It does not approve, authorize, certify, qualify, consent, or make an investment decision. Human final decision authority is preserved.
+
+## Verify
+
+Requirements: Node.js 22+, Python 3.11+, and Chromium or Google Chrome.
+
+macOS / Linux:
+
+```bash
+node scripts/run-python.mjs -m venv .venv
+source .venv/bin/activate
+node scripts/run-python.mjs -m pip install -r requirements-dev.txt
+node scripts/run-python.mjs -m playwright install chromium
+npm ci --ignore-scripts --no-audit --no-fund
+npm run check
+```
+
+Windows PowerShell:
+
+```powershell
+node scripts/run-python.mjs -m venv .venv
+.\.venv\Scripts\Activate.ps1
+node scripts/run-python.mjs -m pip install -r requirements-dev.txt
+node scripts/run-python.mjs -m playwright install chromium
+npm ci --ignore-scripts --no-audit --no-fund
+npm run check
+```
+
+Generated release facts and current application identity are recorded in [`project-facts.json`](project-facts.json). The full verification gate is defined by the repository's `npm run check` command.
+
+## Documentation
+
+- [Architecture](docs/ARCHITECTURE.md)
+- [Methodology](docs/METHODOLOGY.md)
+- [Privacy](docs/PRIVACY.md)
+- [Releasing](docs/RELEASING.md)
+
+## Project
+
+Changes must preserve human decision authority, privacy, accessibility, and the complete validation gate. See [CONTRIBUTING.md](CONTRIBUTING.md).
+
+Report vulnerabilities through GitHub private vulnerability reporting as described in [SECURITY.md](SECURITY.md).
+
+Apache-2.0 licensed. See [LICENSE](LICENSE).
