@@ -121,10 +121,12 @@ def run() -> None:
                     assert page.get_by_role("heading", name="What we do not know").is_visible()
                     assert page.get_by_role("heading", name="What needs proof").is_visible()
                     assert page.get_by_text("Supplier status changes", exact=True).is_visible()
-                    assert page.get_by_text("DCP-E2E-001", exact=True).count() == 0  # hidden until Show me why
+                    packet_id = page.get_by_text("DCP-E2E-001", exact=True)
+                    assert packet_id.count() == 1
+                    assert packet_id.is_hidden()  # present for lineage, disclosed only when requested
 
                     page.get_by_text("Show me why", exact=True).click()
-                    assert page.get_by_text("DCP-E2E-001", exact=True).is_visible()
+                    assert packet_id.is_visible()
                     page.get_by_role("button", name="Open Decision Lab with this context").click()
                     page.get_by_text("Verified Mission Graph preparation context", exact=True).wait_for(state="visible")
                     assert "DCP-E2E-001" not in page.evaluate("JSON.stringify(Object.fromEntries(Object.entries(localStorage)))")
