@@ -132,7 +132,7 @@ def run() -> None:
                     page.get_by_text("Verified Mission Graph preparation context", exact=True).wait_for(state="visible")
                     assert "DCP-E2E-001" not in page.evaluate("JSON.stringify(Object.fromEntries(Object.entries(localStorage)))")
                     assert "DCP-E2E-001" not in page.evaluate("JSON.stringify(Object.fromEntries(Object.entries(sessionStorage)))")
-                    assert page.get_by_text("Preparation context only. This is not evidence, a recommendation, approval, or a recorded FDE decision.", exact=True).is_visible()
+                    assert page.get_by_text("Memory-only preparation context — not autosaved, scored, treated as evidence, or recorded as the decision.", exact=True).is_visible()
 
                     page.reload(wait_until="networkidle")
                     assert "Verified Mission Graph preparation context" not in page.locator("body").inner_text()
