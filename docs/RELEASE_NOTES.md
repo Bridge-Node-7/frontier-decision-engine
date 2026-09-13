@@ -1,3 +1,31 @@
+# v0.4.0
+
+## Governed Mission Context
+
+Application version is 0.4.0. The compatible decision schema 0.2.10 and semantic decision schema 0.3.0 remain unchanged.
+
+This release adds a bounded, browser-local consumer for Mission Graph Decision Context Packet 0.2.0 while preserving FDE's human decision authority and existing deterministic comparison semantics.
+
+### Changes
+
+- Adds a dedicated Governed context route for Mission Graph `FDE_PREPARATION_ONLY` packets.
+- Accepts only Decision Context Packet 0.2.0 with PRIVATE or PROTECTED classification, explicit non-release handling, and no recorded-decision claim.
+- Recomputes the Mission Graph canonical SHA-256 content digest locally before displaying a packet.
+- Presents known, assumed, disputed, unknown, stale, ProofRequest, and reassessment-condition context without converting those categories into FDE evidence or scores.
+- Adds a Show me why lineage view for packet, source graph, source record, and SHA-256 identifiers.
+- Keeps accepted governed context in JavaScript module memory only; it is not written to normal FDE local/session storage and is discarded on refresh.
+- Uses a one-shot handoff into Decision Lab as visible preparation context only. It is not autosaved, scored, promoted to evidence, or recorded as the human decision.
+- Vendors the Mission Graph Decision Context 0.2.0 consumer schema for offline verification and hibernation/reentry clarity.
+- Adds adversarial regressions for digest mismatch, unsupported compatibility/classification, release escalation, recorded-decision escalation, epistemic category preservation, and one-shot memory handling.
+
+### Decision boundary
+
+Mission Graph context informs preparation. FDE still does not approve, authorize, certify, qualify, or autonomously make or record the consequential decision. A person remains accountable for what enters the canonical decision model and for the final decision.
+
+### Release date
+
+2026-09-13
+
 # v0.3.4
 
 ## First-Run Boundary Hardening

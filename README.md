@@ -22,6 +22,12 @@ Supportable first-run structure uses four human-facing concepts: **Decision, Wha
 
 The browser does not call a remote AI provider, retrieve outside facts, invent evidence, probabilities, scores, thresholds, scenario effects, or recommendations.
 
+## Governed Mission Graph context
+
+The **Governed context** route accepts Mission Graph Decision Context Packet 0.2.0 for `FDE_PREPARATION_ONLY` use. FDE verifies the packet locally, including its canonical SHA-256 content digest, and exposes what is known, assumed, disputed, unknown, stale, needs proof, or may change.
+
+Only PRIVATE or PROTECTED packets with explicit non-release handling and no recorded-decision claim are accepted. Accepted context stays in JavaScript page memory only and is discarded on refresh; it is not placed in normal browser autosave or silently promoted into the canonical decision model. Source-lineage details remain collapsed until the user deliberately opens **Show me why**.
+
 ## Decision Lab
 
 After confirmation, FDE asks only for the additional explicit inputs required for a deterministic comparison. The formal Decision Lab preserves the existing ranking semantics, published schemas, saved-work protections, and truthful alternate outcomes including ties, no acceptable option, and insufficient information.
@@ -40,7 +46,7 @@ The repository includes a synthetic critical-material source-qualification case 
 
 ## Privacy and authority
 
-The application is static and browser-local. It has no backend, account system, analytics, telemetry, cookies, remote AI provider, or default upload endpoint. Session recovery and browser autosave are convenience features, not encrypted confidential storage.
+The application is static and browser-local. It has no backend, account system, analytics, telemetry, cookies, remote AI provider, or default upload endpoint. Session recovery and browser autosave are convenience features for ordinary FDE drafts, not encrypted confidential storage. Governed Mission Graph context uses a separate memory-only path.
 
 FDE provides decision support. It does not approve, authorize, certify, qualify, consent, or make an investment decision. Human final decision authority is preserved.
 

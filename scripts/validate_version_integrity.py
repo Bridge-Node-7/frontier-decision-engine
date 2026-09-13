@@ -34,6 +34,8 @@ def main() -> int:
     decision = load_json("examples/phenomena-second-station/decision.fde.json")
     semantic_schema = load_json("schemas/decision-0.3.0.schema.json")
     deployed_semantic_schema = load_json("site/schemas/decision-0.3.0.schema.json")
+    mission_context_schema = load_json("schemas/mission-graph-decision-context-0.2.0.schema.json")
+    deployed_mission_context_schema = load_json("site/schemas/mission-graph-decision-context-0.2.0.schema.json")
     version = str(package.get("version", ""))
     if not re.fullmatch(r"\d+\.\d+\.\d+", version):
         fail(f"invalid package version: {version!r}", errors)
@@ -90,12 +92,25 @@ def main() -> int:
         fail("project-facts semantic decision schema does not match schema 0.3.0", errors)
     if semantic_schema != deployed_semantic_schema:
         fail("source and deployed semantic decision schemas differ", errors)
+
+    if mission_context_schema.get("$id") != "urn:bn7:decision-context:0.2.0":
+        fail("Mission Graph Decision Context Packet 0.2.0 consumer schema identity is invalid", errors)
+    properties = mission_context_schema.get("properties", {})
+    if properties.get("schema_version", {}).get("const") != "0.2.0":
+        fail("Mission Graph Decision Context Packet version contract changed unexpectedly", errors)
+    if properties.get("compatibility", {}).get("const") != "FDE_PREPARATION_ONLY":
+        fail("Mission Graph FDE preparation boundary changed unexpectedly", errors)
+    if properties.get("classification", {}).get("enum") != ["PRIVATE", "PROTECTED"]:
+        fail("Mission Graph context classification boundary changed unexpectedly", errors)
+    if mission_context_schema != deployed_mission_context_schema:
+        fail("source and deployed Mission Graph Decision Context schemas differ", errors)
+
     if errors:
         print("VERSION INTEGRITY FAILED")
         for error in errors:
             print(f"- {error}")
         return 1
-    print(f"VERSION INTEGRITY PASS — application {version}; legacy decision schema {schema}; semantic decision schema 0.3.0")
+    print(f"VERSION INTEGRITY PASS — application {version}; legacy decision schema {schema}; semantic decision schema 0.3.0; Mission Graph context 0.2.0")
     return 0
 
 if __name__ == "__main__":

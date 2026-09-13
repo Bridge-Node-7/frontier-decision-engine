@@ -1,11 +1,11 @@
 {
-  "applicationVersion": "0.3.4",
+  "applicationVersion": "0.4.0",
   "schemaVersions": {
     "decision": "0.2.10",
     "semanticDecision": "0.3.0"
   },
-  "testCount": 156,
-  "discoveredHashRouteLiteralCount": 6,
+  "testCount": 164,
+  "discoveredHashRouteLiteralCount": 7,
   "browserModes": [
     "desktop-light",
     "mobile-light",
@@ -15,5 +15,5 @@
     "reflow-400-equivalent",
     "forced-colors"
   ],
-  "manifestEntryCount": 38
+  "manifestEntryCount": 41
 }

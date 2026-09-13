@@ -30,20 +30,34 @@ function readContext(kind) {
   } catch { return ''; }
 }
 
-function showContext(kind) {
-  const startingPoint = readContext(kind);
+async function consumeGovernedContext() {
+  try {
+    const { consumeGovernedContextHandoff, governedContextSummary } = await import('./lib/governed-context.js');
+    const packet = consumeGovernedContextHandoff();
+    return packet ? governedContextSummary(packet) : '';
+  } catch { return ''; }
+}
+
+function showContext(kind, governedText = '') {
+  const startingPoint = kind === 'governed' ? governedText : readContext(kind);
   const work = main.querySelector('#decision-work');
   if (!startingPoint || !work) return;
   const details = document.createElement('details');
   details.className = 'soft-panel rescue-starting-context';
   const summary = document.createElement('summary');
   const title = document.createElement('strong');
-  title.textContent = kind === 'universal' ? 'Starting context from FDE' : 'Starting context from Decision Rescue';
+  title.textContent = kind === 'universal'
+    ? 'Starting context from FDE'
+    : kind === 'governed'
+      ? 'Verified Mission Graph preparation context'
+      : 'Starting context from Decision Rescue';
   const help = document.createElement('span');
   help.className = 'help';
-  help.textContent = 'Context only — it is not scored or treated as evidence.';
+  help.textContent = kind === 'governed'
+    ? 'Memory-only preparation context — not autosaved, scored, treated as evidence, or recorded as the decision.'
+    : 'Context only — it is not scored or treated as evidence.';
   summary.append(title, help);
-  const body = document.createElement('p');
+  const body = document.createElement('pre');
   body.className = 'decision-section-body rescue-context-text';
   body.textContent = startingPoint;
   details.append(summary, body);
@@ -53,6 +67,7 @@ function showContext(kind) {
 async function router() {
   const path = location.hash.slice(1) || '/';
   let handoff = '';
+  let governedText = '';
   if (path === '/') {
     document.title = 'Frontier Decision Engine';
     const { renderUniversalDecisionExperience } = await import('./universal-ui.js');
@@ -61,12 +76,20 @@ async function router() {
     document.title = 'Frontier Decision Engine';
     const { renderDecisionRescue } = await import('./rescue-ui.js');
     renderDecisionRescue(main);
+  } else if (path === '/context') {
+    document.title = 'Governed Context | Frontier Decision Engine';
+    const { renderGovernedContext } = await import('./governed-context-ui.js');
+    renderGovernedContext(main);
   } else {
     const decisionRoute = ['/decision', '/decision/new', '/decision/example', '/decision/open', '/method'].includes(path);
     if (decisionRoute) {
       document.title = 'Frontier Decision Engine';
       const { renderDecisionLab } = await import('./decision-ui.js');
       handoff = path === '/decision' ? consumeHandoff() : '';
+      if (path === '/decision') {
+        governedText = await consumeGovernedContext();
+        if (governedText) handoff = 'governed';
+      }
       renderDecisionLab(main, {
         openFile: path === '/decision/open',
         entryMode: path === '/decision/new' ? 'blank' : path === '/decision/example' ? 'ready-example' : null,
@@ -74,7 +97,7 @@ async function router() {
       });
       if (handoff) {
         main.querySelector('#resume-browser-draft')?.click();
-        showContext(handoff);
+        showContext(handoff, governedText);
       }
     } else {
       document.title = 'Page Not Found | Frontier Decision Engine';
