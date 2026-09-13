@@ -1,0 +1,114 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:bn7:decision-context:0.2.0",
+  "title": "BN7 Decision Context Packet",
+  "type": "object",
+  "required": [
+    "schema_version",
+    "packet_id",
+    "compatibility",
+    "classification",
+    "handling",
+    "source_graph_id",
+    "question",
+    "decision_owner",
+    "evidence_summary",
+    "critical_unknowns",
+    "candidate_pathways",
+    "shared_failure_domains",
+    "false_redundancy_pairs",
+    "proof_requests",
+    "attention_queue",
+    "conditions_to_watch",
+    "content_sha256",
+    "provenance"
+  ],
+  "properties": {
+    "schema_version": {"const": "0.2.0"},
+    "packet_id": {"type": "string", "pattern": "^DCP-[A-Z0-9-]+$"},
+    "compatibility": {"const": "FDE_PREPARATION_ONLY"},
+    "classification": {"enum": ["PRIVATE", "PROTECTED"]},
+    "handling": {
+      "type": "object",
+      "required": ["release_eligible", "instruction"],
+      "properties": {
+        "release_eligible": {"const": false},
+        "instruction": {"type": "string", "minLength": 1}
+      },
+      "additionalProperties": false
+    },
+    "source_graph_id": {"type": "string"},
+    "question": {"type": "string", "minLength": 1},
+    "decision_owner": {"type": "string", "minLength": 1},
+    "evidence_summary": {
+      "type": "object",
+      "required": ["known", "assumed", "unknown", "contradicted", "expired"],
+      "properties": {
+        "known": {"type": "array", "items": {"type": "string"}},
+        "assumed": {"type": "array", "items": {"type": "string"}},
+        "unknown": {"type": "array", "items": {"type": "string"}},
+        "contradicted": {"type": "array", "items": {"type": "string"}},
+        "expired": {"type": "array", "items": {"type": "string"}}
+      },
+      "additionalProperties": false
+    },
+    "critical_unknowns": {"type": "array", "items": {"type": "string"}},
+    "candidate_pathways": {"type": "array", "items": {"type": "object"}},
+    "shared_failure_domains": {"type": "array", "items": {"type": "object"}},
+    "false_redundancy_pairs": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["left_id", "right_id", "failure_domain_id"],
+        "properties": {
+          "left_id": {"type": "string"},
+          "right_id": {"type": "string"},
+          "failure_domain_id": {"type": "string"}
+        },
+        "additionalProperties": false
+      }
+    },
+    "proof_requests": {"type": "array", "items": {"type": "object"}},
+    "attention_queue": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["proof_request_id", "human_owner", "status", "attention"],
+        "properties": {
+          "proof_request_id": {"type": "string", "minLength": 1},
+          "human_owner": {"type": "string", "minLength": 1},
+          "status": {"type": "string", "minLength": 1},
+          "attention": {"type": "object"}
+        },
+        "additionalProperties": false
+      }
+    },
+    "conditions_to_watch": {"type": "array", "items": {"type": "string"}},
+    "content_sha256": {"type": "string", "pattern": "^[a-f0-9]{64}$"},
+    "provenance": {
+      "type": "object",
+      "required": [
+        "source_record_id",
+        "source_record_sha256",
+        "generated_at",
+        "digest_scope",
+        "model_type",
+        "probability_model_used",
+        "values_are_analyst_assigned",
+        "fde_recorded_decision"
+      ],
+      "properties": {
+        "source_record_id": {"type": "string"},
+        "source_record_sha256": {"type": "string", "pattern": "^[a-f0-9]{64}$"},
+        "generated_at": {"type": "string", "minLength": 1},
+        "digest_scope": {"const": "packet excluding provenance.generated_at and content_sha256"},
+        "model_type": {"type": "string"},
+        "probability_model_used": {"const": false},
+        "values_are_analyst_assigned": {"const": false},
+        "fde_recorded_decision": {"const": false}
+      },
+      "additionalProperties": true
+    }
+  },
+  "additionalProperties": false
+}
