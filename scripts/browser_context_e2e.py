@@ -123,11 +123,11 @@ def run() -> None:
                     assert page.get_by_text("Supplier status changes", exact=True).is_visible()
 
                     lineage = page.locator("details").filter(has_text="Show me why")
-                    packet_id = lineage.get_by_text("DCP-E2E-001", exact=True)
-                    assert packet_id.is_hidden()  # present for lineage, disclosed only when requested
-
+                    assert lineage.get_attribute("open") is None
                     page.get_by_text("Show me why", exact=True).click()
-                    assert packet_id.is_visible()
+                    assert lineage.get_attribute("open") is not None
+                    assert "DCP-E2E-001" in lineage.inner_text()
+
                     page.get_by_role("button", name="Open Decision Lab with this context").click()
                     page.get_by_text("Verified Mission Graph preparation context", exact=True).wait_for(state="visible")
                     assert "DCP-E2E-001" not in page.evaluate("JSON.stringify(Object.fromEntries(Object.entries(localStorage)))")
