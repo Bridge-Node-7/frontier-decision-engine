@@ -1,7 +1,6 @@
 import {
   clearGovernedContextHandoff,
   decisionContextView,
-  governedContextSummary,
   setGovernedContextHandoff,
   validateDecisionContextPacket,
 } from './lib/governed-context.js';
@@ -124,10 +123,6 @@ function renderVerified(main, packet) {
   });
   actions.append(open, clear);
   main.append(actions);
-
-  const hiddenSummary = element('pre', governedContextSummary(packet), 'sr-only');
-  hiddenSummary.setAttribute('aria-hidden', 'true');
-  main.append(hiddenSummary);
 }
 
 function showErrors(status, messages) {
