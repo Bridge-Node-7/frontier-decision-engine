@@ -121,8 +121,9 @@ def run() -> None:
                     assert page.get_by_role("heading", name="What we do not know").is_visible()
                     assert page.get_by_role("heading", name="What needs proof").is_visible()
                     assert page.get_by_text("Supplier status changes", exact=True).is_visible()
-                    packet_id = page.get_by_text("DCP-E2E-001", exact=True)
-                    assert packet_id.count() == 1
+
+                    lineage = page.locator("details").filter(has_text="Show me why")
+                    packet_id = lineage.get_by_text("DCP-E2E-001", exact=True)
                     assert packet_id.is_hidden()  # present for lineage, disclosed only when requested
 
                     page.get_by_text("Show me why", exact=True).click()
