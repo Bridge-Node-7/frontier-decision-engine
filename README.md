@@ -12,7 +12,7 @@
 
 The first screen asks one question: **What are you considering?**
 
-Share a situation, decision, question, options, constraints, notes, or other context in your own words. FDE then does one of three things:
+Share a situation, decision, question, options, constraints, notes, or other context in your own words. **Natural-language intake currently supports English.** FDE then does one of three things:
 
 - shows only decision structure that is supportable from the words provided;
 - asks exactly one useful clarification question when the decision is still too sparse; or
@@ -48,7 +48,22 @@ FDE provides decision support. It does not approve, authorize, certify, qualify,
 
 Requirements: Node.js 22+, Python 3.11+, and Chromium or Google Chrome.
 
+macOS / Linux:
+
 ```bash
+node scripts/run-python.mjs -m venv .venv
+source .venv/bin/activate
+node scripts/run-python.mjs -m pip install -r requirements-dev.txt
+node scripts/run-python.mjs -m playwright install chromium
+npm ci --ignore-scripts --no-audit --no-fund
+npm run check
+```
+
+Windows PowerShell:
+
+```powershell
+node scripts/run-python.mjs -m venv .venv
+.\.venv\Scripts\Activate.ps1
 node scripts/run-python.mjs -m pip install -r requirements-dev.txt
 node scripts/run-python.mjs -m playwright install chromium
 npm ci --ignore-scripts --no-audit --no-fund

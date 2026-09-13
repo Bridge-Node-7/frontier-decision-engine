@@ -1,6 +1,6 @@
 {
   "name": "frontier-decision-engine",
-  "version": "0.3.3",
+  "version": "0.3.4",
   "private": true,
   "type": "module",
   "description": "Browser-local, human-governed decision support for choices under deep uncertainty.",
@@ -19,6 +19,8 @@
     "validate:version": "node scripts/run-python.mjs scripts/validate_version_integrity.py",
     "test:closeout": "node scripts/run-python.mjs scripts/browser_closeout_regressions.py"
   },
-  "engines": { "node": ">=22" },
+  "engines": {
+    "node": ">=22"
+  },
   "license": "Apache-2.0"
 }

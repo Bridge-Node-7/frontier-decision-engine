@@ -26,6 +26,8 @@ const KEYWORDS = {
 
 const decisionPattern = /should i|should we|do i|do we|whether|which should|choose|decid(?:e|ing)\s+(?:between|whether)/i;
 const informationPattern = /^(how much|what is|what's|when is|where is|who is|can you explain|what does|how does|tell me about)\b/i;
+const treatmentActionPattern = /\b(?:stop|start|skip|discontinue|quit|change|increase|decrease|reduce|raise|lower)\b/i;
+const treatmentSubjectPattern = /\b(?:medication|medicine|prescription|dose|treatment|therapy)\b/i;
 
 function normalize(value) {
   return String(value ?? '').replace(/\r\n?/g, '\n').trim();
@@ -70,6 +72,18 @@ function getIntent(text) {
   return decisionPattern.test(clean) ? 'decision' : 'open';
 }
 
+function hasUnresolvedOptionList(text) {
+  const listish = /([^\n.!?;:]{2,200}?,[^\n.!?;:]{2,200}?)\s*,?\s*\b(?:or|and)\s+([^\n.!?;:]{2,80})/i;
+  const match = listish.exec(text);
+  if (!match) return false;
+  return match[1].split(',').filter((value) => value.trim().length >= 2).length >= 2;
+}
+
+function hasTreatmentChangeRequest(text) {
+  const clean = normalize(text);
+  return treatmentActionPattern.test(clean) && treatmentSubjectPattern.test(clean);
+}
+
 function extractChoices(text) {
   const choices = [];
   for (const match of text.matchAll(/(?:either\s+)?([^\n,.!?]{2,80})\s+(?:or|versus|vs\.?|instead of)\s+([^\n,.!?]{2,80})/gi)) {
@@ -104,7 +118,8 @@ function splitUserItems(text, max) {
 export function draftFromInput(text) {
   const clean = normalize(text);
   const intent = getIntent(clean);
-  const choices = extractChoices(clean);
+  const optionListAmbiguous = hasUnresolvedOptionList(clean);
+  const choices = optionListAmbiguous ? [] : extractChoices(clean);
   const goals = extractGoals(clean);
   const futures = extractFutures(clean);
   const possibleDecision = intent !== 'multi' && (decisionPattern.test(clean) || (choices.length >= 2 && clean.includes('?'))) ? titleFrom(clean) : '';
@@ -112,6 +127,7 @@ export function draftFromInput(text) {
     startingPoint: clean,
     intent,
     possibleDecision,
+    optionListAmbiguous,
     choices,
     goals,
     futures,
@@ -120,6 +136,16 @@ export function draftFromInput(text) {
 
 export function responseFor(state) {
   const clean = normalize(state?.startingPoint);
+  if (hasTreatmentChangeRequest(clean)) {
+    return {
+      kind: 'boundary',
+      title: 'Treatment changes need qualified clinical guidance.',
+      body: 'FDE should not recommend starting, stopping, skipping, or changing prescribed treatment. A qualified clinician should guide treatment changes. FDE can still help structure cost, access, logistics, and questions to discuss with that clinician.',
+    };
+  }
+  if (state?.optionListAmbiguous) {
+    return { kind: 'question', question: 'What options should we compare?' };
+  }
   if (!clean || (!state?.possibleDecision && state?.intent !== 'information' && state?.intent !== 'multi')) {
     return { kind: 'question', question: 'Which decision or question should we focus on?' };
   }
@@ -195,7 +221,7 @@ function entryMarkup(state, hasSavedDecision) {
     <div class="universal-entry">
       <label class="sr-only" for="universal-input">What are you considering?</label>
       <textarea id="universal-input" maxlength="${RESCUE_MAX_INPUT_CHARS}" rows="7" aria-describedby="universal-help" placeholder="Decision, question, options, constraints, notes, or other context…">${escapeHtml(state.startingPoint)}</textarea>
-      <p id="universal-help" class="help">Use your own words. Press Ctrl or Command + Enter to continue.</p>
+      <p id="universal-help" class="help">Use your own words. Press Ctrl or Command + Enter to continue. Natural-language intake currently supports English.</p>
       <div class="universal-actions"><button id="universal-analyze" class="primary" type="button">Continue</button></div>
       <p class="universal-lab-link"><a href="#/decision">Already know the decision and options? Open Decision Lab →</a></p>
       ${hasSavedDecision ? '<p class="universal-return"><a href="#/decision">Continue saved work →</a></p>' : ''}
@@ -261,6 +287,7 @@ export function renderUniversalDecisionExperience(root) {
     startingPoint: normalize(restored.startingPoint || ''),
     intent: restored.intent || '',
     possibleDecision: restored.possibleDecision || '',
+    optionListAmbiguous: Boolean(restored.optionListAmbiguous),
     choices: Array.isArray(restored.choices) ? restored.choices.slice(0, MAX_SUGGESTIONS.choices) : [],
     goals: Array.isArray(restored.goals) ? restored.goals.slice(0, MAX_SUGGESTIONS.goals) : [],
     futures: Array.isArray(restored.futures) ? restored.futures.slice(0, MAX_SUGGESTIONS.futures) : [],
