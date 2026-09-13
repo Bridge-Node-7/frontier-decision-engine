@@ -26,8 +26,9 @@ const KEYWORDS = {
 
 const decisionPattern = /should i|should we|do i|do we|whether|which should|choose|decid(?:e|ing)\s+(?:between|whether)/i;
 const informationPattern = /^(how much|what is|what's|when is|where is|who is|can you explain|what does|how does|tell me about)\b/i;
-const treatmentActionPattern = /\b(?:stop|start|skip|discontinue|quit|change|increase|decrease|reduce|raise|lower)\b/i;
-const treatmentSubjectPattern = /\b(?:medication|medicine|prescription|dose|treatment|therapy)\b/i;
+const treatmentActionPattern = /\b(?:stop|start|skip|miss|discontinue|quit|change|adjust|increase|decrease|reduce|raise|lower|halve|double|ration|taper|pause|delay)\b/i;
+const treatmentSubjectPattern = /\b(?:medication|medicine|prescription|dose|treatment|therapy|insulin|chemotherapy|antidepressants?|antibiotics?|inhaler|steroids?|hormones?)\b/i;
+const dangerousRestrictionPattern = /\b(?:stop\s+eating|starv(?:e|ing)(?:\s+myself)?|skip\s+(?:all\s+)?meals?|not\s+eat(?:ing)?|fast(?:ing)?\s+(?:for\s+)?(?:(?:[2-9]|[1-9]\d+)\s+days?|(?:two|three|four|five|six|seven|eight|nine|ten|eleven|twelve)\s+days?|(?:a|one|two|three|four)\s+weeks?))\b/i;
 
 function normalize(value) {
   return String(value ?? '').replace(/\r\n?/g, '\n').trim();
@@ -82,6 +83,10 @@ function hasUnresolvedOptionList(text) {
 function hasTreatmentChangeRequest(text) {
   const clean = normalize(text);
   return treatmentActionPattern.test(clean) && treatmentSubjectPattern.test(clean);
+}
+
+function hasDangerousRestrictionRequest(text) {
+  return dangerousRestrictionPattern.test(normalize(text));
 }
 
 function extractChoices(text) {
@@ -140,7 +145,14 @@ export function responseFor(state) {
     return {
       kind: 'boundary',
       title: 'Treatment changes need qualified clinical guidance.',
-      body: 'FDE should not recommend starting, stopping, skipping, or changing prescribed treatment. A qualified clinician should guide treatment changes. FDE can still help structure cost, access, logistics, and questions to discuss with that clinician.',
+      body: 'FDE should not recommend starting, stopping, skipping, rationing, or changing prescribed treatment. A qualified clinician should guide treatment changes. FDE can still help structure cost, access, logistics, and questions to discuss with that clinician.',
+    };
+  }
+  if (hasDangerousRestrictionRequest(clean)) {
+    return {
+      kind: 'boundary',
+      title: 'Dangerous food restriction is outside FDE’s decision-comparison scope.',
+      body: 'FDE should not compare or optimize starvation, severe food restriction, or multi-day fasting as a decision. If this is about health, weight, or food restriction, qualified health guidance is the appropriate next step. FDE can still help structure safer questions about access, scheduling, or support.',
     };
   }
   if (state?.optionListAmbiguous) {
