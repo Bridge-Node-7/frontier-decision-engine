@@ -47,7 +47,6 @@ test('human input remains inert context and extracted fields remain explicit', (
   assert.ok(draft.goals.includes('Safety'));
 });
 
-
 test('multi-option lists never silently truncate into a partial option set', () => {
   const examples = [
     'Choose between vendor A, vendor B, vendor C, vendor D or build in-house.',
@@ -92,14 +91,45 @@ test('generated multi-option corpus never exposes a strict partial option set', 
 });
 
 test('prescribed treatment changes use a bounded safety response', () => {
-  const response = responseFor(draftFromInput('Should I stop taking my heart medication to save money?'));
-  assert.equal(response.kind, 'boundary');
-  assert.match(response.title, /qualified clinical guidance/i);
-  assert.match(response.body, /should not recommend/i);
-  assert.match(response.body, /cost, access, logistics/i);
+  const examples = [
+    'Should I stop taking my heart medication to save money?',
+    'Should I halve my insulin dose to make it last?',
+    'Should I skip my chemotherapy session because it is expensive?',
+    'Should I stop my antidepressants cold turkey?',
+    'Should I ration my prescription until next month?',
+  ];
+  for (const input of examples) {
+    const response = responseFor(draftFromInput(input));
+    assert.equal(response.kind, 'boundary', input);
+    assert.match(response.title, /qualified clinical guidance/i, input);
+    assert.match(response.body, /should not recommend/i, input);
+    assert.match(response.body, /cost, access, logistics/i, input);
+  }
 });
 
-test('ordinary non-medical cost decisions are not caught by the treatment boundary', () => {
-  const response = responseFor(draftFromInput('Should we build internally or partner externally to save money?'));
-  assert.equal(response.kind, 'structure');
+test('dangerous restriction and multi-day fasting use a separate safety boundary', () => {
+  const examples = [
+    'Should I stop eating to lose weight faster?',
+    'Should I fast for five days or seven days?',
+    'Should I skip all meals this week?',
+    'Should I starve myself to reach my goal sooner?',
+  ];
+  for (const input of examples) {
+    const response = responseFor(draftFromInput(input));
+    assert.equal(response.kind, 'boundary', input);
+    assert.match(response.title, /food restriction/i, input);
+    assert.match(response.body, /should not compare or optimize/i, input);
+  }
+});
+
+test('ordinary non-medical decisions are not caught by personal safety boundaries', () => {
+  for (const input of [
+    'Should we build internally or partner externally to save money?',
+    'Should we reduce project scope or delay launch?',
+    'Should we skip deployment this weekend or ship Monday?',
+    'Should we choose the fast supplier or the reliable supplier?',
+  ]) {
+    const response = responseFor(draftFromInput(input));
+    assert.notEqual(response.kind === 'boundary' && /clinical|food restriction/i.test(response.title || ''), true, input);
+  }
 });

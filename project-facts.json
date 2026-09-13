@@ -4,7 +4,7 @@
     "decision": "0.2.10",
     "semanticDecision": "0.3.0"
   },
-  "testCount": 155,
+  "testCount": 156,
   "discoveredHashRouteLiteralCount": 6,
   "browserModes": [
     "desktop-light",
