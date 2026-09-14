@@ -1,3 +1,32 @@
+# v0.5.0
+
+## Explicit Governed-Context Trust State
+
+Application version is 0.5.0. The compatible decision schema 0.2.10 and semantic decision schema 0.3.0 remain unchanged. Mission Graph Decision Context Packet 0.3.0 is the current governed-context intake contract; legacy packet 0.2.0 remains inspection-only.
+
+This release hardens the Mission Graph → FDE preparation boundary by making integrity, origin, evidence assurance, freshness, handling, and human authority visibly separate rather than allowing one trust property to imply another.
+
+### Changes
+
+- Verifies Decision Context Packet 0.3.0 payload and envelope SHA-256 locally before active preparation use.
+- Separates **Integrity**, **Origin**, **Evidence assurance**, **Freshness**, and **Authority** in the user-visible trust state.
+- Rejects self-asserted `AUTHENTICATED` origin unless a future external trust-policy verifier independently supports it; hashes do not prove authorship.
+- Rejects future-dated context and prevents review-due, expired, or freshness-not-established packets from entering active decision preparation.
+- Keeps valid but stale/review-required packets inspectable so uncertainty is visible rather than erased.
+- Preserves legacy Decision Context Packet 0.2.0 for bounded historical inspection without silently upgrading its origin or freshness semantics.
+- Keeps accepted Mission Graph context in JavaScript module memory only and discards it on refresh; it is not written into the normal Decision Lab autosave path.
+- Preserves `FDE_PREPARATION_ONLY`, PRIVATE/PROTECTED handling boundaries, and explicit accountable-human authority.
+- Adds adversarial regressions for payload tamper, freshness-envelope tamper, future dating, unsupported compatibility/classification, self-asserted origin authentication, release escalation, and one-shot memory handling.
+- Extends browser verification for the governed-context trust UX without changing deterministic Decision Lab ranking or the published decision schemas.
+
+### Decision boundary
+
+A valid packet is preparation context, not a decision, authorization, certification, qualification, or authenticated statement of external truth. FDE does not make the consequential decision. A person remains accountable for what enters the canonical decision model and for the final decision.
+
+### Release date
+
+2026-09-14
+
 # v0.4.0
 
 ## Governed Mission Context
