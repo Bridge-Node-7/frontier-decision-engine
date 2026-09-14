@@ -29,6 +29,11 @@ const informationPattern = /^(how much|what is|what's|when is|where is|who is|ca
 const treatmentActionPattern = /\b(?:stop|start|skip|miss|discontinue|quit|change|adjust|increase|decrease|reduce|raise|lower|halve|double|ration|taper|pause|delay)\b/i;
 const treatmentSubjectPattern = /\b(?:medication|medicine|prescription|dose|treatment|therapy|insulin|chemotherapy|antidepressants?|antibiotics?|inhaler|steroids?|hormones?)\b/i;
 const dangerousRestrictionPattern = /\b(?:stop\s+eating|starv(?:e|ing)(?:\s+myself)?|skip\s+(?:all\s+)?meals?|not\s+eat(?:ing)?|fast(?:ing)?\s+(?:for\s+)?(?:(?:[2-9]|[1-9]\d+)\s+days?|(?:two|three|four|five|six|seven|eight|nine|ten|eleven|twelve)\s+days?|(?:a|one|two|three|four)\s+weeks?))\b/i;
+const selfDosingSubjectPattern = /\b(?:medications?|medicines?|prescriptions?|drugs?|substances?|doses?|pills?|tablets?|capsules?|ibuprofen|acetaminophen|paracetamol|aspirin|naproxen|diphenhydramine|benadryl|nyquil|dayquil|cough\s+syrup|cough\s+medicine|antihistamines?|painkillers?|pain\s+relievers?|sleep\s+aids?|supplements?)\b/i;
+const quantityComparisonPattern = /\b(?:\d+(?:\.\d+)?|one|two|three|four|five|six|seven|eight|nine|ten)\b[^.!?\n]{0,48}\b(?:or|versus|vs\.?|instead\s+of|rather\s+than)\b[^.!?\n]{0,48}\b(?:\d+(?:\.\d+)?|one|two|three|four|five|six|seven|eight|nine|ten)\b/i;
+const ingestionActionPattern = /\b(?:take|taking|eat|eating|drink|drinking|swallow|swallowing|ingest|ingesting|dose|dosing|redose|redosing)\b/i;
+const doseUnitPattern = /\b(?:mg|g|mcg|ug|ml|units?|pills?|tablets?|capsules?|doses?)\b/i;
+const emergencyDelayPattern = /\b(?:(?:go|head|drive(?:\s+myself)?|take\s+\w+|bring\s+\w+)\s+(?:to\s+)?(?:the\s+)?(?:ER|emergency\s+room|emergency\s+department|urgent\s+care|hospital)|seek\s+(?:emergency|urgent)\s+care|call\s+(?:911|an\s+ambulance|emergency\s+services))\b[^.!?\n]{0,120}\b(?:or|versus|vs\.?|instead\s+of)\b[^.!?\n]{0,120}\b(?:wait(?:\s+it\s+out)?|delay|later|tomorrow|stay\s+home)\b|\b(?:wait(?:\s+it\s+out)?|delay|later|tomorrow|stay\s+home)\b[^.!?\n]{0,120}\b(?:or|versus|vs\.?|instead\s+of)\b[^.!?\n]{0,120}\b(?:(?:go|head|drive(?:\s+myself)?|take\s+\w+|bring\s+\w+)\s+(?:to\s+)?(?:the\s+)?(?:ER|emergency\s+room|emergency\s+department|urgent\s+care|hospital)|seek\s+(?:emergency|urgent)\s+care|call\s+(?:911|an\s+ambulance|emergency\s+services))\b/i;
 
 function normalize(value) {
   return String(value ?? '').replace(/\r\n?/g, '\n').trim();
@@ -87,6 +92,16 @@ function hasTreatmentChangeRequest(text) {
 
 function hasDangerousRestrictionRequest(text) {
   return dangerousRestrictionPattern.test(normalize(text));
+}
+
+function hasSelfDosingEscalationRequest(text) {
+  const clean = normalize(text);
+  if (!quantityComparisonPattern.test(clean)) return false;
+  return selfDosingSubjectPattern.test(clean) || (ingestionActionPattern.test(clean) && doseUnitPattern.test(clean));
+}
+
+function hasEmergencyCareDelayRequest(text) {
+  return emergencyDelayPattern.test(normalize(text));
 }
 
 function extractChoices(text) {
@@ -153,6 +168,20 @@ export function responseFor(state) {
       kind: 'boundary',
       title: 'Dangerous food restriction is outside FDE’s decision-comparison scope.',
       body: 'FDE should not compare or optimize starvation, severe food restriction, or multi-day fasting as a decision. If this is about health, weight, or food restriction, qualified health guidance is the appropriate next step. FDE can still help structure safer questions about access, scheduling, or support.',
+    };
+  }
+  if (hasSelfDosingEscalationRequest(clean)) {
+    return {
+      kind: 'boundary',
+      title: 'Self-dosing and quantity escalation need qualified medication guidance.',
+      body: 'FDE should not compare or optimize increasing amounts of a medicine or other ingestible substance. A qualified pharmacist or clinician should guide dosing questions. FDE can still help structure cost, access, refill, logistics, and questions to ask.',
+    };
+  }
+  if (hasEmergencyCareDelayRequest(clean)) {
+    return {
+      kind: 'boundary',
+      title: 'Potential emergency-care delay is outside FDE’s comparison scope.',
+      body: 'FDE should not compare delaying potentially urgent evaluation, waiting out a possible emergency, or self-transport versus emergency care. Use a qualified real-time clinical or emergency service to determine the appropriate next step. FDE can still help with non-urgent logistics after immediate safety is addressed.',
     };
   }
   if (state?.optionListAmbiguous) {
