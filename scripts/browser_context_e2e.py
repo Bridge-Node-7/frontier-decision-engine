@@ -61,7 +61,7 @@ def packet_fixture() -> dict:
             "payload_sha256": "0" * 64,
             "envelope_sha256": "0" * 64,
             "payload_scope": "decision-relevant packet content excluding integrity, origin, freshness, and provenance",
-            "envelope_scope": "packet excluding integrity.envelope_sha256 and origin.attestation_ref",
+            "envelope_scope": "packet excluding the envelope digest field and origin.attestation_ref",
         },
         "origin": {
             "authentication_state": "UNAUTHENTICATED",
