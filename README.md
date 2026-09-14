@@ -24,9 +24,11 @@ The browser does not call a remote AI provider, retrieve outside facts, invent e
 
 ## Governed Mission Graph context
 
-The **Governed context** route accepts Mission Graph Decision Context Packet 0.2.0 for `FDE_PREPARATION_ONLY` use. FDE verifies the packet locally, including its canonical SHA-256 content digest, and exposes what is known, assumed, disputed, unknown, stale, needs proof, or may change.
+The **Governed context** route accepts Mission Graph Decision Context Packet 0.3.0 for `FDE_PREPARATION_ONLY` use. FDE verifies payload and envelope SHA-256 integrity locally while keeping **integrity, origin, evidence assurance, freshness, and human authority** as separate trust properties.
 
-Only PRIVATE or PROTECTED packets with explicit non-release handling and no recorded-decision claim are accepted. Accepted context stays in JavaScript page memory only and is discarded on refresh; it is not placed in normal browser autosave or silently promoted into the canonical decision model. Source-lineage details remain collapsed until the user deliberately opens **Show me why**.
+Only PRIVATE or PROTECTED packets with explicit non-release handling are accepted. A self-asserted authenticated origin is rejected unless a future external trust-policy verifier can independently establish it; a valid digest proves integrity, not authorship. Future-dated context fails closed. Review-due, expired, or freshness-not-established context remains inspectable but cannot enter active decision preparation. Legacy Decision Context Packet 0.2.0 remains inspection-only and is never silently upgraded to current trust semantics.
+
+Accepted context stays in JavaScript page memory only and is discarded on refresh; it is not placed in normal browser autosave or silently promoted into the canonical decision model. Source lineage and packet identity remain behind **Show me why**. The accountable human remains the decision authority.
 
 ## Decision Lab
 
@@ -48,7 +50,7 @@ The repository includes a synthetic critical-material source-qualification case 
 
 The application is static and browser-local. It has no backend, account system, analytics, telemetry, cookies, remote AI provider, or default upload endpoint. Session recovery and browser autosave are convenience features for ordinary FDE drafts, not encrypted confidential storage. Governed Mission Graph context uses a separate memory-only path.
 
-FDE provides decision support. It does not approve, authorize, certify, qualify, consent, or make an investment decision. Human final decision authority is preserved.
+FDE provides decision support. It does not approve, authorize, certify, qualify, consent, authenticate unsigned evidence, or make an investment or other consequential decision. Human final decision authority is preserved.
 
 ## Verify
 

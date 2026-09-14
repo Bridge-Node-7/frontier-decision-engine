@@ -34,8 +34,10 @@ def main() -> int:
     decision = load_json("examples/phenomena-second-station/decision.fde.json")
     semantic_schema = load_json("schemas/decision-0.3.0.schema.json")
     deployed_semantic_schema = load_json("site/schemas/decision-0.3.0.schema.json")
-    mission_context_schema = load_json("schemas/mission-graph-decision-context-0.2.0.schema.json")
-    deployed_mission_context_schema = load_json("site/schemas/mission-graph-decision-context-0.2.0.schema.json")
+    legacy_mission_context_schema = load_json("schemas/mission-graph-decision-context-0.2.0.schema.json")
+    deployed_legacy_mission_context_schema = load_json("site/schemas/mission-graph-decision-context-0.2.0.schema.json")
+    mission_context_schema = load_json("schemas/mission-graph-decision-context-0.3.0.schema.json")
+    deployed_mission_context_schema = load_json("site/schemas/mission-graph-decision-context-0.3.0.schema.json")
     version = str(package.get("version", ""))
     if not re.fullmatch(r"\d+\.\d+\.\d+", version):
         fail(f"invalid package version: {version!r}", errors)
@@ -93,24 +95,55 @@ def main() -> int:
     if semantic_schema != deployed_semantic_schema:
         fail("source and deployed semantic decision schemas differ", errors)
 
-    if mission_context_schema.get("$id") != "urn:bn7:decision-context:0.2.0":
-        fail("Mission Graph Decision Context Packet 0.2.0 consumer schema identity is invalid", errors)
+    if legacy_mission_context_schema.get("$id") != "urn:bn7:decision-context:0.2.0":
+        fail("legacy Mission Graph Decision Context Packet 0.2.0 consumer schema identity is invalid", errors)
+    legacy_properties = legacy_mission_context_schema.get("properties", {})
+    if legacy_properties.get("schema_version", {}).get("const") != "0.2.0":
+        fail("legacy Mission Graph Decision Context Packet version contract changed unexpectedly", errors)
+    if legacy_properties.get("compatibility", {}).get("const") != "FDE_PREPARATION_ONLY":
+        fail("legacy Mission Graph FDE preparation boundary changed unexpectedly", errors)
+    if legacy_properties.get("classification", {}).get("enum") != ["PRIVATE", "PROTECTED"]:
+        fail("legacy Mission Graph context classification boundary changed unexpectedly", errors)
+    if legacy_mission_context_schema != deployed_legacy_mission_context_schema:
+        fail("source and deployed legacy Mission Graph Decision Context schemas differ", errors)
+
+    if mission_context_schema.get("$id") != "urn:bn7:decision-context:0.3.0":
+        fail("Mission Graph Decision Context Packet 0.3.0 consumer schema identity is invalid", errors)
     properties = mission_context_schema.get("properties", {})
-    if properties.get("schema_version", {}).get("const") != "0.2.0":
-        fail("Mission Graph Decision Context Packet version contract changed unexpectedly", errors)
+    if properties.get("schema_version", {}).get("const") != "0.3.0":
+        fail("Mission Graph Decision Context Packet 0.3.0 version contract is invalid", errors)
     if properties.get("compatibility", {}).get("const") != "FDE_PREPARATION_ONLY":
         fail("Mission Graph FDE preparation boundary changed unexpectedly", errors)
     if properties.get("classification", {}).get("enum") != ["PRIVATE", "PROTECTED"]:
         fail("Mission Graph context classification boundary changed unexpectedly", errors)
+    handling = properties.get("handling", {}).get("properties", {})
+    if handling.get("government_classification", {}).get("const") is not False:
+        fail("Mission Graph internal handling label could be confused with government classification", errors)
+    if handling.get("release_eligible", {}).get("const") is not False:
+        fail("Mission Graph context release boundary changed unexpectedly", errors)
+    integrity = properties.get("integrity", {}).get("properties", {})
+    if integrity.get("payload_scope", {}).get("const") != "decision-relevant packet content excluding integrity, origin, freshness, and provenance":
+        fail("Mission Graph payload digest scope changed unexpectedly", errors)
+    if integrity.get("envelope_scope", {}).get("const") != "packet excluding the envelope digest field and origin.attestation_ref":
+        fail("Mission Graph envelope digest scope changed unexpectedly", errors)
+    origin = properties.get("origin", {}).get("properties", {})
+    if origin.get("authentication_state", {}).get("enum") != ["UNAUTHENTICATED", "AUTHENTICATED"]:
+        fail("Mission Graph origin-authentication contract changed unexpectedly", errors)
     if mission_context_schema != deployed_mission_context_schema:
-        fail("source and deployed Mission Graph Decision Context schemas differ", errors)
+        fail("source and deployed Mission Graph Decision Context 0.3.0 schemas differ", errors)
+
+    governed_context = load_text("site/src/lib/governed-context.js")
+    if "const ENVELOPE_SCOPE = 'packet excluding the envelope digest field and origin.attestation_ref';" not in governed_context:
+        fail("runtime governed-context envelope scope is not aligned with the 0.3.0 consumer schema", errors)
+    if "Public FDE cannot accept a self-asserted authenticated origin" not in governed_context:
+        fail("runtime governed-context origin boundary is missing", errors)
 
     if errors:
         print("VERSION INTEGRITY FAILED")
         for error in errors:
             print(f"- {error}")
         return 1
-    print(f"VERSION INTEGRITY PASS — application {version}; legacy decision schema {schema}; semantic decision schema 0.3.0; Mission Graph context 0.2.0")
+    print(f"VERSION INTEGRITY PASS — application {version}; legacy decision schema {schema}; semantic decision schema 0.3.0; Mission Graph context 0.3.0 (legacy 0.2.0 inspection-only)")
     return 0
 
 if __name__ == "__main__":
