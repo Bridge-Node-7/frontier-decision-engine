@@ -31,6 +31,7 @@ jobs:
           python3 -m playwright install --with-deps chromium
       - name: Refresh generated verification inputs
         run: |
+          npm run manifest
           npm run facts
           npm run manifest
       - name: Run verification suite
