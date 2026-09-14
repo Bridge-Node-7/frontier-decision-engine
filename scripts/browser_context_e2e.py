@@ -9,6 +9,7 @@ import json
 import os
 import socketserver
 import threading
+from copy import deepcopy
 from pathlib import Path
 
 from playwright.sync_api import sync_playwright
@@ -26,13 +27,51 @@ def browser_executable() -> str | None:
     return os.environ.get("CHROME_BIN") or None
 
 
+def _digest(value: dict) -> str:
+    canonical = json.dumps(
+        value,
+        ensure_ascii=False,
+        sort_keys=True,
+        separators=(",", ":"),
+    ).encode("utf-8")
+    return hashlib.sha256(canonical).hexdigest()
+
+
 def packet_fixture() -> dict:
     packet = {
-        "schema_version": "0.2.0",
+        "schema_version": "0.3.0",
         "packet_id": "DCP-E2E-001",
         "compatibility": "FDE_PREPARATION_ONLY",
         "classification": "PRIVATE",
-        "handling": {"release_eligible": False, "instruction": "Internal preparation context only."},
+        "handling": {
+            "label": "BN7_PRIVATE",
+            "government_classification": False,
+            "release_eligible": False,
+            "instruction": "BN7 internal preparation context only; not a government classification marking.",
+        },
+        "freshness": {
+            "issued_at": "2026-09-13T17:00:00Z",
+            "source_as_of": "2026-09-13T16:00:00Z",
+            "review_due_at": "2099-01-01T00:00:00Z",
+            "valid_until": "2099-12-31T23:59:59Z",
+            "supersedes_packet_id": None,
+            "state": "CURRENT",
+        },
+        "integrity": {
+            "payload_sha256": "0" * 64,
+            "envelope_sha256": "0" * 64,
+            "payload_scope": "decision-relevant packet content excluding integrity, origin, freshness, and provenance",
+            "envelope_scope": "packet excluding integrity.envelope_sha256 and origin.attestation_ref",
+        },
+        "origin": {
+            "authentication_state": "UNAUTHENTICATED",
+            "issuer_ref": "mission-graph:MG-E2E-001",
+            "attestation_ref": None,
+        },
+        "evidence_assurance": {
+            "state": "REVIEW_REQUIRED",
+            "limitations": ["synthetic unresolved evidence remains"],
+        },
         "source_graph_id": "MG-E2E-001",
         "question": "Which pathway should the accountable human review?",
         "decision_owner": "Human Owner",
@@ -57,28 +96,23 @@ def packet_fixture() -> dict:
         ],
         "attention_queue": [],
         "conditions_to_watch": ["Supplier status changes"],
-        "content_sha256": "0" * 64,
         "provenance": {
             "source_record_id": "CLM-E2E-001",
             "source_record_sha256": "a" * 64,
-            "generated_at": "2026-09-13T17:00:00+00:00",
-            "digest_scope": "packet excluding provenance.generated_at and content_sha256",
             "model_type": "evidence-bound interoperability context",
             "probability_model_used": False,
             "values_are_analyst_assigned": False,
             "fde_recorded_decision": False,
         },
     }
-    digest_value = json.loads(json.dumps(packet))
-    digest_value.pop("content_sha256", None)
-    digest_value["provenance"].pop("generated_at", None)
-    canonical = json.dumps(
-        digest_value,
-        ensure_ascii=False,
-        sort_keys=True,
-        separators=(",", ":"),
-    ).encode("utf-8")
-    packet["content_sha256"] = hashlib.sha256(canonical).hexdigest()
+    payload = deepcopy(packet)
+    for key in ("integrity", "origin", "freshness", "provenance"):
+        payload.pop(key, None)
+    packet["integrity"]["payload_sha256"] = _digest(payload)
+    envelope = deepcopy(packet)
+    envelope["integrity"].pop("envelope_sha256", None)
+    envelope["origin"].pop("attestation_ref", None)
+    packet["integrity"]["envelope_sha256"] = _digest(envelope)
     return packet
 
 
@@ -105,13 +139,17 @@ def run() -> None:
                     assert page.title() == "Governed Context | Frontier Decision Engine"
                     assert page.get_by_role("heading", name="Open governed Mission Graph context").is_visible()
                     assert page.get_by_text("No upload occurs. The file is read only by this browser page.", exact=True).is_visible()
+                    assert page.get_by_text("BN7 PRIVATE/PROTECTED are internal handling labels, not U.S. Government classification markings.", exact=False).is_visible()
 
                     packet = packet_fixture()
                     raw = json.dumps(packet, ensure_ascii=False).encode("utf-8")
                     page.locator("#mission-context-file").set_input_files(
                         {"name": "decision-context.json", "mimeType": "application/json", "buffer": raw}
                     )
-                    page.get_by_text("SHA-256 verified", exact=True).wait_for(state="visible")
+                    page.get_by_text("Integrity VERIFIED", exact=True).wait_for(state="visible")
+                    assert page.get_by_text("Origin UNAUTHENTICATED", exact=True).is_visible()
+                    assert page.get_by_text("Freshness CURRENT", exact=True).is_visible()
+                    assert page.get_by_role("heading", name="Trust state").is_visible()
                     assert page.get_by_role("heading", name="What we know").is_visible()
                     assert page.get_by_text("E-1: Direct observation", exact=True).is_visible()
                     assert page.get_by_role("heading", name="What remains assumed").is_visible()
@@ -127,8 +165,11 @@ def run() -> None:
                     page.get_by_text("Show me why", exact=True).click()
                     assert lineage.get_attribute("open") is not None
                     assert "DCP-E2E-001" in lineage.inner_text()
+                    assert "Envelope SHA-256" in lineage.inner_text()
 
-                    page.get_by_role("button", name="Open Decision Lab with this context").click()
+                    open_button = page.get_by_role("button", name="Open Decision Lab with this context")
+                    assert open_button.is_enabled()
+                    open_button.click()
                     page.get_by_text("Verified Mission Graph preparation context", exact=True).wait_for(state="visible")
                     assert "DCP-E2E-001" not in page.evaluate("JSON.stringify(Object.fromEntries(Object.entries(localStorage)))")
                     assert "DCP-E2E-001" not in page.evaluate("JSON.stringify(Object.fromEntries(Object.entries(sessionStorage)))")
