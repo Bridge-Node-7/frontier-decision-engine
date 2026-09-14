@@ -15,3 +15,11 @@ updates:
     groups:
       python-test-tooling:
         patterns: ["*"]
+
+  - package-ecosystem: npm
+    directory: /
+    schedule:
+      interval: monthly
+    groups:
+      npm:
+        patterns: ["*"]
