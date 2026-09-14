@@ -117,7 +117,7 @@ test('payload tamper fails closed', async () => {
 
 test('freshness tamper fails envelope integrity', async () => {
   const packet = await packetFixture();
-  packet.freshness.review_due_at = '2026-09-20T00:00:00Z';
+  packet.freshness.source_as_of = '2026-09-13T16:30:00Z';
   const result = await validateDecisionContextPacket(packet, { now: NOW });
   assert.equal(result.valid, false);
   assert.ok(result.errors.some((message) => /envelope digest/i.test(message)));
