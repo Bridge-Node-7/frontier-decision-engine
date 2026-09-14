@@ -122,14 +122,49 @@ test('dangerous restriction and multi-day fasting use a separate safety boundary
   }
 });
 
+test('self-dosing quantity escalation uses a bounded medication-safety response', () => {
+  const examples = [
+    'Should I take 2 ibuprofen or 4 ibuprofen for this?',
+    'Should I take 500 mg or 1000 mg acetaminophen?',
+    'Should I use one dose or two doses of cough medicine?',
+    'Should I take one tablet or three tablets of this medication?',
+  ];
+  for (const input of examples) {
+    const response = responseFor(draftFromInput(input));
+    assert.equal(response.kind, 'boundary', input);
+    assert.match(response.title, /self-dosing|quantity escalation/i, input);
+    assert.match(response.body, /should not compare or optimize/i, input);
+    assert.match(response.body, /pharmacist or clinician/i, input);
+  }
+});
+
+test('potential emergency-care delay uses a bounded real-time safety response', () => {
+  const examples = [
+    'Should I drive myself to the ER or wait it out?',
+    'Should I go to urgent care now or wait until morning?',
+    'Should I call 911 or wait it out?',
+    'Should I wait it out or head to the emergency room?',
+  ];
+  for (const input of examples) {
+    const response = responseFor(draftFromInput(input));
+    assert.equal(response.kind, 'boundary', input);
+    assert.match(response.title, /emergency-care delay/i, input);
+    assert.match(response.body, /should not compare delaying/i, input);
+    assert.match(response.body, /real-time clinical or emergency service/i, input);
+  }
+});
+
 test('ordinary non-medical decisions are not caught by personal safety boundaries', () => {
   for (const input of [
     'Should we build internally or partner externally to save money?',
     'Should we reduce project scope or delay launch?',
     'Should we skip deployment this weekend or ship Monday?',
     'Should we choose the fast supplier or the reliable supplier?',
+    'Should I buy 2 servers or 4 servers?',
+    'Should we use 2 GB or 4 GB of memory?',
+    'Should we delay the emergency response software release or ship now?',
   ]) {
     const response = responseFor(draftFromInput(input));
-    assert.notEqual(response.kind === 'boundary' && /clinical|food restriction/i.test(response.title || ''), true, input);
+    assert.notEqual(response.kind === 'boundary' && /clinical|food restriction|self-dosing|quantity escalation|emergency-care delay/i.test(response.title || ''), true, input);
   }
 });
