@@ -1,3 +1,27 @@
+# v0.5.1
+
+## Public Surface Alignment
+
+Application version is 0.5.1. The compatible decision schema 0.2.10, semantic decision schema 0.3.0, and Mission Graph Decision Context Packet 0.3.0 contract remain unchanged.
+
+This release advances the current reviewed source into a coherent stable distribution after public-surface alignment and deterministic site-integrity refresh. Decision logic, comparison semantics, browser-local privacy, governed-context trust semantics, and accountable human decision authority are unchanged.
+
+### Changes
+
+- Advances the application identity to 0.5.1 across package, citation, runtime, project facts, and release metadata.
+- Carries forward the current solution-first public experience and refreshed deterministic site-integrity evidence.
+- Preserves separate integrity, origin, evidence assurance, freshness, handling, and human-authority trust properties for governed context.
+- Preserves Decision Context Packet 0.3.0 for `FDE_PREPARATION_ONLY` use and legacy packet 0.2.0 for historical inspection.
+- Preserves decision schemas 0.2.10 and 0.3.0, deterministic ranking, saved-work protections, browser-local operation, and human final decision authority.
+
+### Decision boundary
+
+FDE structures and calculates for human-governed decision preparation. Accountable people retain authority over what enters the canonical decision model and over the final consequential decision.
+
+### Release date
+
+2026-09-16
+
 # v0.5.0
 
 ## Explicit Governed-Context Trust State
@@ -13,7 +37,7 @@ This release hardens the Mission Graph → FDE preparation boundary by making in
 - Rejects self-asserted `AUTHENTICATED` origin unless a future external trust-policy verifier independently supports it; hashes do not prove authorship.
 - Rejects future-dated context and prevents review-due, expired, or freshness-not-established packets from entering active decision preparation.
 - Keeps valid but stale/review-required packets inspectable so uncertainty is visible rather than erased.
-- Preserves legacy Decision Context Packet 0.2.0 for bounded historical inspection without silently upgrading its origin or freshness semantics.
+- Preserves legacy Decision Context Packet 0.2.0 for historical inspection without silently upgrading its origin or freshness semantics.
 - Keeps accepted Mission Graph context in JavaScript module memory only and discards it on refresh; it is not written into the normal Decision Lab autosave path.
 - Preserves `FDE_PREPARATION_ONLY`, PRIVATE/PROTECTED handling boundaries, and explicit accountable-human authority.
 - Adds adversarial regressions for payload tamper, freshness-envelope tamper, future dating, unsupported compatibility/classification, self-asserted origin authentication, release escalation, and one-shot memory handling.
@@ -33,7 +57,7 @@ A valid packet is preparation context, not a decision, authorization, certificat
 
 Application version is 0.4.0. The compatible decision schema 0.2.10 and semantic decision schema 0.3.0 remain unchanged.
 
-This release adds a bounded, browser-local consumer for Mission Graph Decision Context Packet 0.2.0 while preserving FDE's human decision authority and existing deterministic comparison semantics.
+This release adds a browser-local consumer for Mission Graph Decision Context Packet 0.2.0 while preserving FDE's human decision authority and existing deterministic comparison semantics.
 
 ### Changes
 
@@ -96,7 +120,7 @@ This release completes the first-run FDE experience around one natural input whi
 - After Continue, produces exactly one of three truthful outcomes: supportable decision structure, one useful clarification question, or an explicit capability boundary with a useful next action.
 - Shows only supportable first-run fields under the human-facing labels Decision, What matters, Options, and What may change.
 - Keeps provisional structure separate from confirmed model inputs and asks for human confirmation before any handoff to the formal comparison.
-- Requests only the next missing explicit input required for the bounded deterministic comparison; no hidden defaults or fabricated topology are introduced.
+- Requests only the next missing explicit input required for the deterministic comparison; no hidden defaults or fabricated topology are introduced.
 - Preserves saved Decision Lab work and refuses silent replacement when browser-local work already exists.
 - Keeps the Appearance control stable by name while exposing current and next appearance state accessibly.
 - Moves Strategic Inquiry out of the working application header and keeps it available in the footer.
