@@ -44,7 +44,7 @@ This release adds a bounded, browser-local consumer for Mission Graph Decision C
 - Adds a Show me why lineage view for packet, source graph, source record, and SHA-256 identifiers.
 - Keeps accepted governed context in JavaScript module memory only; it is not written to normal FDE local/session storage and is discarded on refresh.
 - Uses a one-shot handoff into Decision Lab as visible preparation context only. It is not autosaved, scored, promoted to evidence, or recorded as the human decision.
-- Vendors the Mission Graph Decision Context 0.2.0 consumer schema for offline verification and hibernation/reentry clarity.
+- Vendors the Mission Graph Decision Context 0.2.0 consumer schema for offline verification and lifecycle clarity.
 - Adds adversarial regressions for digest mismatch, unsupported compatibility/classification, release escalation, recorded-decision escalation, epistemic category preservation, and one-shot memory handling.
 
 ### Decision boundary

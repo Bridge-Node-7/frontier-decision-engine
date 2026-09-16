@@ -4,9 +4,9 @@ title: "method: "
 labels: [method]
 body:
   - type: textarea
-    id: problem
+    id: objective
     attributes:
-      label: Which methodological problem does this solve?
+      label: Which methodological objective does this advance?
     validations:
       required: true
   - type: textarea
