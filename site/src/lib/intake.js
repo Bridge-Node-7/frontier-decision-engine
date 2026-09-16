@@ -2,7 +2,7 @@ export const RESCUE_MAX_INPUT_CHARS = 12000;
 
 export const RESCUE_INTENTS = Object.freeze([
   { id: 'find-decision', label: 'Figure out what I need to decide' },
-  { id: 'untangle', label: 'Untangle the problem' },
+  { id: 'untangle', label: 'Clarify what matters' },
   { id: 'compare', label: 'Compare choices I already have' },
   { id: 'missing', label: "Figure out what I'm missing" },
   { id: 'urgent', label: 'I need to act soon' },
