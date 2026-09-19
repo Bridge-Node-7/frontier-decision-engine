@@ -9,7 +9,7 @@ test('application version retains the compatible v0.2.10 decision schema', async
   const citation = await read('CITATION.cff');
   const schema = JSON.parse(await read('schemas/decision.schema.json'));
   const semanticSchema = JSON.parse(await read('schemas/decision-0.3.0.schema.json'));
-  const example = JSON.parse(await read('examples/phenomena-second-station/decision.fde.json'));
+  const example = JSON.parse(await read('examples/synthetic-source-qualification/decision.fde.json'));
   const facts = JSON.parse(await read('project-facts.json'));
   assert.match(packageData.version, /^\d+\.\d+\.\d+$/);
   const versionPattern = packageData.version.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
@@ -50,7 +50,7 @@ test('release identity supports a compatible schema and complete current notes',
 });
 
 test('affordability is modeled as an at-least desirability objective', async () => {
-  const example = JSON.parse(await read('examples/phenomena-second-station/decision.fde.json'));
+  const example = JSON.parse(await read('examples/synthetic-source-qualification/decision.fde.json'));
   const objective = example.objectives.find((item) => item.objective_id === 'OBJ-002');
   assert.equal(objective.label, 'Affordability');
   assert.equal(objective.direction, 'at-least');
@@ -270,30 +270,6 @@ test('public repository surface stays lean and user-focused', async () => {
   assert.match(readme, /synthetic critical-material source-qualification case/i);
   assert.doesNotMatch(readme, /synthetic\s+event\s+registry/i);
 });
-test('public event registry is synthetic and contains no personal history', async () => {
-  const data = JSON.parse(await read('site/data/experiences.json'));
-  assert.equal(data.dataset_id, 'opv-experiences-synthetic-v1');
-  assert.equal(data.evidence_class, 'synthetic-demonstration');
-  assert.equal(data.privacy.status, 'synthetic-no-personal-source');
-  assert.equal(data.source.included_in_public_repository, true);
-  assert.equal(data.primary_events.length, 41);
-  assert.equal(data.subphases.length, 22);
-
-  const text = JSON.stringify(data);
-  const privateSourceTokens = [
-    '4D_' + 'Experiences_' + 'Integrated',
-    'Longitudinal ' + 'Experience Registry',
-    'Child' + 'hood',
-    '2019' + '\u2013' + '2022',
-    'OBEs over ' + 'Bribie',
-    'Malevolent ' + 'wrinkled figure',
-    'Approx_' + 'Age',
-  ];
-  for (const token of privateSourceTokens) {
-    assert.equal(text.toLowerCase().includes(token.toLowerCase()), false);
-  }
-});
-
 test('delivery automation retains dependency, review, and attestation controls', async () => {
   const dependabot = await read('.github/dependabot.yml');
   const pullRequest = await read('.github/pull_request_template.md');

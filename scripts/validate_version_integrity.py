@@ -31,7 +31,7 @@ def main() -> int:
     package = load_json("package.json")
     lock = load_json("package-lock.json")
     facts = load_json("project-facts.json")
-    decision = load_json("examples/phenomena-second-station/decision.fde.json")
+    decision = load_json("examples/synthetic-source-qualification/decision.fde.json")
     semantic_schema = load_json("schemas/decision-0.3.0.schema.json")
     deployed_semantic_schema = load_json("site/schemas/decision-0.3.0.schema.json")
     legacy_mission_context_schema = load_json("schemas/mission-graph-decision-context-0.2.0.schema.json")
