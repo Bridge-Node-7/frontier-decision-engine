@@ -29,7 +29,7 @@ required = [
     "site/src/lib/case.js", "site/src/lib/decision-core.js", "site/src/lib/decision.js", "site/src/lib/intake.js",
     "site/src/lib/persistence.js", "site/src/lib/recording.js", "site/src/lib/semantics.js", "site/src/lib/synthesis.js",
     "site/src/decision-map.js",
-    "scripts/browser_e2e.py", "scripts/browser_rescue_e2e.py", "scripts/browser_closeout_regressions.py",
+    "scripts/browser_e2e.py", "scripts/browser_rescue_e2e.py", "scripts/browser_release_regressions.py",
     "scripts/validate_version_integrity.py", "scripts/package_release.py", "scripts/verify_release_tag.py",
     "tests/universal-response.test.js",
     "requirements-dev.txt", ".github/workflows/ci.yml", ".github/workflows/pages.yml", ".github/workflows/release.yml",
