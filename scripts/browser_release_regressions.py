@@ -108,7 +108,7 @@ def assert_boundaries(page):
     fixture = page.evaluate("""
     () => {
       const host = document.createElement('section');
-      host.id = 'closeout-boundary-fixture';
+      host.id = 'release-boundary-fixture';
       host.style.cssText = 'position:fixed;left:4px;bottom:4px;width:340px;padding:16px;background:var(--surface);z-index:99999;display:grid;gap:8px';
       host.innerHTML = `
         <button id="v-button" type="button">Button</button>
@@ -138,7 +138,7 @@ def assert_boundaries(page):
             effective = composite(border, adjacent) if border[3] < 1 else border
             ratio = contrast(effective, adjacent)
             assert ratio >= 3.0, f"{theme} {selector} boundary contrast {ratio:.2f}:1"
-    page.evaluate("document.querySelector('#closeout-boundary-fixture').remove()")
+    page.evaluate("document.querySelector('#release-boundary-fixture').remove()")
 
 
 def assert_404(page, base):
@@ -158,7 +158,7 @@ def assert_404(page, base):
 
 
 def assert_live_invalid(page, base):
-    invalid = urljoin(base, f"invalid-closeout-path-{int(time.time())}")
+    invalid = urljoin(base, f"invalid-release-path-{int(time.time())}")
     page.goto(invalid, wait_until="networkidle")
     assert page.locator("h1").count() == 1
     assert "Page not found" in page.locator("h1").inner_text()
@@ -180,7 +180,7 @@ def main():
                 assert_menu(page)
                 assert_boundaries(page)
                 assert_live_invalid(page, live_base)
-                print("LIVE CLOSEOUT REGRESSIONS PASS")
+                print("LIVE RELEASE REGRESSIONS PASS")
             else:
                 with local_server() as base:
                     page = browser.new_page(viewport={"width": 390, "height": 844})
@@ -188,7 +188,7 @@ def main():
                     assert_menu(page)
                     assert_boundaries(page)
                     assert_404(page, base)
-                    print("LOCAL CLOSEOUT REGRESSIONS PASS")
+                    print("LOCAL RELEASE REGRESSIONS PASS")
         finally:
             browser.close()
 

@@ -91,7 +91,7 @@ test('browser end-to-end harness covers the retained Decision Lab surface', asyn
   assert.match(runner, /decision-step-heading-/);
   assert.equal(runner.includes('#case-step-heading:focus'), false);
   assert.match(packageData.scripts.check, /test:e2e/);
-  assert.match(packageData.scripts.check, /test:closeout/);
+  assert.match(packageData.scripts.check, /test:release/);
 });
 test('cross-platform manifest generation uses file URL conversion rather than URL pathname', async () => {
   const manifest = await read('scripts/build-manifest.mjs');
@@ -196,7 +196,7 @@ test('Pages workflow runs the complete UX gate against the deployed HTTPS origin
   assert.match(pages, /steps\.deployment\.outputs\.page_url/);
   assert.match(pages, /FDE_BASE_URL:/);
   assert.match(pages, /python3 scripts\/browser_e2e_release\.py/);
-  assert.match(pages, /python3 scripts\/browser_closeout_regressions\.py/);
+  assert.match(pages, /python3 scripts\/browser_release_regressions\.py/);
   assert.match(releaseRunner, /import browser_e2e as suite/);
   assert.match(releaseRunner, /suite\.main\(\)/);
   assert.match(runner, /FDE_BASE_URL/);

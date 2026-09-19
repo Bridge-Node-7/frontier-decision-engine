@@ -55,4 +55,4 @@ jobs:
           FDE_BASE_URL: ${{ steps.deployment.outputs.page_url }}
         run: |
           python3 scripts/browser_e2e_release.py
-          python3 scripts/browser_closeout_regressions.py
+          python3 scripts/browser_release_regressions.py
