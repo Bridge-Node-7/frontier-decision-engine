@@ -40,7 +40,7 @@ The comparison informs. A person decides.
 
 Technical users can inspect the underlying inputs, assumptions, evidence state, uncertainty, thresholds, scenario effects, calculations, provenance, and decision record without forcing that depth into the first-run experience.
 
-The internal architecture and exports may still use Decision Map and decision-science terminology where those terms improve technical precision; first-time users do not need to learn that vocabulary before receiving value.
+Technical documentation and exports may still use Decision Map and decision-science terminology where those terms improve precision; first-time users do not need to learn that vocabulary before receiving value.
 
 ## Synthetic reference
 
