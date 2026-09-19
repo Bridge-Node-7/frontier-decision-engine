@@ -34,7 +34,7 @@ test('portable Python resolution skips unavailable launchers', () => {
 
 test('npm Python commands use the portable launcher', async () => {
   const packageData = JSON.parse(await readFile(new URL('../package.json', import.meta.url), 'utf8'));
-  for (const name of ['validate', 'test:e2e', 'package:release', 'capture:screenshots', 'validate:version', 'test:closeout']) {
+  for (const name of ['validate', 'test:e2e', 'package:release', 'capture:screenshots', 'validate:version', 'test:release']) {
     assert.match(packageData.scripts[name], /^node scripts\/run-python\.mjs /, `${name} bypasses the portable launcher`);
   }
   const readme = await readFile(new URL('../README.md', import.meta.url), 'utf8');
