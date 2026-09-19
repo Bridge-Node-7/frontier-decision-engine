@@ -73,7 +73,7 @@ def verify_repository_identity(identity: dict[str, str]) -> None:
         )
 
     example = json.loads(
-        (ROOT / "examples/phenomena-second-station/decision.fde.json").read_text(
+        (ROOT / "examples/synthetic-source-qualification/decision.fde.json").read_text(
             encoding="utf-8"
         )
     )

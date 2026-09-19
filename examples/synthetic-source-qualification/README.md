@@ -1,10 +1,10 @@
-# Phenomena Second-Station Decision
+# Synthetic Source Qualification Decision
 
 This example demonstrates the first complete Frontier Decision Engine vertical slice.
 
-**Decision:** Should a synchronized second observation station be deployed, and under what trigger conditions?
+**Decision:** Should a synchronized second qualification source be deployed, and under what trigger conditions?
 
-The scenario scores are transparent analyst-assigned teaching inputs. They are not probabilities, empirical forecasts, or proof that a deployment will produce anomalous evidence.
+The scenario scores are transparent analyst-assigned teaching inputs. They are not probabilities, empirical forecasts, or proof that a deployment will produce supplier performance.
 
 The example demonstrates:
 
