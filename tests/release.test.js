@@ -91,7 +91,7 @@ test('browser end-to-end harness covers the retained Decision Lab surface', asyn
   assert.match(runner, /decision-step-heading-/);
   assert.equal(runner.includes('#case-step-heading:focus'), false);
   assert.match(packageData.scripts.check, /test:e2e/);
-  assert.match(packageData.scripts.check, /test:closeout/);
+  assert.match(packageData.scripts.check, /test:release/);
 });
 test('cross-platform manifest generation uses file URL conversion rather than URL pathname', async () => {
   const manifest = await read('scripts/build-manifest.mjs');
