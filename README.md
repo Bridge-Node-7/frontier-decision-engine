@@ -80,6 +80,10 @@ npm run check
 
 Generated release facts and current application identity are recorded in [`project-facts.json`](project-facts.json). The full verification gate is defined by the repository's `npm run check` command.
 
+## Release status
+
+`main` is the current reviewed source. GitHub Releases are stable distribution milestones and may intentionally lag reviewed maintenance on `main`. A source version ahead of the latest GitHub Release is unreleased until a release is published.
+
 ## Documentation
 
 - [Architecture](docs/ARCHITECTURE.md)
