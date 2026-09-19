@@ -299,7 +299,7 @@ test('delivery automation retains dependency, review, and attestation controls',
   const pullRequest = await read('.github/pull_request_template.md');
   const release = await read('.github/workflows/release.yml');
   assert.match(dependabot, /package-ecosystem: pip/);
-  assert.match(pullRequest, /## Public boundary/);
+  assert.match(pullRequest, /## Release suitability/);
   assert.match(pullRequest, /npm run check/);
   assert.match(release, /id-token: write/);
   assert.match(release, /attestations: write/);
