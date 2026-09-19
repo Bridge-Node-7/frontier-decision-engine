@@ -2,9 +2,9 @@
 
 Describe the smallest useful change and the decision or user need it serves.
 
-## Public boundary
+## Release suitability
 
-- [ ] No credentials, private evidence, source workbooks, personal narratives, exact locations, client data, or proprietary material are included.
+- [ ] The change fits the repository's declared public scope and rights.
 - [ ] Observation, reported experience, interpretation, and candidate mechanisms remain separate.
 - [ ] Analyst inputs are not presented as probabilities, forecasts, or scientific confirmation.
 
