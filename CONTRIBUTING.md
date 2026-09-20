@@ -4,8 +4,8 @@ Keep changes focused, public-safe, and testable.
 
 ## Requirements
 
-- Do not add personal histories, private narratives, exact private locations,
-  medical information, credentials, client data, or unpublished source files.
+- Use only material intended for unrestricted public release. If disclosure
+  suitability is uncertain, do not add it to this repository.
 - Keep measured, reported, interpreted, assumed, and synthetic material
   explicitly separated.
 - Do not automate consequential human decisions.
@@ -20,8 +20,8 @@ npm ci --ignore-scripts --no-audit --no-fund
 npm run check
 ```
 
-Open a focused pull request that states the user value, public-data impact, and
-validation result.
+Open a focused pull request that states the user value, release-scope impact,
+and validation result.
 
 Public bug and method-improvement forms are retained under
 `.github/ISSUE_TEMPLATE/`. If a non-owner cannot open one, enabling public issue
