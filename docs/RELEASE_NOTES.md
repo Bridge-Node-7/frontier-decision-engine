@@ -1,15 +1,15 @@
 # v0.5.1
 
-## Public Surface Alignment
+## Stable Distribution
 
 Application version is 0.5.1. The compatible decision schema 0.2.10, semantic decision schema 0.3.0, and Mission Graph Decision Context Packet 0.3.0 contract remain unchanged.
 
-This release advances the current reviewed source into a coherent stable distribution after public-surface alignment and deterministic site-integrity refresh. Decision logic, comparison semantics, browser-local privacy, governed-context trust semantics, and accountable human decision authority are unchanged.
+This release advances the current reviewed source into a coherent stable distribution with deterministic site-integrity evidence. Decision logic, comparison semantics, browser-local privacy, governed-context trust semantics, and accountable human decision authority are unchanged.
 
 ### Changes
 
 - Advances the application identity to 0.5.1 across package, citation, runtime, project facts, and release metadata.
-- Carries forward the current solution-first public experience and refreshed deterministic site-integrity evidence.
+- Carries forward the current evaluation experience and deterministic site-integrity evidence.
 - Preserves separate integrity, origin, evidence assurance, freshness, handling, and human-authority trust properties for governed context.
 - Preserves Decision Context Packet 0.3.0 for `FDE_PREPARATION_ONLY` use and legacy packet 0.2.0 for historical inspection.
 - Preserves decision schemas 0.2.10 and 0.3.0, deterministic ranking, saved-work protections, browser-local operation, and human final decision authority.
