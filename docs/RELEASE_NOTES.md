@@ -85,7 +85,7 @@ Mission Graph context informs preparation. FDE still does not approve, authorize
 
 Application version is 0.3.4. The compatible decision schema 0.2.10 and semantic decision schema 0.3.0 remain unchanged.
 
-This maintenance release hardens clean-adopter setup and first-run truthfulness without changing deterministic Decision Lab ranking semantics or human final decision authority.
+This maintenance release improves first-run setup and truthfulness without changing deterministic Decision Lab ranking semantics or human final decision authority.
 
 ### Changes
 
