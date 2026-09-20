@@ -116,7 +116,7 @@ This release completes the first-run FDE experience around one natural input whi
 
 - Starts with the single first-timer question: “What are you considering?”
 - Uses one large natural-language input with a clear Continue action, Ctrl/Cmd + Enter support, a direct Decision Lab path, and a concise browser-local privacy statement.
-- Removes the pre-input Decision Map, empty structural cards, conversational response bubble, workflow narration, readiness decoration, and working-header sales action.
+- Removes the pre-input Decision Map, empty structural cards, conversational response bubble, workflow narration, readiness decoration, and working-header secondary action.
 - After Continue, produces exactly one of three truthful outcomes: supportable decision structure, one useful clarification question, or an explicit capability boundary with a useful next action.
 - Shows only supportable first-run fields under the human-facing labels Decision, What matters, Options, and What may change.
 - Keeps provisional structure separate from confirmed model inputs and asks for human confirmation before any handoff to the formal comparison.
@@ -162,6 +162,6 @@ This patch release improves cross-platform verification, focused progressive dis
 
 FDE provides transparent software decision support. Recording documents human judgment; it is not approval, authorization, certification, qualification, consent, or investment authority. Browser-local storage is not encrypted confidential storage.
 
-### Release-candidate date
+### Source date
 
 2026-08-20
