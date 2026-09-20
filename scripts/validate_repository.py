@@ -179,5 +179,5 @@ if errors:
 print("REPOSITORY VALIDATION PASS")
 print("- first-run UX provides structure, one clarification, or an explicit capability boundary")
 print("- Decision Rescue and deterministic Decision Lab preserve human authority and browser-local boundaries")
-print("- public decision schemas, release identity, accessibility controls, and OPSEC checks are aligned")
+print("- public decision schemas, release identity, accessibility controls, and publication checks are aligned")
 print("- static site has no external runtime dependencies")
