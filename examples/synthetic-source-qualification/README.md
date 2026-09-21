@@ -1,6 +1,6 @@
 # Synthetic Source Qualification Decision
 
-This example demonstrates the first complete Frontier Decision Engine vertical slice.
+This example demonstrates Frontier Decision Engine on a synthetic Materials-to-Mission-style source-qualification decision under deep uncertainty.
 
 **Decision:** Should a synchronized second qualification source be deployed, and under what trigger conditions?
 
@@ -9,7 +9,7 @@ The scenario scores are transparent analyst-assigned teaching inputs. They are n
 The example demonstrates:
 
 - a decision frame
-- XLRM-style uncertainties, levers, relationships, and measures
+- explicit uncertainties, candidate pathways, relationships, and decision criteria
 - three competing strategies
 - four plausible futures
 - threshold-based stress testing
