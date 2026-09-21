@@ -1,6 +1,6 @@
-export const RESCUE_MAX_INPUT_CHARS = 12000;
+export const GUIDED_MAX_INPUT_CHARS = 12000;
 
-export const RESCUE_INTENTS = Object.freeze([
+export const GUIDED_INTENTS = Object.freeze([
   { id: 'find-decision', label: 'Figure out what I need to decide' },
   { id: 'untangle', label: 'Clarify what matters' },
   { id: 'compare', label: 'Compare choices I already have' },
@@ -9,12 +9,12 @@ export const RESCUE_INTENTS = Object.freeze([
   { id: 'unsure', label: "I'm not sure" },
 ]);
 
-export const RESCUE_GOALS = Object.freeze([
+export const GUIDED_GOALS = Object.freeze([
   'Time', 'Cost', 'Safety', 'Quality', 'Reliability',
   'People', 'Revenue', 'Flexibility', 'Compliance', 'Learning',
 ]);
 
-export const RESCUE_CHOICES = Object.freeze([
+export const GUIDED_CHOICES = Object.freeze([
   'Keep things as they are',
   'Make a change',
   'Wait or delay',
@@ -23,7 +23,7 @@ export const RESCUE_CHOICES = Object.freeze([
   'Stage the decision',
 ]);
 
-export const RESCUE_FUTURES = Object.freeze([
+export const GUIDED_FUTURES = Object.freeze([
   'Things stay roughly the same',
   'Timing gets worse',
   'Cost increases',
@@ -40,11 +40,11 @@ export function normalizeIntakeText(value) {
 export function validateIntakeText(value) {
   const text = normalizeIntakeText(value);
   if (!text) return { ok: false, text: '', error: 'Start anywhere — even a few words are enough.' };
-  if (text.length > RESCUE_MAX_INPUT_CHARS) {
+  if (text.length > GUIDED_MAX_INPUT_CHARS) {
     return {
       ok: false,
       text,
-      error: `Keep the starting note under ${RESCUE_MAX_INPUT_CHARS.toLocaleString()} characters.`,
+      error: `Keep the starting note under ${GUIDED_MAX_INPUT_CHARS.toLocaleString()} characters.`,
     };
   }
   return { ok: true, text, error: '' };
@@ -73,7 +73,7 @@ export function decisionFrameReady(frame) {
 export function buildDecisionFrame({ startingPoint = '', intent = '', decision = '', goals = [], choices = [], futures = [], urgency = '', reversibility = '' } = {}) {
   return {
     startingPoint: normalizeIntakeText(startingPoint),
-    intent: RESCUE_INTENTS.some((item) => item.id === intent) ? intent : '',
+    intent: GUIDED_INTENTS.some((item) => item.id === intent) ? intent : '',
     decision: String(decision ?? '').trim(),
     goals: uniqueSelections(goals),
     choices: uniqueSelections(choices),
