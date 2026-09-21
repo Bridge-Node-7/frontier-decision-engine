@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {
-  RESCUE_MAX_INPUT_CHARS,
+  GUIDED_MAX_INPUT_CHARS,
   buildDecisionFrame,
   decisionFrameReady,
   frameAsText,
@@ -36,7 +36,7 @@ test('HTML and code-like intake remains plain text data', () => {
 });
 
 test('oversized Guided framing intake is bounded', () => {
-  const result = validateIntakeText('x'.repeat(RESCUE_MAX_INPUT_CHARS + 1));
+  const result = validateIntakeText('x'.repeat(GUIDED_MAX_INPUT_CHARS + 1));
   assert.equal(result.ok, false);
   assert.match(result.error, /under/i);
 });
