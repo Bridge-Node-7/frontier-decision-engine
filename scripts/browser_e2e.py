@@ -408,7 +408,7 @@ def decision_flow(page: Page, base: str) -> str:
     headings = [
         "What decision needs to be made?",
         "What needs to be true?",
-        "What can be done?",
+        "What choices are available?",
         "What could change?",
         "What the comparison shows",
         "Choose a path.",
@@ -440,7 +440,7 @@ def decision_flow(page: Page, base: str) -> str:
 
         if expected == "What the comparison shows":
             brief = page.locator("body").inner_text()
-            assert "Strongest tested alternative" in brief
+            assert "Leading tested choice" in brief
             assert "81%" not in brief
             page.locator('[data-projection="review"] > summary').click()
             page.locator('[data-projection="inspect"] > summary').click()
