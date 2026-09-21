@@ -44,7 +44,7 @@ function requiredCriterion(decision, dimension = 'people') {
   return criterion;
 }
 
-test('accepted-A General comparison is deep-equal after inactive B normalization', () => {
+test('general comparison is unchanged when assurance semantics are inactive', () => {
   const before = createDecisionCase();
   const expected = {
     matrix: buildPerformanceMatrix(before),
@@ -64,7 +64,7 @@ test('accepted-A General comparison is deep-equal after inactive B normalization
   assert.equal(decisionPosture(before).posture, null);
 });
 
-test('legacy 0.2.10 remains untouched until B semantics are explicitly activated', () => {
+test('0.2.10 decisions remain untouched until assurance semantics are explicitly activated', () => {
   const decision = createDecisionCase();
   assert.equal(decision.schema_version, '0.2.10');
   assert.equal(decision.decision_semantics, undefined);
