@@ -1,12 +1,12 @@
 export const GUIDED_MAX_INPUT_CHARS = 12000;
 
 export const GUIDED_INTENTS = Object.freeze([
-  { id: 'find-decision', label: 'Figure out what I need to decide' },
-  { id: 'untangle', label: 'Clarify what matters' },
-  { id: 'compare', label: 'Compare choices I already have' },
-  { id: 'missing', label: "Figure out what I'm missing" },
-  { id: 'urgent', label: 'I need to act soon' },
-  { id: 'unsure', label: "I'm not sure" },
+  { id: 'find-decision', label: 'Frame the consequential decision' },
+  { id: 'untangle', label: 'Clarify mission criteria and constraints' },
+  { id: 'compare', label: 'Compare candidate pathways' },
+  { id: 'missing', label: 'Identify missing evidence' },
+  { id: 'urgent', label: 'Prepare for a near-term decision gate' },
+  { id: 'unsure', label: 'I need help framing it' },
 ]);
 
 export const GUIDED_GOALS = Object.freeze([
