@@ -10,19 +10,19 @@ import {
   validateIntakeText,
 } from '../site/src/lib/intake.js';
 
-test('empty Decision Rescue intake asks for a useful starting point', () => {
+test('empty Guided framing intake asks for a useful starting point', () => {
   const result = validateIntakeText('   \n  ');
   assert.equal(result.ok, false);
   assert.match(result.error, /few words/i);
 });
 
-test('Decision Rescue preserves multiline human language while normalizing line endings', () => {
+test('Guided framing preserves multiline human language while normalizing line endings', () => {
   const raw = '  Supplier is late.\r\nI am not sure what to do.  ';
   assert.equal(normalizeIntakeText(raw), 'Supplier is late.\nI am not sure what to do.');
   assert.equal(validateIntakeText(raw).ok, true);
 });
 
-test('Decision Rescue preserves Unicode and punctuation', () => {
+test('Guided framing preserves Unicode and punctuation', () => {
   const raw = '¿Qué hago? 東京 🚀 — I’m not sure.';
   assert.equal(validateIntakeText(raw).text, raw);
 });
@@ -35,7 +35,7 @@ test('HTML and code-like intake remains plain text data', () => {
   assert.match(frameAsText(buildDecisionFrame({ startingPoint: raw })), /<script>alert/);
 });
 
-test('oversized Decision Rescue intake is bounded', () => {
+test('oversized Guided framing intake is bounded', () => {
   const result = validateIntakeText('x'.repeat(RESCUE_MAX_INPUT_CHARS + 1));
   assert.equal(result.ok, false);
   assert.match(result.error, /under/i);

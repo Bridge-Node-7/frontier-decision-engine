@@ -50,7 +50,7 @@ function showContext(kind, governedText = '') {
     ? 'Starting context from FDE'
     : kind === 'governed'
       ? 'Verified Mission Graph preparation context'
-      : 'Starting context from Decision Rescue';
+      : 'Starting context from Guided framing';
   const help = document.createElement('span');
   help.className = 'help';
   help.textContent = kind === 'governed'

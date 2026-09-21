@@ -73,7 +73,7 @@ test('multi-option lists never silently truncate into a partial option set', () 
     assert.deepEqual(draft.choices, [], input);
     const response = responseFor(draft);
     assert.equal(response.kind, 'question', input);
-    assert.equal(response.question, 'What options should we compare?', input);
+    assert.equal(response.question, 'What choices should we compare?', input);
   }
 });
 
@@ -96,14 +96,14 @@ test('generated multi-option corpus never exposes a strict partial option set', 
       const draft = draftFromInput(input);
       assert.equal(draft.optionListAmbiguous, true, input);
       assert.equal(draft.choices.length, 0, input);
-      assert.equal(responseFor(draft).question, 'What options should we compare?', input);
+      assert.equal(responseFor(draft).question, 'What choices should we compare?', input);
       cases += 1;
     }
   }
   assert.ok(cases >= 250);
 });
 
-test('prescribed treatment changes use a bounded safety response', () => {
+test('out-of-scope personal treatment decisions fail closed', () => {
   const examples = [
     'Should I stop taking my heart medication to save money?',
     'Should I halve my insulin dose to make it last?',
@@ -114,13 +114,13 @@ test('prescribed treatment changes use a bounded safety response', () => {
   for (const input of examples) {
     const response = responseFor(draftFromInput(input));
     assert.equal(response.kind, 'boundary', input);
-    assert.match(response.title, /qualified clinical guidance/i, input);
-    assert.match(response.body, /should not recommend/i, input);
-    assert.match(response.body, /cost, access, logistics/i, input);
+    assert.equal(response.title, 'This decision is outside FDE’s comparison scope.', input);
+    assert.match(response.body, /technical, organizational, mission, and strategic/i, input);
+    assert.match(response.body, /qualified support/i, input);
   }
 });
 
-test('dangerous restriction and multi-day fasting use a separate safety boundary', () => {
+test('out-of-scope severe personal restriction decisions fail closed', () => {
   const examples = [
     'Should I stop eating to lose weight faster?',
     'Should I fast for five days or seven days?',
@@ -130,12 +130,12 @@ test('dangerous restriction and multi-day fasting use a separate safety boundary
   for (const input of examples) {
     const response = responseFor(draftFromInput(input));
     assert.equal(response.kind, 'boundary', input);
-    assert.match(response.title, /food restriction/i, input);
-    assert.match(response.body, /should not compare or optimize/i, input);
+    assert.equal(response.title, 'This decision is outside FDE’s comparison scope.', input);
+    assert.match(response.body, /technical, organizational, mission, and strategic/i, input);
   }
 });
 
-test('self-dosing quantity escalation uses a bounded medication-safety response', () => {
+test('out-of-scope personal dosing comparisons fail closed', () => {
   const examples = [
     'Should I take 2 ibuprofen or 4 ibuprofen for this?',
     'Should I take 500 mg or 1000 mg acetaminophen?',
@@ -145,13 +145,13 @@ test('self-dosing quantity escalation uses a bounded medication-safety response'
   for (const input of examples) {
     const response = responseFor(draftFromInput(input));
     assert.equal(response.kind, 'boundary', input);
-    assert.match(response.title, /self-dosing|quantity escalation/i, input);
-    assert.match(response.body, /should not compare or optimize/i, input);
-    assert.match(response.body, /pharmacist or clinician/i, input);
+    assert.equal(response.title, 'This decision is outside FDE’s comparison scope.', input);
+    assert.match(response.body, /technical, organizational, mission, and strategic/i, input);
+    assert.match(response.body, /qualified support/i, input);
   }
 });
 
-test('potential emergency-care delay uses a bounded real-time safety response', () => {
+test('out-of-scope immediate personal safety decisions fail closed', () => {
   const examples = [
     'Should I drive myself to the ER or wait it out?',
     'Should I go to urgent care now or wait until morning?',
@@ -161,9 +161,9 @@ test('potential emergency-care delay uses a bounded real-time safety response', 
   for (const input of examples) {
     const response = responseFor(draftFromInput(input));
     assert.equal(response.kind, 'boundary', input);
-    assert.match(response.title, /emergency-care delay/i, input);
-    assert.match(response.body, /should not compare delaying/i, input);
-    assert.match(response.body, /real-time clinical or emergency service/i, input);
+    assert.equal(response.title, 'This decision is outside FDE’s comparison scope.', input);
+    assert.match(response.body, /technical, organizational, mission, and strategic/i, input);
+    assert.match(response.body, /qualified real-time support/i, input);
   }
 });
 
@@ -178,6 +178,61 @@ test('ordinary non-medical decisions are not caught by personal safety boundarie
     'Should we delay the emergency response software release or ship now?',
   ]) {
     const response = responseFor(draftFromInput(input));
-    assert.notEqual(response.kind === 'boundary' && /clinical|food restriction|self-dosing|quantity escalation|emergency-care delay/i.test(response.title || ''), true, input);
+    assert.notEqual(response.kind === 'boundary' && response.title === 'This decision is outside FDE’s comparison scope.', true, input);
   }
 });
+
+test('self-harm requests fail closed before ordinary decision structuring', () => {
+  for (const input of [
+    'Should I hurt myself or not?',
+    'Should I kill myself or keep going?',
+    'Should I end my life?',
+    'I am suicidal and deciding what to do.',
+    'Should I self-harm or call someone?',
+  ]) {
+    const response = responseFor(draftFromInput(input));
+    assert.equal(response.kind, 'boundary', input);
+    assert.equal(response.title, 'This decision is outside FDE’s comparison scope.', input);
+    assert.match(response.body, /does not compare or optimize self-harm/i, input);
+    assert.match(response.body, /emergency services|crisis service/i, input);
+  }
+});
+
+test('ordinary engineering and business harm language does not trigger the personal boundary', () => {
+  for (const input of [
+    'Should we kill the stalled process or restart it?',
+    'Could this policy harm revenue enough to change the decision?',
+    'Should we terminate the failed test or continue collecting data?',
+  ]) {
+    const response = responseFor(draftFromInput(input));
+    assert.notEqual(response.kind === 'boundary' && response.title === 'This decision is outside FDE’s comparison scope.', true, input);
+  }
+});
+
+test('mission criteria use bounded phrase matching without substring false positives', () => {
+  const costa = draftFromInput('Should we expand into Costa Rica or Panama? Reliability and resilience matter.');
+  assert.deepEqual(costa.choices, ['expand into Costa Rica', 'Panama']);
+  assert.equal(costa.goals.includes('Cost'), false);
+  assert.deepEqual(costa.goals, ['Reliability', 'Resilience']);
+
+  const mission = draftFromInput('Should we impose export controls or negotiate supply agreements with allies? National security, cost, and time matter.');
+  assert.equal(mission.optionListAmbiguous, false);
+  assert.deepEqual(mission.choices, ['impose export controls', 'negotiate supply agreements with allies']);
+  assert.deepEqual(mission.goals, ['National security', 'Cost', 'Time']);
+  assert.equal(responseFor(mission).kind, 'structure');
+});
+
+test('ordinary criteria-list forms do not override explicit choices', () => {
+  for (const input of [
+    'Should we build or buy? Cost, schedule risk, and readiness matter.',
+    'Should we build or buy? Cost, schedule risk, and readiness are important.',
+    'Should we build or buy? Our priorities are cost, readiness, and resilience.',
+    'Should we build or buy? The decision must balance cost, readiness, and interoperability.',
+  ]) {
+    const draft = draftFromInput(input);
+    assert.equal(draft.optionListAmbiguous, false, input);
+    assert.deepEqual(draft.choices, ['build', 'buy'], input);
+    assert.equal(responseFor(draft).kind, 'structure', input);
+  }
+});
+

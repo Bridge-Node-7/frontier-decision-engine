@@ -3,7 +3,7 @@
   "version": "0.5.1",
   "private": true,
   "type": "module",
-  "description": "Browser-local, human-governed decision support for choices under deep uncertainty.",
+  "description": "Browser-local, human-governed decision infrastructure for Frontier Mission Assurance.",
   "scripts": {
     "test": "node --test",
     "test:universal": "node --test tests/universal-response.test.js",

@@ -10,7 +10,11 @@ def route_suite(page, base: str) -> None:
         ("/", '[data-surface="fde-hero"] h1', "What are you considering?"),
         ("/method", '[data-surface="integrated-method"]', "Frame"),
         ("/decision", '[data-surface="fde-hero"] h1', "Frontier Decision Engine"),
+        ("/decision/new", '[data-surface="fde-hero"] h1', "Frontier Decision Engine"),
+        ("/decision/example", '[data-surface="fde-hero"] h1', "Frontier Decision Engine"),
         ("/decision/open", '[data-surface="fde-hero"] h1', "Frontier Decision Engine"),
+        ("/context", '.governed-context-hero h1', "Open governed Mission Graph context"),
+        ("/rescue", '[data-surface="fde-hero"] h1', "Frontier Decision Engine"),
     ]
     for route_path, selector, expected in checks:
         suite.route(page, base, route_path, selector, expected)
@@ -29,8 +33,9 @@ def no_js_one_page(browser) -> None:
         "Decision Lab",
         "Appearance",
         "What are you considering?",
-        "Share a situation, decision, question, or context in your own words.",
-        "Already know the decision and options? Open Decision Lab",
+        "Share a technical, organizational, mission, or strategic decision in your own words.",
+        "Already know the decision and choices? Open Decision Lab",
+        "Need more help framing the decision? Use guided framing",
         "Private by design. Your working decision stays in this browser unless you choose to export it.",
         "Human authority",
         "FDE structures and calculates; it does not approve or authorize the decision.",

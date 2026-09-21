@@ -1,6 +1,7 @@
 import { createGuidedDecisionCase, DRAFT_TOPOLOGY_BOUNDS } from './lib/decision.js';
 import { RESCUE_MAX_INPUT_CHARS } from './lib/intake.js';
 import { DECISION_STORAGE_KEY, getBrowserStorage, saveDecision } from './lib/persistence.js';
+import { boundaryForInput } from './lib/input-boundaries.js';
 
 const MAX_SUGGESTIONS = Object.freeze({ choices: 3, goals: 4, futures: 4 });
 const SESSION_KEY = 'fde.universal.session.v1';
@@ -10,31 +11,29 @@ const SESSION_VERSION = 1;
 
 const KEYWORDS = {
   goals: [
+    ['national security', 'National security'],
+    ['mission assurance', 'Mission assurance'],
+    ['alliance alignment', 'Alliance alignment'], ['allied alignment', 'Alliance alignment'], ['alliance', 'Alliance alignment'],
+    ['legal', 'Legal / regulatory'], ['regulatory', 'Legal / regulatory'],
+    ['qualification', 'Qualification'], ['readiness', 'Readiness'], ['interoperability', 'Interoperability'],
+    ['sovereignty', 'Sovereignty'], ['resilience', 'Resilience'], ['security', 'Security'],
+    ['schedule risk', 'Schedule risk'], ['schedule', 'Schedule risk'],
+    ['compliance', 'Compliance'], ['reliable', 'Reliability'], ['reliability', 'Reliability'],
     ['time', 'Time'], ['deadline', 'Time'], ['cost', 'Cost'], ['money', 'Cost'], ['price', 'Cost'], ['budget', 'Cost'],
-    ['safety', 'Safety'], ['quality', 'Quality'], ['reliable', 'Reliability'], ['reliability', 'Reliability'],
+    ['safety', 'Safety'], ['quality', 'Quality'], ['flexibility', 'Flexibility'],
     ['people', 'People'], ['team', 'People'], ['customer', 'Customer'], ['customers', 'Customer'], ['revenue', 'Revenue'],
-    ['flexibility', 'Flexibility'], ['schedule', 'Schedule risk'], ['compliance', 'Compliance'],
   ],
   futures: [
+    ['requirements change', 'Requirements change'], ['requirement changes', 'Requirements change'], ['regulation changes', 'Requirements change'],
+    ['cost increases', 'Cost increases'], ['demand changes', 'Demand changes'],
     ['late', 'Timing gets worse'], ['delay', 'Timing gets worse'], ['shortage', 'Availability worsens'],
     ['unavailable', 'A key dependency fails'], ['fails', 'A key dependency fails'], ['failure', 'A key dependency fails'],
-    ['expensive', 'Cost increases'], ['cost increases', 'Cost increases'], ['demand changes', 'Demand changes'],
-    ['requirement changes', 'Requirements change'], ['requirements change', 'Requirements change'], ['regulation changes', 'Requirements change'],
-    ['improves', 'A key constraint improves'],
+    ['expensive', 'Cost increases'], ['improves', 'A key constraint improves'],
   ],
 };
 
 const decisionPattern = /should i|should we|do i|do we|whether|which should|choose|decid(?:e|ing)\s+(?:between|whether)/i;
 const informationPattern = /^(how much|what is|what's|when is|where is|who is|can you explain|what does|how does|tell me about)\b/i;
-const treatmentActionPattern = /\b(?:stop|start|skip|miss|discontinue|quit|change|adjust|increase|decrease|reduce|raise|lower|halve|double|ration|taper|pause|delay)\b/i;
-const treatmentSubjectPattern = /\b(?:medication|medicine|prescription|dose|treatment|therapy|insulin|chemotherapy|antidepressants?|antibiotics?|inhaler|steroids?|hormones?)\b/i;
-const dangerousRestrictionPattern = /\b(?:stop\s+eating|starv(?:e|ing)(?:\s+myself)?|skip\s+(?:all\s+)?meals?|not\s+eat(?:ing)?|fast(?:ing)?\s+(?:for\s+)?(?:(?:[2-9]|[1-9]\d+)\s+days?|(?:two|three|four|five|six|seven|eight|nine|ten|eleven|twelve)\s+days?|(?:a|one|two|three|four)\s+weeks?))\b/i;
-const selfDosingSubjectPattern = /\b(?:medications?|medicines?|prescriptions?|drugs?|substances?|doses?|pills?|tablets?|capsules?|ibuprofen|acetaminophen|paracetamol|aspirin|naproxen|diphenhydramine|benadryl|nyquil|dayquil|cough\s+syrup|cough\s+medicine|antihistamines?|painkillers?|pain\s+relievers?|sleep\s+aids?|supplements?)\b/i;
-const quantityComparisonPattern = /\b(?:\d+(?:\.\d+)?|one|two|three|four|five|six|seven|eight|nine|ten)\b[^.!?\n]{0,48}\b(?:or|versus|vs\.?|instead\s+of|rather\s+than)\b[^.!?\n]{0,48}\b(?:\d+(?:\.\d+)?|one|two|three|four|five|six|seven|eight|nine|ten)\b/i;
-const ingestionActionPattern = /\b(?:take|taking|eat|eating|drink|drinking|swallow|swallowing|ingest|ingesting|dose|dosing|redose|redosing)\b/i;
-const doseUnitPattern = /\b(?:mg|g|mcg|ug|ml|units?|pills?|tablets?|capsules?|doses?)\b/i;
-const emergencyDelayPattern = /\b(?:(?:go|head|drive(?:\s+myself)?|take\s+\w+|bring\s+\w+)\s+(?:to\s+)?(?:the\s+)?(?:ER|emergency\s+room|emergency\s+department|urgent\s+care|hospital)|seek\s+(?:emergency|urgent)\s+care|call\s+(?:911|an\s+ambulance|emergency\s+services))\b[^.!?\n]{0,120}\b(?:or|versus|vs\.?|instead\s+of)\b[^.!?\n]{0,120}\b(?:wait(?:\s+it\s+out)?|delay|later|tomorrow|stay\s+home)\b|\b(?:wait(?:\s+it\s+out)?|delay|later|tomorrow|stay\s+home)\b[^.!?\n]{0,120}\b(?:or|versus|vs\.?|instead\s+of)\b[^.!?\n]{0,120}\b(?:(?:go|head|drive(?:\s+myself)?|take\s+\w+|bring\s+\w+)\s+(?:to\s+)?(?:the\s+)?(?:ER|emergency\s+room|emergency\s+department|urgent\s+care|hospital)|seek\s+(?:emergency|urgent)\s+care|call\s+(?:911|an\s+ambulance|emergency\s+services))\b/i;
-
 function normalize(value) {
   return String(value ?? '').replace(/\r\n?/g, '\n').trim();
 }
@@ -80,32 +79,13 @@ function getIntent(text) {
 
 function hasUnresolvedOptionList(text) {
   const listish = /([^\n.!?;:]{2,200}?,[^\n.!?;:]{2,200}?)\s*,?\s*\b(?:or|and)\s+([^\n.!?;:]{2,80})/i;
-  const criteriaLead = /\b(?:care about|what matters|criteria|goals?|priorities|requirements?)\b/i;
+  const criteriaClausePattern = /\b(?:care about|what matters|criteria|goals?|priorities|requirements?|matters?|important|must\s+(?:balance|protect|preserve|meet)|need(?:s)?\s+to\s+(?:balance|protect|preserve|meet))\b/i;
   for (const clause of normalize(text).split(/[.!?\n]+/).map((value) => value.trim()).filter(Boolean)) {
     const match = listish.exec(clause);
-    if (!match || criteriaLead.test(clause)) continue;
+    if (!match || criteriaClausePattern.test(clause)) continue;
     if (match[1].split(',').filter((value) => value.trim().length >= 2).length >= 2) return true;
   }
   return false;
-}
-
-function hasTreatmentChangeRequest(text) {
-  const clean = normalize(text);
-  return treatmentActionPattern.test(clean) && treatmentSubjectPattern.test(clean);
-}
-
-function hasDangerousRestrictionRequest(text) {
-  return dangerousRestrictionPattern.test(normalize(text));
-}
-
-function hasSelfDosingEscalationRequest(text) {
-  const clean = normalize(text);
-  if (!quantityComparisonPattern.test(clean)) return false;
-  return selfDosingSubjectPattern.test(clean) || (ingestionActionPattern.test(clean) && doseUnitPattern.test(clean));
-}
-
-function hasEmergencyCareDelayRequest(text) {
-  return emergencyDelayPattern.test(normalize(text));
 }
 
 function extractChoices(text) {
@@ -118,14 +98,38 @@ function extractChoices(text) {
   return unique([...choices, ...numbered], MAX_SUGGESTIONS.choices);
 }
 
+function phraseMatches(text, needle) {
+  const escaped = needle.trim().split(/\s+/).join('\\s+');
+  const pattern = new RegExp('(^|[^\\p{L}\\p{N}_])(' + escaped + ')(?=$|[^\\p{L}\\p{N}_])', 'giu');
+  return [...String(text).matchAll(pattern)].map((match) => {
+    const start = match.index + match[1].length;
+    return { start, end: start + match[2].length };
+  });
+}
+
+function extractKeywordLabels(text, entries, max) {
+  const matches = [];
+  for (const [needle, label] of entries) {
+    for (const span of phraseMatches(text, needle)) matches.push({ ...span, needle, label });
+  }
+  matches.sort((left, right) => left.start - right.start || (right.end - right.start) - (left.end - left.start));
+  const selected = [];
+  const occupied = [];
+  for (const match of matches) {
+    if (occupied.some((span) => match.start < span.end && match.end > span.start)) continue;
+    if (!selected.includes(match.label)) selected.push(match.label);
+    occupied.push({ start: match.start, end: match.end });
+    if (selected.length >= max) break;
+  }
+  return selected;
+}
+
 function extractGoals(text) {
-  const lower = text.toLowerCase();
-  return unique(KEYWORDS.goals.filter(([needle]) => lower.includes(needle)).map(([, label]) => label), MAX_SUGGESTIONS.goals);
+  return extractKeywordLabels(text, KEYWORDS.goals, MAX_SUGGESTIONS.goals);
 }
 
 function extractFutures(text) {
-  const lower = text.toLowerCase();
-  return unique(KEYWORDS.futures.filter(([needle]) => lower.includes(needle)).map(([, label]) => label), MAX_SUGGESTIONS.futures);
+  return extractKeywordLabels(text, KEYWORDS.futures, MAX_SUGGESTIONS.futures);
 }
 
 function splitUserItems(text, max) {
@@ -160,36 +164,12 @@ export function draftFromInput(text) {
 
 export function responseFor(state) {
   const clean = normalize(state?.startingPoint);
-  if (hasTreatmentChangeRequest(clean)) {
-    return {
-      kind: 'boundary',
-      title: 'Treatment changes need qualified clinical guidance.',
-      body: 'FDE should not recommend starting, stopping, skipping, rationing, or changing prescribed treatment. A qualified clinician should guide treatment changes. FDE can still help structure cost, access, logistics, and questions to discuss with that clinician.',
-    };
-  }
-  if (hasDangerousRestrictionRequest(clean)) {
-    return {
-      kind: 'boundary',
-      title: 'Dangerous food restriction is outside FDE’s decision-comparison scope.',
-      body: 'FDE should not compare or optimize starvation, severe food restriction, or multi-day fasting as a decision. If this is about health, weight, or food restriction, qualified health guidance is the appropriate next step. FDE can still help structure safer questions about access, scheduling, or support.',
-    };
-  }
-  if (hasSelfDosingEscalationRequest(clean)) {
-    return {
-      kind: 'boundary',
-      title: 'Self-dosing and quantity escalation need qualified medication guidance.',
-      body: 'FDE should not compare or optimize increasing amounts of a medicine or other ingestible substance. A qualified pharmacist or clinician should guide dosing questions. FDE can still help structure cost, access, refill, logistics, and questions to ask.',
-    };
-  }
-  if (hasEmergencyCareDelayRequest(clean)) {
-    return {
-      kind: 'boundary',
-      title: 'Potential emergency-care delay is outside FDE’s comparison scope.',
-      body: 'FDE should not compare delaying potentially urgent evaluation, waiting out a possible emergency, or self-transport versus emergency care. Use a qualified real-time clinical or emergency service to determine the appropriate next step. FDE can still help with non-urgent logistics after immediate safety is addressed.',
-    };
+  const boundary = boundaryForInput(clean);
+  if (boundary) {
+    return { kind: 'boundary', title: boundary.title, body: boundary.body };
   }
   if (state?.optionListAmbiguous) {
-    return { kind: 'question', question: 'What options should we compare?' };
+    return { kind: 'question', question: 'What choices should we compare?' };
   }
   if (!clean || (!state?.possibleDecision && state?.intent !== 'information' && state?.intent !== 'multi')) {
     return { kind: 'question', question: 'Which decision or question should we focus on?' };
@@ -243,8 +223,8 @@ function missingRequirement(state) {
 }
 
 function nextQuestion(state, kind) {
-  if (kind === 'choices') return state.choices.length === 1 ? 'What is one other option to compare?' : 'What options should we compare?';
-  if (kind === 'goals') return state.goals.length === 1 ? 'What else matters when comparing these options?' : 'What matters most when comparing these options?';
+  if (kind === 'choices') return state.choices.length === 1 ? 'What is one other choice to compare?' : 'What choices should we compare?';
+  if (kind === 'goals') return state.goals.length === 1 ? 'What else matters when comparing these choices?' : 'What matters most when comparing these choices?';
   if (kind === 'futures') return state.futures.length === 1 ? 'What else could change the choice?' : 'What conditions or uncertainties could change the choice?';
   return 'Which decision or question should we focus on?';
 }
@@ -262,13 +242,14 @@ function entryMarkup(state, hasSavedDecision) {
   return `<section class="universal-hero universal-front-door" data-surface="fde-hero" aria-labelledby="universal-title">
     <span class="eyebrow">Frontier Decision Engine</span>
     <h1 id="universal-title">What are you considering?</h1>
-    <p class="universal-subtitle">Share a situation, decision, question, or context in your own words.</p>
+    <p class="universal-subtitle">Share a technical, organizational, mission, or strategic decision in your own words.</p>
     <div class="universal-entry">
       <label class="sr-only" for="universal-input">What are you considering?</label>
-      <textarea id="universal-input" maxlength="${RESCUE_MAX_INPUT_CHARS}" rows="7" aria-describedby="universal-help" placeholder="Decision, question, options, constraints, notes, or other context…">${escapeHtml(state.startingPoint)}</textarea>
+      <textarea id="universal-input" maxlength="${RESCUE_MAX_INPUT_CHARS}" rows="7" aria-describedby="universal-help" placeholder="Decision, choices, criteria, uncertainties, notes, or context…">${escapeHtml(state.startingPoint)}</textarea>
       <p id="universal-help" class="help">Use your own words. Press Ctrl or Command + Enter to continue. Natural-language intake currently supports English.</p>
       <div class="universal-actions"><button id="universal-analyze" class="primary" type="button">Continue</button></div>
-      <p class="universal-lab-link"><a href="#/decision">Already know the decision and options? Open Decision Lab →</a></p>
+      <p class="universal-lab-link"><a href="#/decision">Already know the decision and choices? Open Decision Lab →</a></p>
+      <p class="universal-lab-link"><a href="#/rescue">Need more help framing the decision? Use guided framing →</a></p>
       ${hasSavedDecision ? '<p class="universal-return"><a href="#/decision">Continue saved work →</a></p>' : ''}
       <p class="universal-trust">Private by design. Your working decision stays in this browser unless you choose to export it.</p>
       <p id="universal-status" class="sr-only" role="status" aria-live="polite"></p>
@@ -284,7 +265,7 @@ function structureMarkup(state) {
       <div class="universal-structure-head"><h2 id="universal-response-title">Decision structure</h2><span class="universal-badge">Needs confirmation</span></div>
       ${supportableSection('Decision', 'decision', state.possibleDecision)}
       ${supportableSection('What matters', 'what_matters', state.goals)}
-      ${supportableSection('Options', 'options', state.choices)}
+      ${supportableSection('Choices', 'options', state.choices)}
       ${supportableSection('What may change', 'what_may_change', state.futures)}
       <div class="universal-confirmation" data-fde-field="next_required_input">
         <h3>Is this the decision you want to evaluate?</h3>

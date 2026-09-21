@@ -14,6 +14,8 @@ from pathlib import Path
 
 from playwright.sync_api import sync_playwright
 
+import browser_e2e as shared
+
 ROOT = Path(__file__).resolve().parents[1]
 SITE = ROOT / "site"
 
@@ -130,6 +132,13 @@ def run() -> None:
                     launch["executable_path"] = executable
                 browser = p.chromium.launch(**launch)
                 try:
+                    for width in (1366, 1280):
+                        layout_context = browser.new_context(viewport={"width": width, "height": 900})
+                        layout_page = layout_context.new_page()
+                        layout_page.goto(f"{base}#/context", wait_until="networkidle")
+                        shared.assert_page_clean(layout_page)
+                        layout_context.close()
+
                     context = browser.new_context(viewport={"width": 1280, "height": 900})
                     remote_requests: list[str] = []
                     context.on("request", lambda request: remote_requests.append(request.url) if not request.url.startswith(base) else None)
@@ -159,6 +168,7 @@ def run() -> None:
                     assert page.get_by_role("heading", name="What we do not know").is_visible()
                     assert page.get_by_role("heading", name="What needs proof").is_visible()
                     assert page.get_by_text("Supplier status changes", exact=True).is_visible()
+                    shared.assert_page_clean(page)
 
                     lineage = page.locator("details").filter(has_text="Show me why")
                     assert lineage.get_attribute("open") is None
