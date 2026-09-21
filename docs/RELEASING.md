@@ -8,6 +8,6 @@
 6. After a successful `main` Pages deployment, the Release workflow verifies that the deployed commit is still current `main` and has a valid GitHub commit signature, derives the version-matched tag, reruns the complete release gate, builds deterministic assets, and attests them.
 7. The Release workflow creates an annotated version tag that points only to that verified commit, publishes the GitHub Release, then re-downloads and verifies the hosted checksums, release assets, and attestations.
 
-Release workflows remain pinned and minimally privileged. Publication requires successful live Pages UAT and a GitHub-verified `main` commit; no operator credential or manual signing step is injected into the workflow.
+Release workflows remain pinned and minimally privileged. Publication requires successful live Pages UAT and a GitHub-verified `main` commit; no operator credential, manual signing step, or manual deployment approval is required.
 
 Repository, deployment, commit-signature, and artifact verification establish release integrity within the tested controls. They do not alter the human-governed decision model or establish external certification, approval, or operational fitness.
