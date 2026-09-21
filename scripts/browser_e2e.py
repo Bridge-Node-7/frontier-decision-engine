@@ -534,7 +534,7 @@ def default_ui_leakage_probe(page: Page) -> None:
     assert_no_default_ui_leakage(page)
 
 
-def corrective_draft_and_entry_flow(page: Page, completed_file: str) -> None:
+def draft_and_entry_flow(page: Page, completed_file: str) -> None:
     set_hash_route(page, "/decision/new")
     open_stage(page, 0)
     page.locator("summary").filter(has_text=re.compile(r"^Add context")).click()
@@ -858,7 +858,7 @@ def run_mode(
     if full:
         completed_file = decision_flow(page, base)
         print_flow(page)
-        corrective_draft_and_entry_flow(page, completed_file)
+        draft_and_entry_flow(page, completed_file)
         assurance_profile_flow(page)
     else:
         route(page, base, "/decision", '[data-surface="fde-hero"] h1', "Frontier Decision Engine")
