@@ -12,6 +12,19 @@ test('clear decision input produces only supportable deterministic structure', (
   assert.equal(responseFor(draft).kind, 'structure');
 });
 
+test('criteria lists do not override explicit binary choices from ordinary language', () => {
+  const input = 'Should we qualify a second gallium nitride wafer supplier in Japan or keep our current Chinese supplier? We care about cost, schedule risk, and DFARS compliance.';
+  const draft = draftFromInput(input);
+  assert.equal(draft.intent, 'decision');
+  assert.equal(draft.optionListAmbiguous, false);
+  assert.deepEqual(draft.choices, [
+    'qualify a second gallium nitride wafer supplier in Japan',
+    'keep our current Chinese supplier',
+  ]);
+  assert.deepEqual(draft.goals, ['Cost', 'Schedule risk', 'Compliance']);
+  assert.equal(responseFor(draft).kind, 'structure');
+});
+
 test('sparse input produces exactly one useful clarification question', () => {
   for (const input of ['', 'banana moon 777', 'I have a complicated situation.']) {
     const response = responseFor(draftFromInput(input));
