@@ -248,7 +248,8 @@ function entryMarkup(state, hasSavedDecision) {
       <textarea id="universal-input" maxlength="${RESCUE_MAX_INPUT_CHARS}" rows="7" aria-describedby="universal-help" placeholder="Decision, choices, criteria, uncertainties, notes, or context…">${escapeHtml(state.startingPoint)}</textarea>
       <p id="universal-help" class="help">Use your own words. Press Ctrl or Command + Enter to continue. Natural-language intake currently supports English.</p>
       <div class="universal-actions"><button id="universal-analyze" class="primary" type="button">Continue</button></div>
-      <p class="universal-lab-link"><a href="#/decision">Already know the decision and choices? Open Decision Lab →</a></p>\n      <p class="universal-lab-link"><a href="#/rescue">Need more help framing the decision? Use guided framing →</a></p>
+      <p class="universal-lab-link"><a href="#/decision">Already know the decision and choices? Open Decision Lab →</a></p>
+      <p class="universal-lab-link"><a href="#/rescue">Need more help framing the decision? Use guided framing →</a></p>
       ${hasSavedDecision ? '<p class="universal-return"><a href="#/decision">Continue saved work →</a></p>' : ''}
       <p class="universal-trust">Private by design. Your working decision stays in this browser unless you choose to export it.</p>
       <p id="universal-status" class="sr-only" role="status" aria-live="polite"></p>
