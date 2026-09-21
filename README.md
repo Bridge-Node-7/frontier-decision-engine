@@ -1,6 +1,6 @@
 # Frontier Decision Engine
 
-**Trustworthy decision infrastructure for choices under deep uncertainty.**
+**Human-governed decision infrastructure for Frontier Mission Assurance.**
 
 [Open the live application](https://bridgenode7.com/frontier-decision-engine/)
 
@@ -12,13 +12,13 @@
 
 The first screen asks one question: **What are you considering?**
 
-Share a situation, decision, question, options, constraints, notes, or other context in your own words. **Natural-language intake currently supports English.** FDE then does one of three things:
+Share a technical, organizational, mission, or strategic decision in your own words. **Natural-language intake currently supports English.** FDE then does one of three things:
 
 - shows only decision structure that is supportable from the words provided;
 - asks exactly one useful clarification question when the decision is still too sparse; or
 - states an honest capability boundary and a useful next action when the request is outside the browser-local decision-support scope.
 
-Supportable first-run structure uses four human-facing concepts: **Decision, What matters, Options, What may change.** Nothing inferred becomes a canonical model input until a person confirms it.
+Supportable first-run structure uses four human-facing concepts: **Decision, What matters, Choices, What may change.** Nothing inferred becomes a canonical model input until a person confirms it.
 
 The browser does not call a remote AI provider, retrieve outside facts, invent evidence, probabilities, scores, thresholds, scenario effects, or recommendations.
 
@@ -32,7 +32,7 @@ Accepted context stays in JavaScript page memory only and is discarded on refres
 
 ## Decision Lab
 
-After confirmation, FDE asks only for the additional explicit inputs required for a deterministic comparison. The formal Decision Lab preserves the existing ranking semantics, published schemas, saved-work protections, and truthful alternate outcomes including ties, no acceptable option, and insufficient information.
+FDE is the human-governed decision layer within Bridge Node 7's Frontier Mission Assurance architecture. After confirmation, FDE asks only for the additional explicit inputs required for a deterministic comparison. The formal Decision Lab preserves the existing ranking semantics, published schemas, saved-work protections, and truthful alternate outcomes including ties, no acceptable option, and insufficient information.
 
 The comparison informs. A person decides.
 
