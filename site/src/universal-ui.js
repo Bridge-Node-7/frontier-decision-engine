@@ -19,9 +19,10 @@ const KEYWORDS = {
     ['sovereignty', 'Sovereignty'], ['resilience', 'Resilience'], ['security', 'Security'],
     ['schedule risk', 'Schedule risk'], ['schedule', 'Schedule risk'],
     ['compliance', 'Compliance'], ['reliable', 'Reliability'], ['reliability', 'Reliability'],
+    ['mission performance', 'Mission performance'], ['technical performance', 'Technical performance'],
+    ['supply continuity', 'Supply continuity'], ['evidence confidence', 'Evidence confidence'],
     ['time', 'Time'], ['deadline', 'Time'], ['cost', 'Cost'], ['money', 'Cost'], ['price', 'Cost'], ['budget', 'Cost'],
     ['safety', 'Safety'], ['quality', 'Quality'], ['flexibility', 'Flexibility'],
-    ['people', 'People'], ['team', 'People'], ['customer', 'Customer'], ['customers', 'Customer'], ['revenue', 'Revenue'],
   ],
   futures: [
     ['requirements change', 'Requirements change'], ['requirement changes', 'Requirements change'], ['regulation changes', 'Requirements change'],
