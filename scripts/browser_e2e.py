@@ -703,7 +703,7 @@ def corrective_draft_and_entry_flow(page: Page, completed_file: str) -> None:
 
 def checkpoint_b_semantics_flow(page: Page) -> None:
     set_hash_route(page, "/decision/example")
-    page.locator("summary").filter(has_text=re.compile(r"^Choose a decision approach")).click()
+    page.locator("summary").filter(has_text=re.compile(r"^Choose an assurance profile")).click()
     page.locator("#decision-semantic-mode").select_option("sustainability-seer")
     page.locator('[data-decision-stage="0"] [data-stage-next]').click()
     semantic_model = page.locator('[data-surface="semantic-model"]')
@@ -736,7 +736,7 @@ def checkpoint_b_semantics_flow(page: Page) -> None:
     decision_signature.locator(":scope > summary").click()
     page.locator('[data-surface="decision-posture"]').wait_for(state="visible")
     results = page.locator("body").inner_text()
-    assert "Decision posture" in results
+    assert "Assurance posture" in results
     assert "HOLD" in results
     assert "People" in results and "Needs evidence" in results
     assert "Planet" in results and "Meets" in results
@@ -778,7 +778,7 @@ def checkpoint_b_semantics_flow(page: Page) -> None:
     assert preserved["conditions"][0]["criterion_refs"] == ["CRT-001"]
     assert preserved["conditions"][1] == {"id": "CON-002", "statement": "Imported condition", "required": False, "state": "satisfied", "criterion_refs": ["CRT-002"], "strategy_refs": ["STR-003"]}
     assert preserved["monitoring"][1] == {"monitoring_id": "MON-002", "observable": "Imported monitor", "trigger": "Imported trigger", "response": "Imported response", "required": False, "criterion_refs": ["CRT-002"], "strategy_refs": ["STR-003"]}
-    page.locator("summary").filter(has_text=re.compile(r"^Choose a decision approach")).click()
+    page.locator("summary").filter(has_text=re.compile(r"^Choose an assurance profile")).click()
     page.locator("#decision-semantic-mode").select_option("general")
     page.locator("#enable-decision-posture").uncheck()
     page.locator('[data-decision-stage="0"] [data-stage-next]').click()
