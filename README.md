@@ -32,13 +32,13 @@ Accepted context stays in JavaScript page memory only and is discarded on refres
 
 ## Decision Lab
 
-FDE is the human-governed decision layer within Bridge Node 7's Frontier Mission Assurance architecture. After confirmation, FDE asks only for the additional explicit inputs required for a deterministic comparison. The formal Decision Lab preserves the existing ranking semantics, published schemas, saved-work protections, and truthful alternate outcomes including ties, no acceptable option, and insufficient information.
+FDE is the human-governed decision layer within Bridge Node 7's Frontier Mission Assurance architecture. Materials-to-Mission and other assurance profiles can contribute governed evidence and dependency context; Governed Context carries bounded preparation context into FDE; the accountable human records the consequential decision and reassessment. After confirmation, FDE asks only for the additional explicit inputs required for a deterministic comparison. The formal Decision Lab preserves the existing ranking semantics, published schemas, saved-work protections, and truthful alternate outcomes including ties, no acceptable option, and insufficient information.
 
 The comparison informs. A person decides.
 
 ## Assurance on demand
 
-Technical users can inspect the underlying inputs, assumptions, evidence state, uncertainty, thresholds, scenario effects, calculations, provenance, and decision record without forcing that depth into the first-run experience.
+Technical users can inspect the underlying inputs, assumptions, evidence state, uncertainty, thresholds, scenario effects, calculations, provenance, and decision record without forcing that depth into the first-run experience. The optional **Sustainability assurance · SEER** profile adds People, Planet, Profits, and Product as independent criteria while preserving the same evidence, posture, monitoring, reassessment, and human-authority model.
 
 Technical documentation and exports may still use Decision Map and decision-science terminology where those terms improve precision; first-time users do not need to learn that vocabulary before receiving value.
 
