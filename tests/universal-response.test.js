@@ -7,7 +7,7 @@ test('clear decision input produces only supportable deterministic structure', (
   assert.equal(draft.intent, 'decision');
   assert.equal(draft.possibleDecision, 'Should we qualify an alternate source or redesign around the dependency');
   assert.deepEqual(draft.choices, ['qualify an alternate source', 'redesign around the dependency']);
-  assert.deepEqual(draft.goals, ['Schedule risk', 'Resilience']);
+  assert.deepEqual(draft.goals, ['Schedule risk', 'Resilience', 'Qualification']);
   assert.deepEqual(draft.futures, ['Timing gets worse']);
   assert.equal(responseFor(draft).kind, 'structure');
 });
