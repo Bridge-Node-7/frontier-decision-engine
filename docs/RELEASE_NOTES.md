@@ -1,16 +1,11 @@
-# Release status
+# v0.5.1
 
-Current application version: **0.5.1**
+Application version is 0.5.1. The compatible decision schema 0.2.10, semantic decision schema 0.3.0, and Mission Graph Decision Context Packet 0.3.0 remain supported.
 
-Supported contracts:
+Frontier Decision Engine is browser-local decision infrastructure for Frontier Mission Assurance. Deterministic comparison, governed-context trust separation, portable decision records, and accountable human judgment remain the supported operating boundary.
 
-- decision schema **0.2.10**
-- semantic decision schema **0.3.0**
-- Mission Graph Decision Context Packet **0.3.0**
-- legacy Mission Graph Decision Context Packet **0.2.0** remains inspection-only
+When sustainability is relevant, the optional SEER reminder prompts consideration of People, Planet, Profits, and Product as independent criteria. It supplements the decision and does not replace the comparison or human authority.
 
-The current reviewed source is `main`. Frontier Decision Engine is browser-local, preserves deterministic comparison semantics, keeps governed-context trust properties separate, and preserves accountable human decision authority.
+Browser-local storage is not encrypted confidential storage.
 
-SEER is available as an optional sustainability reminder across People, Planet, Profits, and Product when those considerations are relevant to the decision. It does not replace the comparison or collapse the dimensions into a composite score.
-
-Historical release records remain available through GitHub Releases for provenance and reproducibility.
+Historical version-specific release records remain available through GitHub Releases for provenance and reproducibility.
