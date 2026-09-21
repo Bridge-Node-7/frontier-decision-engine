@@ -1,10 +1,10 @@
 # Architecture
 
-Frontier Decision Engine is a static browser application served from `site/`. There is no backend or account service.
+Frontier Decision Engine is the human-governed decision layer of Bridge Node 7's Frontier Mission Assurance architecture. It is a static browser application served from `site/`; there is no backend or account service.
 
 ## Human-first runtime
 
-The public root is a one-input decision experience. A person can write a situation, decision, question, options, constraints, notes, or other context without learning decision-science vocabulary first.
+The public root is a one-input decision experience for technical, organizational, mission, and strategic decisions. A person can start in ordinary language without learning decision-science vocabulary first.
 
 After Continue, the runtime must resolve to exactly one of three states:
 
@@ -12,7 +12,7 @@ After Continue, the runtime must resolve to exactly one of three states:
 2. exactly one useful clarification question; or
 3. an honest capability boundary plus a useful next action.
 
-The first-run structure uses stable semantic concepts: `decision`, `what_matters`, `options`, `what_may_change`, `status`, and `next_required_input`. Human-facing labels remain natural. Only fields actually supported by explicit input are rendered.
+The first-run structure uses stable semantic concepts: `decision`, `what_matters`, `options`, `what_may_change`, `status`, and `next_required_input`. Human-facing labels are **Decision, What matters, Choices, What may change**. Only fields actually supported by explicit input are rendered.
 
 A Decision Map remains an internal architecture/export concept where it improves technical precision. It is not the pre-input first-run surface.
 
@@ -22,7 +22,7 @@ FDE follows this interaction rule:
 
 > Continue without bothering the person when the system can proceed safely; otherwise ask for the smallest human contribution that materially advances the decision.
 
-No ordinary input is treated as an error-only dead end. Sparse or ambiguous input receives one clarification question. Requests outside the local decision-support boundary receive a truthful limitation and a next action.
+No ordinary in-scope input is treated as an error-only dead end. Sparse or ambiguous input receives one clarification question. A small pre-interpretation scope boundary fails closed on high-risk personal decisions before they can become comparison choices; that boundary is infrastructure, not FDE's product domain.
 
 ## Formal Decision Lab
 
