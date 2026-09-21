@@ -461,6 +461,33 @@ export function renderUniversalDecisionExperience(root) {
       paint('#universal-response-title');
       return;
     }
+
+    // A complete new decision entered during a follow-up replaces the prior
+    // intake context instead of inheriting choices, goals, or uncertainties.
+    const replacementDraft = draftFromInput(answer);
+    const answerDefinesNewFocus = Boolean(replacementDraft.possibleDecision)
+      || replacementDraft.intent === 'multi'
+      || replacementDraft.intent === 'information';
+    if (answerDefinesNewFocus) {
+      Object.assign(state, replacementDraft);
+      const replacementResponse = responseFor(state);
+      if (replacementResponse.kind === 'question') {
+        setQuestion(state.optionListAmbiguous ? 'choices' : 'decision', replacementResponse.question);
+        return;
+      }
+      if (replacementResponse.kind === 'boundary') {
+        setBoundary(replacementResponse.title, replacementResponse.body);
+        return;
+      }
+      state.view = 'structure';
+      state.questionKind = '';
+      state.question = '';
+      state.answerDraft = '';
+      saveSession(state);
+      paint('#universal-response-title');
+      return;
+    }
+
     if (state.questionKind === 'decision') {
       const draft = draftFromInput(answer);
       state.startingPoint = state.startingPoint ? `${state.startingPoint}\n${answer}` : answer;

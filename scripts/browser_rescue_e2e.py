@@ -98,6 +98,31 @@ def run() -> None:
                     assert page.locator("#universal-response-title").inner_text() == "A saved FDE decision already exists."
                     assert page.get_by_role("link", name="Open Decision Lab →").is_visible()
 
+                    # A completely new decision entered during a follow-up must not inherit
+                    # criteria or options from the abandoned decision.
+                    page.evaluate(f"localStorage.removeItem('{DECISION_KEY}')")
+                    page.evaluate(f"sessionStorage.removeItem('{SESSION_KEY}')")
+                    page.goto(base, wait_until="networkidle")
+                    diligence_input = "Should we qualify a second gallium nitride wafer supplier in Japan or keep our current Chinese supplier? We care about cost, schedule risk, and DFARS compliance."
+                    page.locator("#universal-input").fill(diligence_input)
+                    page.get_by_role("button", name="Continue").click()
+                    assert page.locator("#universal-response-title").inner_text() == "Decision structure"
+                    assert page.get_by_text("Cost", exact=True).is_visible()
+                    assert page.get_by_text("Schedule risk", exact=True).is_visible()
+                    assert page.get_by_text("Compliance", exact=True).is_visible()
+                    page.get_by_role("button", name="Yes").click()
+                    assert page.locator("#universal-response-title").inner_text() == "What conditions or uncertainties could change the choice?"
+                    page.locator("#universal-input").fill("Should I hire a CFO this year?")
+                    page.get_by_role("button", name="Continue").click()
+                    assert page.locator("#universal-response-title").inner_text() == "Decision structure"
+                    assert page.get_by_text("Should I hire a CFO this year", exact=True).is_visible()
+                    current_text = page.locator("main").inner_text()
+                    assert "Cost" not in current_text
+                    assert "Schedule risk" not in current_text
+                    assert "Compliance" not in current_text
+                    assert "Japanese supplier" not in current_text
+                    assert "Chinese supplier" not in current_text
+
                     # Information-request UAT is a separate first-run scenario. Clear only the
                     # tab-scoped intake session; the persistence behavior itself is tested below.
                     page.evaluate(f"localStorage.removeItem('{DECISION_KEY}')")
