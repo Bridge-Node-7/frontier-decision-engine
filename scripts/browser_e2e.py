@@ -534,7 +534,7 @@ def default_ui_leakage_probe(page: Page) -> None:
     assert_no_default_ui_leakage(page)
 
 
-def corrective_draft_and_entry_flow(page: Page, completed_file: str) -> None:
+def draft_and_entry_flow(page: Page, completed_file: str) -> None:
     set_hash_route(page, "/decision/new")
     open_stage(page, 0)
     page.locator("summary").filter(has_text=re.compile(r"^Add context")).click()
@@ -701,10 +701,10 @@ def corrective_draft_and_entry_flow(page: Page, completed_file: str) -> None:
     assert_page_clean(page)
 
 
-def assurance_profile_flow(page: Page) -> None:
+def seer_sustainability_reminder_flow(page: Page) -> None:
     set_hash_route(page, "/decision/example")
-    page.locator("summary").filter(has_text=re.compile(r"^Choose an assurance profile")).click()
-    page.locator("#decision-semantic-mode").select_option("sustainability-seer")
+    page.locator("summary").filter(has_text=re.compile(r"^Optional considerations")).click()
+    page.locator("#enable-seer-reminder").check()
     page.locator('[data-decision-stage="0"] [data-stage-next]').click()
     semantic_model = page.locator('[data-surface="semantic-model"]')
     assert semantic_model.get_attribute("open") is None
@@ -778,8 +778,8 @@ def assurance_profile_flow(page: Page) -> None:
     assert preserved["conditions"][0]["criterion_refs"] == ["CRT-001"]
     assert preserved["conditions"][1] == {"id": "CON-002", "statement": "Imported condition", "required": False, "state": "satisfied", "criterion_refs": ["CRT-002"], "strategy_refs": ["STR-003"]}
     assert preserved["monitoring"][1] == {"monitoring_id": "MON-002", "observable": "Imported monitor", "trigger": "Imported trigger", "response": "Imported response", "required": False, "criterion_refs": ["CRT-002"], "strategy_refs": ["STR-003"]}
-    page.locator("summary").filter(has_text=re.compile(r"^Choose an assurance profile")).click()
-    page.locator("#decision-semantic-mode").select_option("general")
+    page.locator("summary").filter(has_text=re.compile(r"^Optional considerations")).click()
+    page.locator("#enable-seer-reminder").uncheck()
     page.locator("#enable-decision-posture").uncheck()
     page.locator('[data-decision-stage="0"] [data-stage-next]').click()
     open_stage(page, 4)
@@ -858,8 +858,8 @@ def run_mode(
     if full:
         completed_file = decision_flow(page, base)
         print_flow(page)
-        corrective_draft_and_entry_flow(page, completed_file)
-        assurance_profile_flow(page)
+        draft_and_entry_flow(page, completed_file)
+        seer_sustainability_reminder_flow(page)
     else:
         route(page, base, "/decision", '[data-surface="fde-hero"] h1', "Frontier Decision Engine")
     assert not console_errors, f"console errors in {label}: {console_errors}"
