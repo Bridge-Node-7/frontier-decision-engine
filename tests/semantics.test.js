@@ -17,16 +17,17 @@ import {
   decisionPosture,
   semanticView,
   setCautiousOverride,
-  summarizeFourP,
+  summarizeSeerProfile,
   updateVisibleCondition,
   updateVisibleMonitoring,
   validateDecisionSemantics,
 } from '../site/src/lib/semantics.js';
+import { SEER_PROFILE_ID } from '../site/src/lib/profiles/seer.js';
 import { createDraftBackup, parseDecisionFile } from '../site/src/lib/persistence.js';
 
 function seerDecision() {
   const decision = createDecisionCase();
-  activateDecisionSemantics(decision, 'sustainability-seer');
+  activateDecisionSemantics(decision, SEER_PROFILE_ID);
   decision.decision_semantics.criteria.forEach((criterion) => {
     criterion.label = `${criterion.dimension} requirement`;
     criterion.requirement = `${criterion.dimension} must satisfy its declared requirement`;
@@ -68,10 +69,10 @@ test('legacy 0.2.10 remains untouched until B semantics are explicitly activated
   assert.equal(decision.schema_version, '0.2.10');
   assert.equal(decision.decision_semantics, undefined);
   assert.equal(validateDecisionCase(decision).valid, true);
-  activateDecisionSemantics(decision, 'sustainability-seer');
+  activateDecisionSemantics(decision, SEER_PROFILE_ID);
   assert.equal(decision.schema_version, '0.3.0');
   assert.equal(decision.profile, 'critical-minerals-readiness');
-  assert.equal(decision.decision_semantics.mode, 'sustainability-seer');
+  assert.equal(decision.decision_semantics.mode, SEER_PROFILE_ID);
 });
 
 test('schema 0.3.0 is parallel and preserves the legacy schema identity', async () => {
@@ -92,12 +93,12 @@ test('completed SEER requires all Four Ps and usable criterion descriptions', ()
   assert.ok(result.errors.some((error) => error.includes('planet')));
 });
 
-test('Four-P summaries use every criterion and never compensate across dimensions', () => {
+test('SEER profile summaries use every criterion and never compensate across dimensions', () => {
   const decision = seerDecision();
   const productConcern = decision.decision_semantics.criteria.find((item) => item.dimension === 'product');
   productConcern.must_be_true = false;
   productConcern.outcome = 'does-not-meet';
-  const summaries = summarizeFourP(decision);
+  const summaries = summarizeSeerProfile(decision);
   assert.equal(summaries.find((item) => item.dimension === 'product').state, 'Does not meet');
   assert.ok(summaries.filter((item) => item.dimension !== 'product').every((item) => item.state === 'Meets'));
   assert.equal(decisionPosture(decision).posture, 'HOLD');
@@ -186,7 +187,7 @@ test('evidence weakening is posture-monotonic across every allowed weak state', 
 
 test('unknown and invalid evidence reject contradictory favorable outcomes', () => {
   for (const evidence of ['unknown', 'invalid']) {
-    const semantics = createDecisionSemantics('sustainability-seer');
+    const semantics = createDecisionSemantics(SEER_PROFILE_ID);
     semantics.criteria[0].evidence_state = evidence;
     semantics.criteria[0].outcome = 'meets';
     const result = validateDecisionSemantics(semantics);
@@ -254,7 +255,7 @@ test('next evidence is explicit, deterministic, and omitted when unsupported', (
   assert.deepEqual(decisionPosture(decision), decisionPosture(structuredClone(decision)));
 });
 
-test('next evidence prioritizes controlling severity before Four-P order', () => {
+test('next evidence prioritizes controlling severity before SEER profile order', () => {
   const decision = seerDecision();
   const people = requiredCriterion(decision, 'people');
   people.evidence_state = 'unknown';
@@ -268,7 +269,7 @@ test('next evidence prioritizes controlling severity before Four-P order', () =>
   assert.equal(decisionPosture(decision).next_evidence.evidence_need, 'Planet evidence B');
 });
 
-test('equal-severity next evidence follows Four-P then persisted order', () => {
+test('equal-severity next evidence follows SEER profile then persisted order', () => {
   const decision = seerDecision();
   const people = requiredCriterion(decision, 'people');
   people.evidence_state = 'unknown';
@@ -288,7 +289,7 @@ test('equal-severity next evidence follows Four-P then persisted order', () => {
 });
 
 test('compact Step 6 updates preserve unrepresented conditions and monitoring facts', () => {
-  const semantics = createDecisionSemantics('sustainability-seer');
+  const semantics = createDecisionSemantics(SEER_PROFILE_ID);
   semantics.conditions = [
     { id: 'CON-001', statement: 'Visible condition', required: true, state: 'open', criterion_refs: ['CRT-001'], strategy_refs: ['STR-001'] },
     { id: 'CON-002', statement: 'Imported condition', required: false, state: 'satisfied', criterion_refs: ['CRT-002'], strategy_refs: ['STR-002'], extension: 'preserve' },
