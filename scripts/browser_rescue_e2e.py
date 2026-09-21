@@ -49,11 +49,11 @@ def run() -> None:
 
                     assert page.title() == "Frontier Decision Engine"
                     assert page.locator("h1").inner_text() == "What are you considering?"
-                    assert page.get_by_text("Share a situation, decision, question, or context in your own words.", exact=True).is_visible()
+                    assert page.get_by_text("Share a technical, organizational, mission, or strategic decision in your own words.", exact=True).is_visible()
                     assert page.get_by_role("button", name="Continue").is_visible()
-                    assert page.get_by_role("link", name="Already know the decision and options? Open Decision Lab →").is_visible()
+                    assert page.get_by_role("link", name="Already know the decision and choices? Open Decision Lab →").is_visible()
                     assert page.get_by_text("Private by design. Your working decision stays in this browser unless you choose to export it.", exact=True).is_visible()
-                    assert page.locator("#universal-input").get_attribute("placeholder") == "Decision, question, options, constraints, notes, or other context…"
+                    assert page.locator("#universal-input").get_attribute("placeholder") == "Decision, choices, criteria, uncertainties, notes, or context…"
                     assert page.locator(".universal-surface").count() == 0
                     assert "Decision Map" not in page.locator("main").inner_text()
                     assert "Bring the whole mess" not in page.locator("body").inner_text()
@@ -133,6 +133,27 @@ def run() -> None:
                     assert "does not retrieve outside facts" in page.locator("#universal-response-title").inner_text().lower()
                     assert "Gather the fact first" in page.locator("main").inner_text()
 
+                    # High-risk personal input fails closed before ordinary decision structuring.
+                    page.evaluate(f"localStorage.removeItem('{DECISION_KEY}')")
+                    page.evaluate(f"sessionStorage.removeItem('{SESSION_KEY}')")
+                    page.goto(base, wait_until="networkidle")
+                    page.locator("#universal-input").fill("Should I hurt myself or not?")
+                    page.get_by_role("button", name="Continue").click()
+                    assert page.locator("#universal-response-title").inner_text() == "This decision is outside FDE’s comparison scope."
+                    assert "does not compare or optimize self-harm" in page.locator("main").inner_text()
+
+                    # Mission-focused criteria remain choices/criteria, not an ambiguous option list.
+                    page.evaluate(f"sessionStorage.removeItem('{SESSION_KEY}')")
+                    page.goto(base, wait_until="networkidle")
+                    page.locator("#universal-input").fill("Should we impose export controls or negotiate supply agreements with allies? National security, cost, and time matter.")
+                    page.get_by_role("button", name="Continue").click()
+                    assert page.locator("#universal-response-title").inner_text() == "Decision structure"
+                    assert page.get_by_text("National security", exact=True).is_visible()
+                    assert page.get_by_text("Cost", exact=True).is_visible()
+                    assert page.get_by_text("Time", exact=True).is_visible()
+                    assert page.get_by_text("impose export controls", exact=True).is_visible()
+                    assert page.get_by_text("negotiate supply agreements with allies", exact=True).is_visible()
+
                     # Ctrl/Cmd + Enter activates Continue.
                     page.get_by_role("button", name="Adjust").click()
                     page.locator("#universal-input").fill("Should we stay or go? Safety and cost matter. Delay and demand changes are possible.")
@@ -146,7 +167,7 @@ def run() -> None:
                     page.reload(wait_until="networkidle")
                     assert page.locator("#universal-input").input_value() == "Refresh should not erase this situation."
 
-                    # Decision Rescue remains reachable and intact.
+                    # Guided framing remains reachable and intact.
                     page.evaluate(f"sessionStorage.removeItem('{RESCUE_SESSION_KEY}')")
                     page.goto(f"{base}#/rescue", wait_until="networkidle")
                     page.locator("#rescue-question").wait_for(state="visible")
