@@ -701,7 +701,7 @@ def draft_and_entry_flow(page: Page, completed_file: str) -> None:
     assert_page_clean(page)
 
 
-def assurance_profile_flow(page: Page) -> None:
+def seer_sustainability_reminder_flow(page: Page) -> None:
     set_hash_route(page, "/decision/example")
     page.locator("summary").filter(has_text=re.compile(r"^Optional considerations")).click()
     page.locator("#enable-seer-reminder").check()
@@ -859,7 +859,7 @@ def run_mode(
         completed_file = decision_flow(page, base)
         print_flow(page)
         draft_and_entry_flow(page, completed_file)
-        assurance_profile_flow(page)
+        seer_sustainability_reminder_flow(page)
     else:
         route(page, base, "/decision", '[data-surface="fde-hero"] h1', "Frontier Decision Engine")
     assert not console_errors, f"console errors in {label}: {console_errors}"
