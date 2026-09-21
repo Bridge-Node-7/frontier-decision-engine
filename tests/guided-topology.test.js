@@ -13,22 +13,22 @@ import { createDraftBackup, parseDraftBackupText } from '../site/src/lib/persist
 
 function completeGuidedComparison() {
   const decision = createGuidedDecisionCase();
-  decision.question = 'Should we move now or test first?';
-  decision.objectives[0].label = 'Reliability';
+  decision.question = 'Should we qualify the alternate source or run a bounded pilot first?';
+  decision.objectives[0].label = 'Mission reliability';
   decision.objectives[0].threshold = 50;
   decision.objectives[0].critical = true;
-  decision.objectives[1].label = 'Flexibility';
+  decision.objectives[1].label = 'Reversibility';
   decision.objectives[1].threshold = 50;
 
-  decision.strategies[0].label = 'Move now';
+  decision.strategies[0].label = 'Qualify alternate source';
   decision.strategies[0].baseline['OBJ-001'] = 70;
   decision.strategies[0].baseline['OBJ-002'] = 60;
-  decision.strategies[1].label = 'Test first';
+  decision.strategies[1].label = 'Run bounded pilot';
   decision.strategies[1].baseline['OBJ-001'] = 50;
   decision.strategies[1].baseline['OBJ-002'] = 80;
 
-  decision.scenarios[0].label = 'Things stay roughly the same';
-  decision.scenarios[1].label = 'Integration takes longer';
+  decision.scenarios[0].label = 'Current conditions persist';
+  decision.scenarios[1].label = 'Qualification takes longer';
   for (const scenario of decision.scenarios) {
     for (const strategy of decision.strategies) {
       for (const objective of decision.objectives) {
@@ -77,7 +77,7 @@ test('true 2 by 2 by 2 comparison is analysis-ready and uses the unchanged ranki
 
 test('guided 2 by 2 by 2 drafts survive the existing portable draft-backup path', () => {
   const decision = createGuidedDecisionCase();
-  decision.question = 'Should we continue?';
+  decision.question = 'Should we continue qualification?';
   const text = JSON.stringify(createDraftBackup(decision));
   const reopened = parseDraftBackupText(text, validateDraftDecisionCase);
   assert.equal(reopened.ok, true);
