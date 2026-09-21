@@ -10,7 +10,11 @@ def route_suite(page, base: str) -> None:
         ("/", '[data-surface="fde-hero"] h1', "What are you considering?"),
         ("/method", '[data-surface="integrated-method"]', "Frame"),
         ("/decision", '[data-surface="fde-hero"] h1', "Frontier Decision Engine"),
+        ("/decision/new", '[data-surface="fde-hero"] h1', "Frontier Decision Engine"),
+        ("/decision/example", '[data-surface="fde-hero"] h1', "Frontier Decision Engine"),
         ("/decision/open", '[data-surface="fde-hero"] h1', "Frontier Decision Engine"),
+        ("/context", '[data-surface="fde-hero"] h1', "Open governed Mission Graph context"),
+        ("/rescue", '[data-surface="fde-hero"] h1', "Frontier Decision Engine"),
     ]
     for route_path, selector, expected in checks:
         suite.route(page, base, route_path, selector, expected)
