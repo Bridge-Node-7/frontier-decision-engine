@@ -38,7 +38,7 @@ The comparison informs. A person decides.
 
 ## Assurance on demand
 
-Technical users can inspect the underlying inputs, assumptions, evidence state, uncertainty, thresholds, scenario effects, calculations, provenance, and decision record without forcing that depth into the first-run experience. The optional **Sustainability assurance · SEER** profile adds People, Planet, Profits, and Product as independent criteria while preserving the same evidence, posture, monitoring, reassessment, and human-authority model.
+Technical users can inspect the underlying inputs, assumptions, evidence state, uncertainty, thresholds, scenario effects, calculations, provenance, and decision record without forcing that depth into the first-run experience. When sustainability is relevant, an optional **SEER reminder** prompts consideration of People, Planet, Profits, and Product as independent criteria. It supplements the decision rather than changing the comparison, and it preserves the same evidence, posture, monitoring, reassessment, and human-authority model.
 
 Technical documentation and exports may still use Decision Map and decision-science terminology where those terms improve precision; first-time users do not need to learn that vocabulary before receiving value.
 
