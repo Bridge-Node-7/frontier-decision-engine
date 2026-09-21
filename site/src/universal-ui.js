@@ -13,7 +13,7 @@ const KEYWORDS = {
     ['time', 'Time'], ['deadline', 'Time'], ['cost', 'Cost'], ['money', 'Cost'], ['price', 'Cost'], ['budget', 'Cost'],
     ['safety', 'Safety'], ['quality', 'Quality'], ['reliable', 'Reliability'], ['reliability', 'Reliability'],
     ['people', 'People'], ['team', 'People'], ['customer', 'Customer'], ['customers', 'Customer'], ['revenue', 'Revenue'],
-    ['flexibility', 'Flexibility'], ['compliance', 'Compliance'],
+    ['flexibility', 'Flexibility'], ['schedule', 'Schedule risk'], ['compliance', 'Compliance'],
   ],
   futures: [
     ['late', 'Timing gets worse'], ['delay', 'Timing gets worse'], ['shortage', 'Availability worsens'],
@@ -80,9 +80,13 @@ function getIntent(text) {
 
 function hasUnresolvedOptionList(text) {
   const listish = /([^\n.!?;:]{2,200}?,[^\n.!?;:]{2,200}?)\s*,?\s*\b(?:or|and)\s+([^\n.!?;:]{2,80})/i;
-  const match = listish.exec(text);
-  if (!match) return false;
-  return match[1].split(',').filter((value) => value.trim().length >= 2).length >= 2;
+  const criteriaLead = /\b(?:care about|what matters|criteria|goals?|priorities|requirements?)\b/i;
+  for (const clause of normalize(text).split(/[.!?\n]+/).map((value) => value.trim()).filter(Boolean)) {
+    const match = listish.exec(clause);
+    if (!match || criteriaLead.test(clause)) continue;
+    if (match[1].split(',').filter((value) => value.trim().length >= 2).length >= 2) return true;
+  }
+  return false;
 }
 
 function hasTreatmentChangeRequest(text) {
@@ -434,7 +438,7 @@ export function renderUniversalDecisionExperience(root) {
     Object.assign(state, draft);
     const response = responseFor(state);
     if (response.kind === 'question') {
-      setQuestion('decision', response.question);
+      setQuestion(state.optionListAmbiguous ? 'choices' : 'decision', response.question);
       return;
     }
     if (response.kind === 'boundary') {
