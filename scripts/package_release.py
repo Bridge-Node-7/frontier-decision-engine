@@ -17,7 +17,7 @@ CHECKSUM = DIST / f"{STEM}.zip.sha256"
 
 EXCLUDED_PARTS = {".git", "dist", "node_modules", ".private-input", "coverage", "__pycache__", "hosted-verification"}
 EXCLUDED_SUFFIXES = {".xlsx", ".xls", ".pyc", ".pyo"}
-FIXED_TIME = (2026, 9, 16, 0, 0, 0)
+FIXED_TIME = (2026, 9, 21, 0, 0, 0)
 
 def include(path: Path) -> bool:
     relative = path.relative_to(ROOT)

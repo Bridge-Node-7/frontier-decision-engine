@@ -101,7 +101,7 @@ async function router() {
       }
     } else {
       document.title = 'Page Not Found | Frontier Decision Engine';
-      main.innerHTML = `<section class="panel stack"><h1>Page not found</h1><a href="#/">Return to Frontier Decision Engine</a></section>`;
+      main.innerHTML = `<section class="panel stack"><h1>Page not found</h1><p>This route is not part of the current Frontier Decision Engine.</p><div class="actions"><a class="button primary" href="#/">Return to Frontier Decision Engine</a><a class="button" href="#/framing">Use Guided framing</a></div></section>`;
     }
   }
   main.dataset.route = path;

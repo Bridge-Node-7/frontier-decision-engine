@@ -78,15 +78,25 @@ function getIntent(text) {
   return decisionPattern.test(clean) ? 'decision' : 'open';
 }
 
-function hasUnresolvedOptionList(text) {
-  const listish = /([^\n.!?;:]{2,200}?,[^\n.!?;:]{2,200}?)\s*,?\s*\b(?:or|and)\s+([^\n.!?;:]{2,80})/i;
-  const criteriaClausePattern = /\b(?:care about|what matters|criteria|goals?|priorities|requirements?|matters?|important|must\s+(?:balance|protect|preserve|meet)|need(?:s)?\s+to\s+(?:balance|protect|preserve|meet))\b/i;
+const criteriaClausePattern = /\b(?:care about|what matters|criteria|goals?|priorities|requirements?|matters?|important|must\s+(?:balance|protect|preserve|meet)|need(?:s)?\s+to\s+(?:balance|protect|preserve|meet))\b/i;
+
+function extractListedChoices(text) {
   for (const clause of normalize(text).split(/[.!?\n]+/).map((value) => value.trim()).filter(Boolean)) {
-    const match = listish.exec(clause);
-    if (!match || criteriaClausePattern.test(clause)) continue;
-    if (match[1].split(',').filter((value) => value.trim().length >= 2).length >= 2) return true;
+    if (!clause.includes(',') || criteriaClausePattern.test(clause) || !/\b(?:or|and)\b/i.test(clause)) continue;
+    const body = clause
+      .replace(/^(?:should\s+(?:i|we)\s+(?:choose|pick|select|use|pursue|qualify)\s+|choose\s+(?:between\s+)?|decid(?:e|ing)\s+between\s+|we\s+can\s+)/i, '')
+      .trim();
+    const parts = body
+      .split(/\s*,\s*(?:\b(?:or|and)\b\s*)?|\s+\b(?:or|and)\b\s+/i)
+      .map((value) => cleanChoice(value).replace(/\bwhich\s+should\s+(?:i|we)\s+choose\b.*$/i, '').trim())
+      .filter((value) => value.length >= 2);
+    if (parts.length >= 3) return [...new Set(parts)];
   }
-  return false;
+  return [];
+}
+
+function hasUnresolvedOptionList(text) {
+  return extractListedChoices(text).length > MAX_SUGGESTIONS.choices;
 }
 
 function extractChoices(text) {
@@ -147,8 +157,10 @@ function splitUserItems(text, max) {
 export function draftFromInput(text) {
   const clean = normalize(text);
   const intent = getIntent(clean);
-  const optionListAmbiguous = hasUnresolvedOptionList(clean);
-  const choices = optionListAmbiguous ? [] : extractChoices(clean);
+  const listedChoices = extractListedChoices(clean);
+  const detectedChoiceCount = listedChoices.length;
+  const optionListAmbiguous = detectedChoiceCount > MAX_SUGGESTIONS.choices;
+  const choices = optionListAmbiguous ? [] : unique([...extractChoices(clean), ...listedChoices], MAX_SUGGESTIONS.choices);
   const goals = extractGoals(clean);
   const futures = extractFutures(clean);
   const possibleDecision = intent !== 'multi' && (decisionPattern.test(clean) || (choices.length >= 2 && clean.includes('?'))) ? titleFrom(clean) : '';
@@ -157,6 +169,7 @@ export function draftFromInput(text) {
     intent,
     possibleDecision,
     optionListAmbiguous,
+    detectedChoiceCount,
     choices,
     goals,
     futures,
@@ -170,7 +183,8 @@ export function responseFor(state) {
     return { kind: 'boundary', title: boundary.title, body: boundary.body };
   }
   if (state?.optionListAmbiguous) {
-    return { kind: 'question', question: 'What choices should we compare?' };
+    const count = Number(state.detectedChoiceCount) || 4;
+    return { kind: 'question', question: `I found ${count} possible choices. Choose up to ${MAX_SUGGESTIONS.choices} to compare.` };
   }
   if (!clean || (!state?.possibleDecision && state?.intent !== 'information' && state?.intent !== 'multi')) {
     return { kind: 'question', question: 'Which decision or question should we focus on?' };
@@ -315,6 +329,7 @@ export function renderUniversalDecisionExperience(root) {
     intent: restored.intent || '',
     possibleDecision: restored.possibleDecision || '',
     optionListAmbiguous: Boolean(restored.optionListAmbiguous),
+    detectedChoiceCount: Number(restored.detectedChoiceCount) || 0,
     choices: Array.isArray(restored.choices) ? restored.choices.slice(0, MAX_SUGGESTIONS.choices) : [],
     goals: Array.isArray(restored.goals) ? restored.goals.slice(0, MAX_SUGGESTIONS.goals) : [],
     futures: Array.isArray(restored.futures) ? restored.futures.slice(0, MAX_SUGGESTIONS.futures) : [],

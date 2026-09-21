@@ -185,7 +185,7 @@ test('exported decision brief preserves assumptions, vulnerabilities, and adapti
   decision.human_decision.next_action = 'Begin review.';
   const html = buildDecisionHtml(createDecisionRecord(decision));
   assert.match(html, /<h3>Assumed<\/h3>/);
-  assert.match(html, /Selected-choice vulnerabilities/);
+  assert.match(html, /Recorded human choice vulnerabilities/);
   assert.match(html, /Recorded human decision/);
   assert.match(html, /<h3>Monitor<\/h3>/);
   assert.match(html, /<h3>Contingencies<\/h3>/);
