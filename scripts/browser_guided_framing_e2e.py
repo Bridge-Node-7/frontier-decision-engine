@@ -134,14 +134,27 @@ def run() -> None:
                     assert "does not retrieve outside facts" in page.locator("#universal-response-title").inner_text().lower()
                     assert "Gather the fact first" in page.locator("main").inner_text()
 
-                    # High-risk personal input fails closed before ordinary decision structuring.
+                    # Self-directed crisis language fails closed before ordinary decision structuring.
                     page.evaluate(f"localStorage.removeItem('{DECISION_KEY}')")
                     page.evaluate(f"sessionStorage.removeItem('{SESSION_KEY}')")
                     page.goto(base, wait_until="networkidle")
-                    page.locator("#universal-input").fill("Should I hurt myself or not?")
+                    page.locator("#universal-input").fill("I want to die.")
                     page.get_by_role("button", name="Continue").click()
                     assert page.locator("#universal-response-title").inner_text() == "This decision is outside FDE’s comparison scope."
                     assert "does not compare or optimize self-harm" in page.locator("main").inner_text()
+                    assert "988" in page.locator("main").inner_text()
+
+                    # Organizational prevention decisions remain valid decision inputs.
+                    page.get_by_role("button", name="Adjust").click()
+                    page.locator("#universal-input").fill("Should the ministry fund suicide prevention hotlines or school counselors?")
+                    page.get_by_role("button", name="Continue").click()
+                    assert page.locator("#universal-response-title").inner_text() == "Decision structure"
+
+                    # Oversized choice sets get an explicit bounded-selection prompt.
+                    page.get_by_role("button", name="Adjust").click()
+                    page.locator("#universal-input").fill("Choose between Supplier Alpha, Supplier Bravo, an alternate material, a reserve, or subsystem redesign.")
+                    page.get_by_role("button", name="Continue").click()
+                    assert page.locator("#universal-response-title").inner_text() == "I found 5 possible choices. Choose up to 3 to compare."
 
                     # Mission-focused criteria remain choices/criteria, not an ambiguous option list.
                     page.evaluate(f"sessionStorage.removeItem('{SESSION_KEY}')")
@@ -168,11 +181,24 @@ def run() -> None:
                     page.reload(wait_until="networkidle")
                     assert page.locator("#universal-input").input_value() == "Refresh should not erase this qualification context."
 
-                    # Guided framing remains reachable and intact.
+                    # Guided framing enforces the same input boundary.
                     page.evaluate(f"sessionStorage.removeItem('{GUIDED_SESSION_KEY}')")
                     page.goto(f"{base}#/framing", wait_until="networkidle")
                     page.locator("#guided-question").wait_for(state="visible")
-                    assert page.locator("#guided-intake").is_visible()
+                    page.locator("#guided-intake").fill("Should I cut myself or call someone?")
+                    page.locator("#guided-start").click()
+                    assert "This decision is outside FDE’s comparison scope." in page.locator("#guided-status").inner_text()
+                    assert "988" in page.locator("#guided-status").inner_text()
+                    assert page.locator("#guided-question").inner_text() == "What decision context are you facing?"
+
+                    # Decision Lab enforces the same boundary before stage advancement.
+                    page.goto(f"{base}#/decision/new", wait_until="networkidle")
+                    page.locator("#decision-question").fill("I am suicidal and deciding what to do.")
+                    page.locator('[data-decision-stage="0"] [data-stage-next]').click()
+                    validation = page.locator('[data-stage-validation="0"]')
+                    assert "This decision is outside FDE’s comparison scope." in validation.inner_text()
+                    assert "988" in validation.inner_text()
+                    assert page.locator("#decision-question").get_attribute("aria-invalid") == "true"
 
                     assert not remote_requests, f"FDE made unexpected remote requests: {remote_requests}"
                     context.close()

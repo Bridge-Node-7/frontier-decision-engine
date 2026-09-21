@@ -60,21 +60,29 @@ test('human input remains inert context and extracted fields remain explicit', (
   assert.ok(draft.goals.includes('Safety'));
 });
 
-test('multi-option lists never silently truncate into a partial option set', () => {
-  const examples = [
-    'Choose between Supplier Alpha, Supplier Bravo, an alternate material, a reserve, or subsystem redesign.',
+test('listed choices are preserved when they fit the comparison bound', () => {
+  for (const input of [
     'Should we qualify Supplier Alpha, Supplier Bravo, or Supplier Charlie?',
     'We can dual-source, stockpile, or redesign. Which should we choose?',
     'Should we qualify the incumbent material, a substitute material, or a redesigned subsystem?',
-  ];
-  for (const input of examples) {
+  ]) {
     const draft = draftFromInput(input);
-    assert.equal(draft.optionListAmbiguous, true, input);
-    assert.deepEqual(draft.choices, [], input);
-    const response = responseFor(draft);
-    assert.equal(response.kind, 'question', input);
-    assert.equal(response.question, 'What choices should we compare?', input);
+    assert.equal(draft.optionListAmbiguous, false, input);
+    assert.equal(draft.detectedChoiceCount, 3, input);
+    assert.equal(draft.choices.length, 3, input);
+    assert.equal(responseFor(draft).kind, 'structure', input);
   }
+});
+
+test('oversized listed choices ask the user to choose up to the supported bound', () => {
+  const input = 'Choose between Supplier Alpha, Supplier Bravo, an alternate material, a reserve, or subsystem redesign.';
+  const draft = draftFromInput(input);
+  assert.equal(draft.optionListAmbiguous, true);
+  assert.equal(draft.detectedChoiceCount, 5);
+  assert.deepEqual(draft.choices, []);
+  const response = responseFor(draft);
+  assert.equal(response.kind, 'question');
+  assert.equal(response.question, 'I found 5 possible choices. Choose up to 3 to compare.');
 });
 
 test('binary option extraction remains deterministic', () => {
@@ -84,23 +92,23 @@ test('binary option extraction remains deterministic', () => {
   assert.equal(responseFor(draft).kind, 'structure');
 });
 
-test('generated multi-option corpus never exposes a strict partial option set', () => {
-  const connectors = ['or', 'or', 'or'];
+test('generated oversized-choice corpus never exposes a strict partial option set', () => {
   let cases = 0;
-  for (let count = 3; count <= 7; count += 1) {
+  for (let count = 4; count <= 7; count += 1) {
     for (let variant = 0; variant < 60; variant += 1) {
       const options = Array.from({ length: count }, (_, index) => `qualification-path-${variant}-${index + 1}`);
       const prefix = variant % 2 === 0 ? 'Should we choose ' : 'Choose between ';
       const separator = variant % 3 === 0 ? ', ' : variant % 3 === 1 ? ',  ' : ', ';
-      const input = `${prefix}${options.slice(0, -1).join(separator)}, ${connectors[variant % connectors.length]} ${options.at(-1)}?`;
+      const input = `${prefix}${options.slice(0, -1).join(separator)}, or ${options.at(-1)}?`;
       const draft = draftFromInput(input);
       assert.equal(draft.optionListAmbiguous, true, input);
+      assert.equal(draft.detectedChoiceCount, count, input);
       assert.equal(draft.choices.length, 0, input);
-      assert.equal(responseFor(draft).question, 'What choices should we compare?', input);
+      assert.equal(responseFor(draft).question, `I found ${count} possible choices. Choose up to 3 to compare.`, input);
       cases += 1;
     }
   }
-  assert.ok(cases >= 250);
+  assert.ok(cases >= 200);
 });
 
 test('out-of-scope personal treatment decisions fail closed', () => {
@@ -182,19 +190,35 @@ test('ordinary non-medical decisions are not caught by personal safety boundarie
   }
 });
 
-test('self-harm requests fail closed before ordinary decision structuring', () => {
+test('self-directed crisis language fails closed before ordinary decision structuring', () => {
   for (const input of [
     'Should I hurt myself or not?',
     'Should I kill myself or keep going?',
     'Should I end my life?',
     'I am suicidal and deciding what to do.',
     'Should I self-harm or call someone?',
+    'I want to die.',
+    'I want to end it all.',
+    'end it all',
+    'Should I cut myself or call someone?',
+    'I cannot keep living like this.',
   ]) {
     const response = responseFor(draftFromInput(input));
     assert.equal(response.kind, 'boundary', input);
     assert.equal(response.title, 'This decision is outside FDE’s comparison scope.', input);
     assert.match(response.body, /does not compare or optimize self-harm/i, input);
-    assert.match(response.body, /emergency services|crisis service/i, input);
+    assert.match(response.body, /988/i, input);
+  }
+});
+
+test('organizational prevention decisions are not mistaken for first-person self-harm', () => {
+  for (const input of [
+    'Should the ministry fund suicide prevention hotlines or school counselors?',
+    'Should we expand suicide prevention training or crisis-response staffing?',
+    'Should the program measure self-harm prevention outcomes or referral completion?',
+  ]) {
+    const response = responseFor(draftFromInput(input));
+    assert.notEqual(response.kind === 'boundary' && response.title === 'This decision is outside FDE’s comparison scope.', true, input);
   }
 });
 

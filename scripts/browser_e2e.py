@@ -448,6 +448,12 @@ def decision_flow(page: Page, base: str) -> str:
             assert "Strongest alignment in this comparison" in inspected
             assert "81%" in inspected
 
+        if expected == "Choose a path.":
+            decision_text = page.locator("body").inner_text()
+            assert "No human selection" in decision_text
+            assert "Conditions that could break the selection" not in decision_text
+            assert "No declared threshold failures in the included futures." not in decision_text
+
     page.locator("#human-rationale").fill("")
     page.locator("#human-next-action").fill("")
     page.locator("#record-decision").click()
