@@ -1,7 +1,8 @@
+import { SEER_DIMENSIONS, SEER_PROFILE_ID, SEER_PROFILE_LABEL, createSeerCriteria, isSeerProfile } from './profiles/seer.js';
+
 export const SEMANTIC_SCHEMA_VERSION = '0.3.0';
-export const SEMANTIC_MODES = Object.freeze(['general', 'sustainability-seer']);
-export const DIMENSIONS = Object.freeze(['general', 'people', 'planet', 'profits', 'product']);
-export const FOUR_P_DIMENSIONS = Object.freeze(['people', 'planet', 'profits', 'product']);
+export const SEMANTIC_MODES = Object.freeze(['general', SEER_PROFILE_ID]);
+export const DIMENSIONS = Object.freeze(['general', ...SEER_DIMENSIONS]);
 export const EVIDENCE_STATES = Object.freeze(['supported', 'partial', 'unknown', 'contested', 'stale', 'invalid']);
 export const CRITERION_OUTCOMES = Object.freeze(['meets', 'does-not-meet', 'not-assessable']);
 export const PROCEED_STATES = Object.freeze(['unreviewed', 'declared', 'none-required']);
@@ -14,23 +15,9 @@ const list = (value) => Array.isArray(value) ? value : [];
 export function createDecisionSemantics(mode = 'general') {
   return {
     mode: SEMANTIC_MODES.includes(mode) ? mode : 'general',
-    posture_enabled: mode === 'sustainability-seer',
+    posture_enabled: isSeerProfile(mode),
     proceed_conditions_state: 'unreviewed',
-    criteria: mode === 'sustainability-seer' ? FOUR_P_DIMENSIONS.map((dimension, index) => ({
-      criterion_id: `CRT-${String(index + 1).padStart(3, '0')}`,
-      dimension,
-      label: '',
-      requirement: '',
-      must_be_true: false,
-      evidence_state: 'unknown',
-      outcome: 'not-assessable',
-      source_refs: [],
-      evidence_need: '',
-      affected_party_ids: [],
-      missing_perspectives: [],
-      assumptions: [],
-      limitations: [],
-    })) : [],
+    criteria: isSeerProfile(mode) ? createSeerCriteria() : [],
     affected_parties: [],
     dissent: [],
     conditions: [],
@@ -57,17 +44,15 @@ export function activateDecisionSemantics(decision, mode = 'general') {
   }
   decision.decision_semantics.mode = SEMANTIC_MODES.includes(mode) ? mode : 'general';
   for (const strategy of list(decision.strategies)) strategy.score_rationales ||= {};
-  if (mode === 'sustainability-seer') {
+  if (isSeerProfile(mode)) {
     decision.decision_semantics.posture_enabled = true;
     const represented = new Set(list(decision.decision_semantics.criteria).map((item) => item.dimension));
-    for (const dimension of FOUR_P_DIMENSIONS) {
+    for (const dimension of SEER_DIMENSIONS) {
       if (!represented.has(dimension)) {
         const next = decision.decision_semantics.criteria.length + 1;
         decision.decision_semantics.criteria.push({
+          ...createSeerCriteria(next - 1)[SEER_DIMENSIONS.indexOf(dimension)],
           criterion_id: `CRT-${String(next).padStart(3, '0')}`,
-          dimension, label: '', requirement: '', must_be_true: false,
-          evidence_state: 'unknown', outcome: 'not-assessable', source_refs: [], evidence_need: '',
-          affected_party_ids: [], missing_perspectives: [], assumptions: [], limitations: [],
         });
       }
     }
@@ -102,8 +87,8 @@ export function validateDecisionSemantics(semantics, { completed = false } = {})
   }
   if (semantics.proceed_conditions_state === 'declared' && !criteria.some((item) => item.must_be_true)) errors.push('Declared proceed conditions require at least one criterion marked required to move forward.');
   if (semantics.proceed_conditions_state === 'none-required' && criteria.some((item) => item.must_be_true)) errors.push('None-required cannot be combined with a required-to-move-forward criterion.');
-  if (semantics.mode === 'sustainability-seer' && completed) {
-    for (const dimension of FOUR_P_DIMENSIONS) if (!criteria.some((item) => item.dimension === dimension)) errors.push(`Completed SEER-informed decisions require a ${dimension} criterion.`);
+  if (isSeerProfile(semantics.mode) && completed) {
+    for (const dimension of SEER_DIMENSIONS) if (!criteria.some((item) => item.dimension === dimension)) errors.push(`Completed ${SEER_PROFILE_LABEL} decisions require a ${dimension} criterion.`);
   }
   for (const [collection, prefix] of [['conditions', 'condition'], ['safeguards', 'safeguard']]) {
     for (const item of list(semantics[collection])) {
@@ -131,9 +116,9 @@ function criterionConcern(criterion) {
   return criterion.outcome === 'meets' ? 'Meets' : 'Needs evidence';
 }
 
-export function summarizeFourP(decision) {
+export function summarizeSeerProfile(decision) {
   const semantics = semanticView(decision);
-  return FOUR_P_DIMENSIONS.map((dimension) => {
+  return SEER_DIMENSIONS.map((dimension) => {
     const criteria = list(semantics.criteria).filter((item) => item.dimension === dimension);
     const states = criteria.map(criterionConcern);
     const state = !criteria.length ? 'Not assessed'
@@ -177,7 +162,7 @@ export function decisionPosture(decision) {
   for (const item of unresolved) changes.push(item.evidence_need ? `${item.label || item.criterion_id}: ${item.evidence_need}` : `${item.label || item.criterion_id}: resolve the declared requirement.`);
   for (const item of [...list(semantics.conditions), ...list(semantics.safeguards)].filter((entry) => entry.required && entry.state === 'open')) changes.push(item.statement);
   for (const item of list(semantics.monitoring).filter((entry) => entry.required && text(entry.trigger))) changes.push(`${item.trigger}${text(item.response) ? ` — ${item.response}` : ''}`);
-  const dimensionOrder = new Map([...FOUR_P_DIMENSIONS, 'general'].map((item, index) => [item, index]));
+  const dimensionOrder = new Map([...SEER_DIMENSIONS, 'general'].map((item, index) => [item, index]));
   const persistedOrder = new Map(list(semantics.criteria).map((item, index) => [item, index]));
   const next = unresolved.filter((item) => text(item.evidence_need)).sort((a, b) => (
     POSTURE_SEVERITY[criterionPosture(semantics, b)] - POSTURE_SEVERITY[criterionPosture(semantics, a)]

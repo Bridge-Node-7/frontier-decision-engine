@@ -1,36 +1,37 @@
-export const RESCUE_MAX_INPUT_CHARS = 12000;
+export const GUIDED_MAX_INPUT_CHARS = 12000;
 
-export const RESCUE_INTENTS = Object.freeze([
-  { id: 'find-decision', label: 'Figure out what I need to decide' },
-  { id: 'untangle', label: 'Clarify what matters' },
-  { id: 'compare', label: 'Compare choices I already have' },
-  { id: 'missing', label: "Figure out what I'm missing" },
-  { id: 'urgent', label: 'I need to act soon' },
-  { id: 'unsure', label: "I'm not sure" },
+export const GUIDED_INTENTS = Object.freeze([
+  { id: 'find-decision', label: 'Frame the consequential decision' },
+  { id: 'untangle', label: 'Clarify mission criteria and constraints' },
+  { id: 'compare', label: 'Compare candidate pathways' },
+  { id: 'missing', label: 'Identify missing evidence' },
+  { id: 'urgent', label: 'Prepare for a near-term decision gate' },
+  { id: 'unsure', label: 'I need help framing it' },
 ]);
 
-export const RESCUE_GOALS = Object.freeze([
-  'Time', 'Cost', 'Safety', 'Quality', 'Reliability',
-  'People', 'Revenue', 'Flexibility', 'Compliance', 'Learning',
+export const GUIDED_GOALS = Object.freeze([
+  'Readiness', 'Mission performance', 'Supply continuity', 'Schedule',
+  'Cost exposure', 'Compliance', 'Resilience', 'Interoperability',
+  'Evidence confidence', 'Reversibility',
 ]);
 
-export const RESCUE_CHOICES = Object.freeze([
-  'Keep things as they are',
-  'Make a change',
-  'Wait or delay',
-  'Test or pilot first',
-  'Gather information first',
-  'Stage the decision',
+export const GUIDED_CHOICES = Object.freeze([
+  'Maintain the current path',
+  'Qualify an alternate source',
+  'Redesign around the dependency',
+  'Run a bounded pilot first',
+  'Gather decision-relevant evidence',
+  'Hold pending a defined threshold',
 ]);
 
-export const RESCUE_FUTURES = Object.freeze([
-  'Things stay roughly the same',
-  'Timing gets worse',
-  'Cost increases',
+export const GUIDED_FUTURES = Object.freeze([
+  'Current conditions persist',
+  'Schedule slips',
+  'Cost exposure rises',
   'Demand changes',
-  'A key dependency fails',
-  'Requirements change',
-  'A key constraint improves',
+  'A critical dependency fails',
+  'Requirements or regulations change',
+  'New evidence resolves a key uncertainty',
 ]);
 
 export function normalizeIntakeText(value) {
@@ -40,11 +41,11 @@ export function normalizeIntakeText(value) {
 export function validateIntakeText(value) {
   const text = normalizeIntakeText(value);
   if (!text) return { ok: false, text: '', error: 'Start anywhere — even a few words are enough.' };
-  if (text.length > RESCUE_MAX_INPUT_CHARS) {
+  if (text.length > GUIDED_MAX_INPUT_CHARS) {
     return {
       ok: false,
       text,
-      error: `Keep the starting note under ${RESCUE_MAX_INPUT_CHARS.toLocaleString()} characters.`,
+      error: `Keep the starting note under ${GUIDED_MAX_INPUT_CHARS.toLocaleString()} characters.`,
     };
   }
   return { ok: true, text, error: '' };
@@ -73,7 +74,7 @@ export function decisionFrameReady(frame) {
 export function buildDecisionFrame({ startingPoint = '', intent = '', decision = '', goals = [], choices = [], futures = [], urgency = '', reversibility = '' } = {}) {
   return {
     startingPoint: normalizeIntakeText(startingPoint),
-    intent: RESCUE_INTENTS.some((item) => item.id === intent) ? intent : '',
+    intent: GUIDED_INTENTS.some((item) => item.id === intent) ? intent : '',
     decision: String(decision ?? '').trim(),
     goals: uniqueSelections(goals),
     choices: uniqueSelections(choices),

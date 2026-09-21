@@ -3,11 +3,11 @@ import assert from 'node:assert/strict';
 import { draftFromInput, responseFor } from '../site/src/universal-ui.js';
 
 test('clear decision input produces only supportable deterministic structure', () => {
-  const draft = draftFromInput('Should we build internally or partner externally? Time and quality matter, but the supplier may be late.');
+  const draft = draftFromInput('Should we qualify an alternate source or redesign around the dependency? Schedule risk and resilience matter, but qualification may be late.');
   assert.equal(draft.intent, 'decision');
-  assert.equal(draft.possibleDecision, 'Should we build internally or partner externally');
-  assert.deepEqual(draft.choices, ['build internally', 'partner externally']);
-  assert.deepEqual(draft.goals, ['Time', 'Quality']);
+  assert.equal(draft.possibleDecision, 'Should we qualify an alternate source or redesign around the dependency');
+  assert.deepEqual(draft.choices, ['qualify an alternate source', 'redesign around the dependency']);
+  assert.deepEqual(draft.goals, ['Schedule risk', 'Resilience', 'Qualification']);
   assert.deepEqual(draft.futures, ['Timing gets worse']);
   assert.equal(responseFor(draft).kind, 'structure');
 });
@@ -26,7 +26,7 @@ test('criteria lists do not override explicit binary choices from ordinary langu
 });
 
 test('sparse input produces exactly one useful clarification question', () => {
-  for (const input of ['', 'banana moon 777', 'I have a complicated situation.']) {
+  for (const input of ['', 'qualification evidence incomplete', 'The mission dependency is unclear.']) {
     const response = responseFor(draftFromInput(input));
     assert.equal(response.kind, 'question');
     assert.match(response.question, /which decision or question/i);
@@ -35,14 +35,14 @@ test('sparse input produces exactly one useful clarification question', () => {
 });
 
 test('information request returns an honest capability boundary and useful next action', () => {
-  const response = responseFor(draftFromInput('How much does a new MRI machine cost?'));
+  const response = responseFor(draftFromInput('What is the current spot price of gallium?'));
   assert.equal(response.kind, 'boundary');
   assert.match(response.title, /does not retrieve outside facts/i);
   assert.match(response.body, /gather the fact|state the decision/i);
 });
 
 test('multiple decisions ask for one focus instead of fabricating a combined model', () => {
-  const draft = draftFromInput('Should we hire someone? Should we expand next year?');
+  const draft = draftFromInput('Should we qualify a second source? Should we redesign around the dependency?');
   assert.equal(draft.intent, 'multi');
   assert.equal(draft.possibleDecision, '');
   const response = responseFor(draft);
@@ -51,21 +51,21 @@ test('multiple decisions ask for one focus instead of fabricating a combined mod
 });
 
 test('human input remains inert context and extracted fields remain explicit', () => {
-  const input = '<script>alert("x")</script> Should we stay or go? Safety matters.';
+  const input = '<script>alert("x")</script> Should we qualify now or hold? Mission safety matters.';
   const draft = draftFromInput(input);
   assert.equal(draft.startingPoint, input);
   assert.equal(draft.choices.length, 2);
-  assert.equal(draft.choices[1], 'go');
-  assert.match(draft.choices[0], /stay/i);
+  assert.equal(draft.choices[1], 'hold');
+  assert.match(draft.choices[0], /qualify now/i);
   assert.ok(draft.goals.includes('Safety'));
 });
 
 test('multi-option lists never silently truncate into a partial option set', () => {
   const examples = [
-    'Choose between vendor A, vendor B, vendor C, vendor D or build in-house.',
-    'Should we pick option A, option B, or option C?',
-    'We can lease, buy, or refurbish. Which should we choose?',
-    'Should we use titanium, aluminium, or composite?',
+    'Choose between Supplier Alpha, Supplier Bravo, an alternate material, a reserve, or subsystem redesign.',
+    'Should we qualify Supplier Alpha, Supplier Bravo, or Supplier Charlie?',
+    'We can dual-source, stockpile, or redesign. Which should we choose?',
+    'Should we qualify the incumbent material, a substitute material, or a redesigned subsystem?',
   ];
   for (const input of examples) {
     const draft = draftFromInput(input);
@@ -78,9 +78,9 @@ test('multi-option lists never silently truncate into a partial option set', () 
 });
 
 test('binary option extraction remains deterministic', () => {
-  const draft = draftFromInput('Should we build internally or partner externally?');
+  const draft = draftFromInput('Should we qualify an alternate source or redesign around the dependency?');
   assert.equal(draft.optionListAmbiguous, false);
-  assert.deepEqual(draft.choices, ['build internally', 'partner externally']);
+  assert.deepEqual(draft.choices, ['qualify an alternate source', 'redesign around the dependency']);
   assert.equal(responseFor(draft).kind, 'structure');
 });
 
@@ -89,7 +89,7 @@ test('generated multi-option corpus never exposes a strict partial option set', 
   let cases = 0;
   for (let count = 3; count <= 7; count += 1) {
     for (let variant = 0; variant < 60; variant += 1) {
-      const options = Array.from({ length: count }, (_, index) => `option-${variant}-${index + 1}`);
+      const options = Array.from({ length: count }, (_, index) => `qualification-path-${variant}-${index + 1}`);
       const prefix = variant % 2 === 0 ? 'Should we choose ' : 'Choose between ';
       const separator = variant % 3 === 0 ? ', ' : variant % 3 === 1 ? ',  ' : ', ';
       const input = `${prefix}${options.slice(0, -1).join(separator)}, ${connectors[variant % connectors.length]} ${options.at(-1)}?`;
@@ -169,13 +169,13 @@ test('out-of-scope immediate personal safety decisions fail closed', () => {
 
 test('ordinary non-medical decisions are not caught by personal safety boundaries', () => {
   for (const input of [
-    'Should we build internally or partner externally to save money?',
-    'Should we reduce project scope or delay launch?',
-    'Should we skip deployment this weekend or ship Monday?',
-    'Should we choose the fast supplier or the reliable supplier?',
-    'Should I buy 2 servers or 4 servers?',
-    'Should we use 2 GB or 4 GB of memory?',
-    'Should we delay the emergency response software release or ship now?',
+    'Should we qualify an alternate source or redesign around the dependency to save money?',
+    'Should we reduce qualification scope or delay the readiness gate?',
+    'Should we hold deployment pending evidence or proceed at the next readiness window?',
+    'Should we qualify the faster source or the more reliable source?',
+    'Should we field 2 redundant ground nodes or 4 redundant ground nodes?',
+    'Should the mission processor reserve 2 GB or 4 GB of memory?',
+    'Should we delay the mission-control software release or proceed at the current readiness gate?',
   ]) {
     const response = responseFor(draftFromInput(input));
     assert.notEqual(response.kind === 'boundary' && response.title === 'This decision is outside FDE’s comparison scope.', true, input);
@@ -200,9 +200,9 @@ test('self-harm requests fail closed before ordinary decision structuring', () =
 
 test('ordinary engineering and business harm language does not trigger the personal boundary', () => {
   for (const input of [
-    'Should we kill the stalled process or restart it?',
-    'Could this policy harm revenue enough to change the decision?',
-    'Should we terminate the failed test or continue collecting data?',
+    'Should we terminate the failed qualification run or restart it?',
+    'Could this dependency harm mission readiness enough to change the decision?',
+    'Should we terminate the failed verification run or continue collecting evidence?',
   ]) {
     const response = responseFor(draftFromInput(input));
     assert.notEqual(response.kind === 'boundary' && response.title === 'This decision is outside FDE’s comparison scope.', true, input);
@@ -210,8 +210,8 @@ test('ordinary engineering and business harm language does not trigger the perso
 });
 
 test('mission criteria use bounded phrase matching without substring false positives', () => {
-  const costa = draftFromInput('Should we expand into Costa Rica or Panama? Reliability and resilience matter.');
-  assert.deepEqual(costa.choices, ['expand into Costa Rica', 'Panama']);
+  const costa = draftFromInput('Should we qualify Costara Materials or retain the incumbent source? Reliability and resilience matter.');
+  assert.deepEqual(costa.choices, ['qualify Costara Materials', 'retain the incumbent source']);
   assert.equal(costa.goals.includes('Cost'), false);
   assert.deepEqual(costa.goals, ['Reliability', 'Resilience']);
 
@@ -224,14 +224,14 @@ test('mission criteria use bounded phrase matching without substring false posit
 
 test('ordinary criteria-list forms do not override explicit choices', () => {
   for (const input of [
-    'Should we build or buy? Cost, schedule risk, and readiness matter.',
-    'Should we build or buy? Cost, schedule risk, and readiness are important.',
-    'Should we build or buy? Our priorities are cost, readiness, and resilience.',
-    'Should we build or buy? The decision must balance cost, readiness, and interoperability.',
+    'Should we qualify or redesign? Cost, schedule risk, and readiness matter.',
+    'Should we qualify or redesign? Cost, schedule risk, and readiness are important.',
+    'Should we qualify or redesign? Our priorities are cost, readiness, and resilience.',
+    'Should we qualify or redesign? The decision must balance cost, readiness, and interoperability.',
   ]) {
     const draft = draftFromInput(input);
     assert.equal(draft.optionListAmbiguous, false, input);
-    assert.deepEqual(draft.choices, ['build', 'buy'], input);
+    assert.deepEqual(draft.choices, ['qualify', 'redesign'], input);
     assert.equal(responseFor(draft).kind, 'structure', input);
   }
 });

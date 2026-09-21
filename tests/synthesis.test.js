@@ -3,13 +3,14 @@ import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 import { createDecisionCase } from '../site/src/lib/decision.js';
 import { activateDecisionSemantics } from '../site/src/lib/semantics.js';
+import { SEER_PROFILE_ID } from '../site/src/lib/profiles/seer.js';
 import { deriveDecisionSynthesis } from '../site/src/lib/synthesis.js';
 import { createDecisionRecord } from '../site/src/lib/recording.js';
 import { buildDecisionHtml } from '../site/src/decision-ui.js';
 
 function decision() {
   const value = createDecisionCase();
-  activateDecisionSemantics(value, 'sustainability-seer');
+  activateDecisionSemantics(value, SEER_PROFILE_ID);
   value.decision_semantics.proceed_conditions_state = 'none-required';
   value.decision_semantics.criteria.forEach((criterion) => {
     criterion.label = `${criterion.dimension} requirement`;

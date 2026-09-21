@@ -15,7 +15,7 @@ ROOT = Path(__file__).resolve().parents[1]
 SITE = ROOT / "site"
 SESSION_KEY = "fde.universal.session.v1"
 DECISION_KEY = "fde.decision.autosave.v0.2.11"
-RESCUE_SESSION_KEY = "fde.rescue.session.v1"
+GUIDED_SESSION_KEY = "fde.guided-framing.session.v1"
 
 
 class QuietHandler(http.server.SimpleHTTPRequestHandler):
@@ -63,7 +63,7 @@ def run() -> None:
                     assert page.evaluate("document.documentElement.scrollWidth <= window.innerWidth + 1")
 
                     # Sparse input yields one question, not an invalid state or empty structural cards.
-                    page.locator("#universal-input").fill("banana moon 777")
+                    page.locator("#universal-input").fill("qualification evidence incomplete")
                     page.get_by_role("button", name="Continue").click()
                     assert page.locator("#universal-response-title").inner_text() == "Which decision or question should we focus on?"
                     assert page.locator("[data-fde-field='next_required_input']").count() == 1
@@ -71,7 +71,7 @@ def run() -> None:
                     assert "Invalid input" not in page.locator("body").inner_text()
 
                     page.get_by_role("button", name="Adjust original input").click()
-                    clear_input = "Should we build internally or partner externally? Time and quality matter, but the supplier may be late. <script>alert(1)</script>"
+                    clear_input = "Should we qualify an alternate source or redesign around the dependency? Schedule risk and resilience matter, but qualification may be late. <script>alert(1)</script>"
                     page.locator("#universal-input").fill(clear_input)
                     page.get_by_role("button", name="Continue").click()
                     assert page.locator("#universal-response-title").inner_text() == "Decision structure"
@@ -80,10 +80,10 @@ def run() -> None:
                     assert page.locator("[data-fde-field='what_matters']").is_visible()
                     assert page.locator("[data-fde-field='options']").is_visible()
                     assert page.locator("[data-fde-field='what_may_change']").is_visible()
-                    assert page.get_by_text("build internally", exact=True).is_visible()
-                    assert page.get_by_text("partner externally", exact=True).is_visible()
-                    assert page.get_by_text("Time", exact=True).is_visible()
-                    assert page.get_by_text("Quality", exact=True).is_visible()
+                    assert page.get_by_text("qualify an alternate source", exact=True).is_visible()
+                    assert page.get_by_text("redesign around the dependency", exact=True).is_visible()
+                    assert page.get_by_text("Schedule risk", exact=True).is_visible()
+                    assert page.get_by_text("Resilience", exact=True).is_visible()
                     assert page.get_by_text("Timing gets worse", exact=True).is_visible()
                     assert page.locator("script").filter(has_text="alert(1)").count() == 0
 
@@ -113,10 +113,10 @@ def run() -> None:
                     assert page.get_by_text("Compliance", exact=True).is_visible()
                     page.get_by_role("button", name="Yes").click()
                     assert page.locator("#universal-response-title").inner_text() == "What conditions or uncertainties could change the choice?"
-                    page.locator("#universal-input").fill("Should I hire a CFO this year?")
+                    page.locator("#universal-input").fill("Should we retire the legacy test stand?")
                     page.get_by_role("button", name="Continue").click()
                     assert page.locator("#universal-response-title").inner_text() == "Decision structure"
-                    assert page.get_by_text("Should I hire a CFO this year", exact=True).is_visible()
+                    assert page.get_by_text("Should we retire the legacy test stand", exact=True).is_visible()
                     current_text = page.locator("main").inner_text()
                     assert "Cost" not in current_text
                     assert "Schedule risk" not in current_text
@@ -129,7 +129,7 @@ def run() -> None:
                     page.evaluate(f"localStorage.removeItem('{DECISION_KEY}')")
                     page.evaluate(f"sessionStorage.removeItem('{SESSION_KEY}')")
                     page.goto(base, wait_until="networkidle")
-                    page.locator("#universal-input").fill("How much does a new MRI machine cost?")
+                    page.locator("#universal-input").fill("What is the current spot price of gallium?")
                     page.get_by_role("button", name="Continue").click()
                     assert "does not retrieve outside facts" in page.locator("#universal-response-title").inner_text().lower()
                     assert "Gather the fact first" in page.locator("main").inner_text()
@@ -157,22 +157,22 @@ def run() -> None:
 
                     # Ctrl/Cmd + Enter activates Continue.
                     page.get_by_role("button", name="Adjust").click()
-                    page.locator("#universal-input").fill("Should we stay or go? Safety and cost matter. Delay and demand changes are possible.")
+                    page.locator("#universal-input").fill("Should we qualify the alternate source or hold for evidence? Mission safety and cost exposure matter. Schedule slips and demand changes are possible.")
                     page.locator("#universal-input").press("Control+Enter")
                     assert page.locator("#universal-response-title").inner_text() == "Decision structure"
 
                     # Refresh preserves in-progress first-run work.
                     page.get_by_role("button", name="Adjust").click()
-                    page.locator("#universal-input").fill("Refresh should not erase this situation.")
+                    page.locator("#universal-input").fill("Refresh should not erase this qualification context.")
                     assert page.evaluate(f"Boolean(sessionStorage.getItem('{SESSION_KEY}'))")
                     page.reload(wait_until="networkidle")
-                    assert page.locator("#universal-input").input_value() == "Refresh should not erase this situation."
+                    assert page.locator("#universal-input").input_value() == "Refresh should not erase this qualification context."
 
                     # Guided framing remains reachable and intact.
-                    page.evaluate(f"sessionStorage.removeItem('{RESCUE_SESSION_KEY}')")
-                    page.goto(f"{base}#/rescue", wait_until="networkidle")
-                    page.locator("#rescue-question").wait_for(state="visible")
-                    assert page.locator("#rescue-intake").is_visible()
+                    page.evaluate(f"sessionStorage.removeItem('{GUIDED_SESSION_KEY}')")
+                    page.goto(f"{base}#/framing", wait_until="networkidle")
+                    page.locator("#guided-question").wait_for(state="visible")
+                    assert page.locator("#guided-intake").is_visible()
 
                     assert not remote_requests, f"FDE made unexpected remote requests: {remote_requests}"
                     context.close()

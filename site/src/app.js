@@ -1,7 +1,7 @@
 import { installUniversalDecisionEnhancer } from './decision-map.js';
 
 const main = document.querySelector('#main');
-const RESCUE_CONTEXT_KEY = 'fde.rescue.context.v1';
+const GUIDED_CONTEXT_KEY = 'fde.guided-framing.context.v1';
 const UNIVERSAL_CONTEXT_KEY = 'fde.universal.context.v1';
 
 function consumeHandoff() {
@@ -10,16 +10,16 @@ function consumeHandoff() {
       globalThis.sessionStorage.removeItem('fde.universal.handoff');
       return 'universal';
     }
-    if (globalThis.sessionStorage?.getItem('fde.rescue.handoff') === '1') {
-      globalThis.sessionStorage.removeItem('fde.rescue.handoff');
-      return 'rescue';
+    if (globalThis.sessionStorage?.getItem('fde.guided-framing.handoff') === '1') {
+      globalThis.sessionStorage.removeItem('fde.guided-framing.handoff');
+      return 'guided';
     }
   } catch { /* keep normal navigation working */ }
   return '';
 }
 
 function readContext(kind) {
-  const key = kind === 'universal' ? UNIVERSAL_CONTEXT_KEY : RESCUE_CONTEXT_KEY;
+  const key = kind === 'universal' ? UNIVERSAL_CONTEXT_KEY : GUIDED_CONTEXT_KEY;
   try {
     const raw = globalThis.sessionStorage?.getItem(key);
     if (!raw) return '';
@@ -43,7 +43,7 @@ function showContext(kind, governedText = '') {
   const work = main.querySelector('#decision-work');
   if (!startingPoint || !work) return;
   const details = document.createElement('details');
-  details.className = 'soft-panel rescue-starting-context';
+  details.className = 'soft-panel guided-starting-context';
   const summary = document.createElement('summary');
   const title = document.createElement('strong');
   title.textContent = kind === 'universal'
@@ -58,7 +58,7 @@ function showContext(kind, governedText = '') {
     : 'Context only — it is not scored or treated as evidence.';
   summary.append(title, help);
   const body = document.createElement('pre');
-  body.className = 'decision-section-body rescue-context-text';
+  body.className = 'decision-section-body guided-context-text';
   body.textContent = startingPoint;
   details.append(summary, body);
   work.prepend(details);
@@ -72,10 +72,10 @@ async function router() {
     document.title = 'Frontier Decision Engine';
     const { renderUniversalDecisionExperience } = await import('./universal-ui.js');
     renderUniversalDecisionExperience(main);
-  } else if (path === '/rescue') {
+  } else if (path === '/framing') {
     document.title = 'Frontier Decision Engine';
-    const { renderDecisionRescue } = await import('./rescue-ui.js');
-    renderDecisionRescue(main);
+    const { renderGuidedFraming } = await import('./guided-framing-ui.js');
+    renderGuidedFraming(main);
   } else if (path === '/context') {
     document.title = 'Governed Context | Frontier Decision Engine';
     const { renderGovernedContext } = await import('./governed-context-ui.js');
