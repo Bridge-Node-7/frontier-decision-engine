@@ -24,12 +24,12 @@ required = [
     "docs/RELEASE_NOTES.md", "docs/RELEASING.md", "docs/STYLE_LAYERS.md",
     "site/schemas/decision.schema.json", "site/schemas/decision-0.3.0.schema.json",
     "site/index.html", "site/404.html",
-    "site/assets/styles.css", "site/assets/bridge-node-7-shell.css", "site/assets/beginner-first.css", "site/assets/rescue.css", "site/assets/universal-decision.css",
-    "site/src/app.js", "site/src/decision-ui.js", "site/src/rescue-ui.js", "site/src/universal-ui.js", "site/src/theme.js",
+    "site/assets/styles.css", "site/assets/bridge-node-7-shell.css", "site/assets/beginner-first.css", "site/assets/guided-framing.css", "site/assets/universal-decision.css",
+    "site/src/app.js", "site/src/decision-ui.js", "site/src/guided-framing-ui.js", "site/src/universal-ui.js", "site/src/theme.js",
     "site/src/lib/case.js", "site/src/lib/decision-core.js", "site/src/lib/decision.js", "site/src/lib/intake.js",
     "site/src/lib/persistence.js", "site/src/lib/recording.js", "site/src/lib/semantics.js", "site/src/lib/synthesis.js",
     "site/src/decision-map.js",
-    "scripts/browser_e2e.py", "scripts/browser_rescue_e2e.py", "scripts/browser_release_regressions.py",
+    "scripts/browser_e2e.py", "scripts/browser_guided_framing_e2e.py", "scripts/browser_release_regressions.py",
     "scripts/validate_version_integrity.py", "scripts/package_release.py", "scripts/verify_release_tag.py",
     "tests/universal-response.test.js", "site/src/lib/input-boundaries.js",
     "requirements-dev.txt", ".github/workflows/ci.yml", ".github/workflows/pages.yml", ".github/workflows/release.yml",
@@ -81,7 +81,7 @@ if "Content-Security-Policy" not in index:
     errors.append("site index lacks Content-Security-Policy")
 if re.search(r"<script[^>]+src=[\"']https?://", index, re.I):
     errors.append("site index loads an external script")
-for stylesheet in ["./assets/styles.css", "./assets/bridge-node-7-shell.css", "./assets/beginner-first.css", "./assets/rescue.css", "./assets/universal-decision.css"]:
+for stylesheet in ["./assets/styles.css", "./assets/bridge-node-7-shell.css", "./assets/beginner-first.css", "./assets/guided.css", "./assets/universal-decision.css"]:
     if stylesheet not in index:
         errors.append(f"site index does not load required stylesheet: {stylesheet}")
 if "Bridge Node 7 Home" not in index:
@@ -100,15 +100,15 @@ for path in (SITE / "src").rglob("*.js"):
 
 app_text = (SITE / "src/app.js").read_text(encoding="utf-8")
 decision_text = (SITE / "src/decision-ui.js").read_text(encoding="utf-8")
-rescue_text = (SITE / "src/rescue-ui.js").read_text(encoding="utf-8")
+guided_text = (SITE / "src/guided-framing-ui.js").read_text(encoding="utf-8")
 universal_text = (SITE / "src/universal-ui.js").read_text(encoding="utf-8")
 theme_text = (SITE / "src/theme.js").read_text(encoding="utf-8")
 
 if len(re.findall(r'id="decision-step-heading-[0-5]" tabindex="-1"', decision_text)) != 7:
     errors.append("FDE must expose six focusable decision-stage headings and one incomplete-analysis variant")
-if "rescue-intake" not in rescue_text or "Decision Frame" not in rescue_text or "fde.rescue.session.v1" not in rescue_text or "Guided framing" not in rescue_text:
+if "guided-intake" not in guided_text or "Decision Frame" not in guided_text or "fde.guided-framing.session.v1" not in guided_text or "Guided framing" not in guided_text:
     errors.append("Guided framing public entry/session boundary is incomplete")
-if "A decision is already saved in this browser." not in rescue_text:
+if "A decision is already saved in this browser." not in guided_text:
     errors.append("Guided framing saved-work collision boundary is missing")
 if "renderUniversalDecisionExperience" not in app_text:
     errors.append("first-run decision intake is not the public root experience")
@@ -138,7 +138,7 @@ if "button.textContent = 'Appearance'" not in theme_text or "Current:" not in th
     errors.append("Appearance control does not preserve a stable visible name plus accessible state")
 
 runner = (ROOT / "scripts/browser_e2e.py").read_text(encoding="utf-8")
-universal_runner = (ROOT / "scripts/browser_rescue_e2e.py").read_text(encoding="utf-8")
+universal_runner = (ROOT / "scripts/browser_guided_framing_e2e.py").read_text(encoding="utf-8")
 requirements = (ROOT / "requirements-dev.txt").read_text(encoding="utf-8")
 for required_flow in ("decision_flow", "route_suite", "print_flow"):
     if required_flow not in runner:
@@ -154,11 +154,11 @@ if not re.search(rf"(?m)^version:\s*{re.escape(version)}\s*$", citation):
     errors.append("citation version mismatch")
 
 shell = (SITE / "assets/bridge-node-7-shell.css").read_text(encoding="utf-8")
-rescue_css = (SITE / "assets/rescue.css").read_text(encoding="utf-8")
+guided_css = (SITE / "assets/guided-framing.css").read_text(encoding="utf-8")
 universal_css = (SITE / "assets/universal-decision.css").read_text(encoding="utf-8")
 if "--line-strong:" not in shell:
     errors.append("interactive boundary token is missing")
-if "--focus-ring:" not in rescue_css:
+if "--focus-ring:" not in guided_css:
     errors.append("theme-aware focus token is missing")
 for token in ["@media(max-width:620px)", "@media(forced-colors:active)", "@media(prefers-reduced-motion:reduce)"]:
     if token not in universal_css:
