@@ -16,9 +16,7 @@ Share a technical, organizational, mission, or strategic decision in your own wo
 
 - shows only decision structure that is supportable from the words provided;
 - asks exactly one useful clarification question when the decision is still too sparse; or
-- states an honest capability boundary and a useful next action when the request is outside the browser-local decision-support scope.
-
-Supportable first-run structure uses four human-facing concepts: **Decision, What matters, Choices, What may change.** Nothing inferred becomes a canonical model input until a person confirms it.
+- states an honest capability boundary and a useful next action when the request is outside the browser-local decision-support scope.\n\nWhen a consequential decision needs more structure first, **Guided framing** captures the decision, criteria, choices, and uncertainties before handing confirmed inputs into the same Decision Lab.\n\nSupportable first-run structure uses four human-facing concepts: **Decision, What matters, Choices, What may change.** Nothing inferred becomes a canonical model input until a person confirms it.
 
 The browser does not call a remote AI provider, retrieve outside facts, invent evidence, probabilities, scores, thresholds, scenario effects, or recommendations.
 
