@@ -81,7 +81,7 @@ if "Content-Security-Policy" not in index:
     errors.append("site index lacks Content-Security-Policy")
 if re.search(r"<script[^>]+src=[\"']https?://", index, re.I):
     errors.append("site index loads an external script")
-for stylesheet in ["./assets/styles.css", "./assets/bridge-node-7-shell.css", "./assets/beginner-first.css", "./assets/guided.css", "./assets/universal-decision.css"]:
+for stylesheet in ["./assets/styles.css", "./assets/bridge-node-7-shell.css", "./assets/beginner-first.css", "./assets/guided-framing.css", "./assets/universal-decision.css"]:
     if stylesheet not in index:
         errors.append(f"site index does not load required stylesheet: {stylesheet}")
 if "Bridge Node 7 Home" not in index:
