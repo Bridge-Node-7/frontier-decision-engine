@@ -1,5 +1,6 @@
 import { CANDIDATE_STATE, robustCandidateDecision } from './decision.js';
-import { decisionPosture, semanticView, summarizeFourP } from './semantics.js';
+import { decisionPosture, semanticView, summarizeSeerProfile } from './semantics.js';
+import { isSeerProfile } from './profiles/seer.js';
 
 const list = (value) => Array.isArray(value) ? value : [];
 
@@ -29,7 +30,7 @@ export function deriveDecisionSynthesis(decision, record = null) {
     controlling_issue: posture.why,
     strongest_alternative: strongest ? { strategy_id: strongest.strategy_id, label: strongest.label } : null,
     candidate_state: candidateResult.status,
-    four_p: semantics.mode === 'sustainability-seer' ? summarizeFourP(decision) : [],
+    sustainability_profile: isSeerProfile(semantics.mode) ? summarizeSeerProfile(decision) : [],
     changes: posture.changes,
     next_evidence: posture.next_evidence,
     unresolved_conditions: openConditions,
