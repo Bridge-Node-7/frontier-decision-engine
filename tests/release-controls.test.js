@@ -56,6 +56,15 @@ test('production release follows successful Pages UAT and uses a verified main c
   assert.match(workflow, /Download and verify hosted release assets/);
 });
 
+test('Pages blocks site drift under an already-published application version', async () => {
+  const workflow = await read('.github/workflows/pages.yml');
+  assert.match(workflow, /fetch-depth: 0/);
+  assert.match(workflow, /Enforce released-version site immutability/);
+  assert.match(workflow, /gh release view "\$TAG"/);
+  assert.match(workflow, /git diff --quiet "\$RELEASE_COMMIT" HEAD -- site/);
+  assert.match(workflow, /Bump package version before deploying Pages/);
+});
+
 test('release preflight is minimally privileged and never publishes', async () => {
   const workflow = await read('.github/workflows/release-preflight.yml');
   assert.match(workflow, /contents: read/);

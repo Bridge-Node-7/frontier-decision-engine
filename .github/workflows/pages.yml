@@ -26,6 +26,7 @@ jobs:
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
+          fetch-depth: 0
       - name: Set up Node
         uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
         with:
@@ -41,6 +42,26 @@ jobs:
         run: |
           npm run check
           git diff --exit-code
+      - name: Enforce released-version site immutability
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          TAG="v$(python3 -c 'import json; print(json.load(open("package.json", encoding="utf-8"))["version"])')"
+          if ! gh release view "$TAG" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
+            echo "No published release exists for $TAG; deployment may proceed."
+            exit 0
+          fi
+          TAG_OBJECT_TYPE="$(gh api "repos/$GITHUB_REPOSITORY/git/ref/tags/$TAG" --jq '.object.type')"
+          test "$TAG_OBJECT_TYPE" = "tag"
+          TAG_OBJECT_SHA="$(gh api "repos/$GITHUB_REPOSITORY/git/ref/tags/$TAG" --jq '.object.sha')"
+          RELEASE_COMMIT="$(gh api "repos/$GITHUB_REPOSITORY/git/tags/$TAG_OBJECT_SHA" --jq '.object.sha')"
+          git cat-file -e "$RELEASE_COMMIT^{commit}"
+          if ! git diff --quiet "$RELEASE_COMMIT" HEAD -- site; then
+            echo "::error::Application payload changed after immutable release $TAG. Bump package version before deploying Pages."
+            git diff --stat "$RELEASE_COMMIT" HEAD -- site
+            exit 1
+          fi
+          echo "Released site payload unchanged for $TAG."
       - name: Configure Pages
         uses: actions/configure-pages@45bfe0192ca1faeb007ade9deae92b16b8254a0d # v6.0.0
       - name: Upload static site
