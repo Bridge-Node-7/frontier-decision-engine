@@ -1,86 +1,142 @@
 name: Release
 
 on:
-  push:
-    tags:
-      - "v*"
+  workflow_run:
+    workflows: ["Deploy Pages"]
+    types: [completed]
 
 permissions:
+  actions: read
   contents: write
   id-token: write
   attestations: write
 
 concurrency:
-  group: release-${{ github.ref }}
+  group: release-${{ github.event.workflow_run.head_sha }}
   cancel-in-progress: false
 
 jobs:
   publish:
+    if: >-
+      github.event.workflow_run.conclusion == 'success' &&
+      github.event.workflow_run.event == 'push' &&
+      github.event.workflow_run.head_branch == 'main'
     environment:
       name: release
     runs-on: ubuntu-latest
     timeout-minutes: 25
     steps:
-      - name: Checkout
+      - name: Checkout verified Pages commit
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
+          ref: ${{ github.event.workflow_run.head_sha }}
           fetch-depth: 0
           persist-credentials: false
+      - name: Verify trusted main release anchor
+        id: commit
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_COMMIT: ${{ github.event.workflow_run.head_sha }}
+        run: |
+          test "$(git rev-parse HEAD)" = "$RELEASE_COMMIT"
+          git fetch --no-tags origin main
+          test "$(git rev-parse origin/main)" = "$RELEASE_COMMIT"
+          test "$(gh api "repos/$GITHUB_REPOSITORY/commits/$RELEASE_COMMIT" --jq '.commit.verification.verified')" = "true"
+          test "$(gh api "repos/$GITHUB_REPOSITORY/commits/$RELEASE_COMMIT" --jq '.commit.verification.reason')" = "valid"
+          echo "release_commit=$RELEASE_COMMIT" >> "$GITHUB_OUTPUT"
       - name: Verify release identity
         id: identity
-        run: python3 scripts/verify_release_tag.py "$GITHUB_REF_NAME"
+        run: |
+          TAG="v$(python3 -c 'import json; print(json.load(open("package.json", encoding="utf-8"))["version"])')"
+          python3 scripts/verify_release_tag.py "$TAG"
+          echo "tag=$TAG" >> "$GITHUB_OUTPUT"
       - name: Verify required release notes
         run: test -s "${{ steps.identity.outputs.notes_file }}"
+      - name: Check release state
+        id: state
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_COMMIT: ${{ steps.commit.outputs.release_commit }}
+          TAG: ${{ steps.identity.outputs.tag }}
+        run: |
+          if gh release view "$TAG" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
+            echo "publish_needed=false" >> "$GITHUB_OUTPUT"
+            echo "tag_ready=true" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          echo "publish_needed=true" >> "$GITHUB_OUTPUT"
+          if gh api "repos/$GITHUB_REPOSITORY/git/ref/tags/$TAG" >/dev/null 2>&1; then
+            TAG_OBJECT_TYPE="$(gh api "repos/$GITHUB_REPOSITORY/git/ref/tags/$TAG" --jq '.object.type')"
+            TAG_OBJECT_SHA="$(gh api "repos/$GITHUB_REPOSITORY/git/ref/tags/$TAG" --jq '.object.sha')"
+            test "$TAG_OBJECT_TYPE" = "tag"
+            test "$(gh api "repos/$GITHUB_REPOSITORY/git/tags/$TAG_OBJECT_SHA" --jq '.object.sha')" = "$RELEASE_COMMIT"
+            echo "tag_ready=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "tag_ready=false" >> "$GITHUB_OUTPUT"
+          fi
       - name: Set up Node
+        if: steps.state.outputs.publish_needed == 'true'
         uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
         with:
           node-version: 22
           package-manager-cache: false
       - name: Verify npm lockfile
+        if: steps.state.outputs.publish_needed == 'true'
         run: npm ci --ignore-scripts --no-audit --no-fund
       - name: Install browser test tooling
+        if: steps.state.outputs.publish_needed == 'true'
         run: |
           python3 -m pip install --disable-pip-version-check -r requirements-dev.txt
           python3 -m playwright install --with-deps chromium
-      - name: Verify signed annotated tag
-        env:
-          GH_TOKEN: ${{ github.token }}
-        run: |
-          test "$(git cat-file -t "$GITHUB_REF_NAME")" = "tag"
-          TAG_OBJECT_TYPE="$(gh api "repos/$GITHUB_REPOSITORY/git/ref/tags/$GITHUB_REF_NAME" --jq '.object.type')"
-          TAG_OBJECT_SHA="$(gh api "repos/$GITHUB_REPOSITORY/git/ref/tags/$GITHUB_REF_NAME" --jq '.object.sha')"
-          test "$TAG_OBJECT_TYPE" = "tag"
-          test "$(gh api "repos/$GITHUB_REPOSITORY/git/tags/$TAG_OBJECT_SHA" --jq '.verification.verified')" = "true"
-          test "$(gh api "repos/$GITHUB_REPOSITORY/git/tags/$TAG_OBJECT_SHA" --jq '.verification.reason')" = "valid"
-      - name: Verify tagged commit identity
-        id: commit
-        run: |
-          TAG_COMMIT="$(git rev-list -n 1 "$GITHUB_REF_NAME")"
-          CHECKOUT_COMMIT="$(git rev-parse HEAD)"
-          test "$TAG_COMMIT" = "$CHECKOUT_COMMIT"
-          git fetch --no-tags origin main
-          git merge-base --is-ancestor "$TAG_COMMIT" origin/main
-          echo "release_commit=$TAG_COMMIT" >> "$GITHUB_OUTPUT"
       - name: Run complete release gate
+        if: steps.state.outputs.publish_needed == 'true'
         run: |
           npm run check
           git diff --exit-code
       - name: Build and verify deterministic artifacts
+        if: steps.state.outputs.publish_needed == 'true'
+        env:
+          TAG: ${{ steps.identity.outputs.tag }}
         run: |
           npm run package:release
           cd dist
-          sha256sum --check "frontier-decision-engine-${GITHUB_REF_NAME}.zip.sha256"
+          sha256sum --check "frontier-decision-engine-${TAG}.zip.sha256"
       - name: Attest deterministic release artifacts
+        if: steps.state.outputs.publish_needed == 'true'
         uses: actions/attest@508db95dd578ae2727ebd6217d5ba78e4fbda05d # v4.2.1
         with:
           subject-path: |
-            dist/frontier-decision-engine-${{ github.ref_name }}.zip
-            dist/frontier-decision-engine-${{ github.ref_name }}.zip.sha256
+            dist/frontier-decision-engine-${{ steps.identity.outputs.tag }}.zip
+            dist/frontier-decision-engine-${{ steps.identity.outputs.tag }}.zip.sha256
+      - name: Create annotated release tag
+        if: steps.state.outputs.publish_needed == 'true' && steps.state.outputs.tag_ready != 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_COMMIT: ${{ steps.commit.outputs.release_commit }}
+          TAG: ${{ steps.identity.outputs.tag }}
+        run: |
+          TAG_OBJECT_SHA="$(gh api --method POST "repos/$GITHUB_REPOSITORY/git/tags"             -f tag="$TAG"             -f message="Frontier Decision Engine $TAG"             -f object="$RELEASE_COMMIT"             -f type="commit"             --jq '.sha')"
+          gh api --method POST "repos/$GITHUB_REPOSITORY/git/refs"             -f ref="refs/tags/$TAG"             -f sha="$TAG_OBJECT_SHA" >/dev/null
+      - name: Verify annotated tag and release commit
+        if: steps.state.outputs.publish_needed == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_COMMIT: ${{ steps.commit.outputs.release_commit }}
+          TAG: ${{ steps.identity.outputs.tag }}
+        run: |
+          TAG_OBJECT_TYPE="$(gh api "repos/$GITHUB_REPOSITORY/git/ref/tags/$TAG" --jq '.object.type')"
+          TAG_OBJECT_SHA="$(gh api "repos/$GITHUB_REPOSITORY/git/ref/tags/$TAG" --jq '.object.sha')"
+          test "$TAG_OBJECT_TYPE" = "tag"
+          test "$(gh api "repos/$GITHUB_REPOSITORY/git/tags/$TAG_OBJECT_SHA" --jq '.object.sha')" = "$RELEASE_COMMIT"
+          test "$(gh api "repos/$GITHUB_REPOSITORY/commits/$RELEASE_COMMIT" --jq '.commit.verification.verified')" = "true"
+          test "$(gh api "repos/$GITHUB_REPOSITORY/commits/$RELEASE_COMMIT" --jq '.commit.verification.reason')" = "valid"
       - name: Publish GitHub Release
+        if: steps.state.outputs.publish_needed == 'true'
         env:
           GH_TOKEN: ${{ github.token }}
           RELEASE_KIND: ${{ steps.identity.outputs.release_kind }}
           RELEASE_COMMIT: ${{ steps.commit.outputs.release_commit }}
+          TAG: ${{ steps.identity.outputs.tag }}
         run: |
           release_flags=(--verify-tag)
           if [ "$RELEASE_KIND" = "prerelease" ]; then
@@ -88,43 +144,28 @@ jobs:
           else
             release_flags+=(--latest)
           fi
-          gh release create "$GITHUB_REF_NAME" \
-            "dist/frontier-decision-engine-${GITHUB_REF_NAME}.zip" \
-            "dist/frontier-decision-engine-${GITHUB_REF_NAME}.zip.sha256" \
-            "${release_flags[@]}" \
-            --target "$RELEASE_COMMIT" \
-            --title "Frontier Decision Engine ${GITHUB_REF_NAME}" \
-            --notes-file "${{ steps.identity.outputs.notes_file }}"
+          gh release create "$TAG"             "dist/frontier-decision-engine-${TAG}.zip"             "dist/frontier-decision-engine-${TAG}.zip.sha256"             "${release_flags[@]}"             --target "$RELEASE_COMMIT"             --title "Frontier Decision Engine $TAG"             --notes-file "${{ steps.identity.outputs.notes_file }}"
       - name: Download and verify hosted release assets
+        if: steps.state.outputs.publish_needed == 'true'
         env:
           GH_TOKEN: ${{ github.token }}
+          TAG: ${{ steps.identity.outputs.tag }}
         run: |
           rm -rf hosted-verification
           mkdir hosted-verification
-          gh release download "$GITHUB_REF_NAME" \
-            --repo "$GITHUB_REPOSITORY" \
-            --dir hosted-verification \
-            --pattern "frontier-decision-engine-${GITHUB_REF_NAME}.zip*"
+          gh release download "$TAG"             --repo "$GITHUB_REPOSITORY"             --dir hosted-verification             --pattern "frontier-decision-engine-${TAG}.zip*"
           cd hosted-verification
-          sha256sum --check "frontier-decision-engine-${GITHUB_REF_NAME}.zip.sha256"
+          sha256sum --check "frontier-decision-engine-${TAG}.zip.sha256"
           verified=false
           for attempt in 1 2 3 4 5 6; do
-            if gh release verify "$GITHUB_REF_NAME" --repo "$GITHUB_REPOSITORY"; then
+            if gh release verify "$TAG" --repo "$GITHUB_REPOSITORY"; then
               verified=true
               break
             fi
             sleep 5
           done
           test "$verified" = "true"
-          gh release verify-asset "$GITHUB_REF_NAME" \
-            "frontier-decision-engine-${GITHUB_REF_NAME}.zip" \
-            --repo "$GITHUB_REPOSITORY"
-          gh release verify-asset "$GITHUB_REF_NAME" \
-            "frontier-decision-engine-${GITHUB_REF_NAME}.zip.sha256" \
-            --repo "$GITHUB_REPOSITORY"
-          gh attestation verify \
-            "frontier-decision-engine-${GITHUB_REF_NAME}.zip" \
-            --repo "$GITHUB_REPOSITORY"
-          gh attestation verify \
-            "frontier-decision-engine-${GITHUB_REF_NAME}.zip.sha256" \
-            --repo "$GITHUB_REPOSITORY"
+          gh release verify-asset "$TAG"             "frontier-decision-engine-${TAG}.zip"             --repo "$GITHUB_REPOSITORY"
+          gh release verify-asset "$TAG"             "frontier-decision-engine-${TAG}.zip.sha256"             --repo "$GITHUB_REPOSITORY"
+          gh attestation verify             "frontier-decision-engine-${TAG}.zip"             --repo "$GITHUB_REPOSITORY"
+          gh attestation verify             "frontier-decision-engine-${TAG}.zip.sha256"             --repo "$GITHUB_REPOSITORY"

@@ -31,19 +31,28 @@ test('release classifier accepts stable and prerelease tags and rejects malforme
   assert.notEqual(malformed.status, 0);
 });
 
-test('production release workflow remains tag-only and classifies RC publication explicitly', async () => {
+test('production release follows successful Pages UAT and uses a verified main commit anchor', async () => {
   const workflow = await read('.github/workflows/release.yml');
-  assert.match(workflow, /tags:/);
+  assert.match(workflow, /workflow_run:/);
+  assert.match(workflow, /workflows: \["Deploy Pages"\]/);
+  assert.match(workflow, /types: \[completed\]/);
   assert.equal(workflow.includes('workflow_dispatch'), false);
+  assert.match(workflow, /workflow_run\.conclusion == 'success'/);
+  assert.match(workflow, /workflow_run\.event == 'push'/);
+  assert.match(workflow, /workflow_run\.head_branch == 'main'/);
+  assert.match(workflow, /github\.event\.workflow_run\.head_sha/);
+  assert.match(workflow, /git rev-parse origin\/main/);
+  assert.match(workflow, /\.commit\.verification\.verified/);
+  assert.match(workflow, /\.commit\.verification\.reason/);
+  assert.match(workflow, /Create annotated release tag/);
+  assert.match(workflow, /git\/tags/);
+  assert.match(workflow, /refs\/tags\/\$TAG/);
+  assert.match(workflow, /--verify-tag/);
+  assert.match(workflow, /--target "\$RELEASE_COMMIT"/);
   assert.match(workflow, /--prerelease --latest=false/);
   assert.match(workflow, /release_flags\+=\(--latest\)/);
-  assert.match(workflow, /Verify required release notes/);
-  assert.ok(workflow.indexOf('Verify required release notes') < workflow.indexOf('Verify npm lockfile'));
-  assert.match(workflow, /group: release-\$\{\{ github\.ref \}\}/);
-  assert.match(workflow, /Verify tagged commit identity/);
-  assert.match(workflow, /git rev-list -n 1 "\$GITHUB_REF_NAME"/);
-  assert.match(workflow, /git merge-base --is-ancestor "\$TAG_COMMIT" origin\/main/);
-  assert.match(workflow, /--target "\$RELEASE_COMMIT"/);
+  assert.match(workflow, /Attest deterministic release artifacts/);
+  assert.match(workflow, /Download and verify hosted release assets/);
 });
 
 test('release preflight is minimally privileged and never publishes', async () => {
