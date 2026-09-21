@@ -63,7 +63,7 @@ def run() -> None:
                     assert page.evaluate("document.documentElement.scrollWidth <= window.innerWidth + 1")
 
                     # Sparse input yields one question, not an invalid state or empty structural cards.
-                    page.locator("#universal-input").fill("banana moon 777")
+                    page.locator("#universal-input").fill("qualification evidence incomplete")
                     page.get_by_role("button", name="Continue").click()
                     assert page.locator("#universal-response-title").inner_text() == "Which decision or question should we focus on?"
                     assert page.locator("[data-fde-field='next_required_input']").count() == 1
@@ -71,7 +71,7 @@ def run() -> None:
                     assert "Invalid input" not in page.locator("body").inner_text()
 
                     page.get_by_role("button", name="Adjust original input").click()
-                    clear_input = "Should we build internally or partner externally? Time and quality matter, but the supplier may be late. <script>alert(1)</script>"
+                    clear_input = "Should we qualify an alternate source or redesign around the dependency? Schedule risk and resilience matter, but qualification may be late. <script>alert(1)</script>"
                     page.locator("#universal-input").fill(clear_input)
                     page.get_by_role("button", name="Continue").click()
                     assert page.locator("#universal-response-title").inner_text() == "Decision structure"
@@ -129,7 +129,7 @@ def run() -> None:
                     page.evaluate(f"localStorage.removeItem('{DECISION_KEY}')")
                     page.evaluate(f"sessionStorage.removeItem('{SESSION_KEY}')")
                     page.goto(base, wait_until="networkidle")
-                    page.locator("#universal-input").fill("How much does a new MRI machine cost?")
+                    page.locator("#universal-input").fill("What is the current spot price of gallium?")
                     page.get_by_role("button", name="Continue").click()
                     assert "does not retrieve outside facts" in page.locator("#universal-response-title").inner_text().lower()
                     assert "Gather the fact first" in page.locator("main").inner_text()
@@ -157,7 +157,7 @@ def run() -> None:
 
                     # Ctrl/Cmd + Enter activates Continue.
                     page.get_by_role("button", name="Adjust").click()
-                    page.locator("#universal-input").fill("Should we stay or go? Safety and cost matter. Delay and demand changes are possible.")
+                    page.locator("#universal-input").fill("Should we qualify the alternate source or hold for evidence? Mission safety and cost exposure matter. Schedule slips and demand changes are possible.")
                     page.locator("#universal-input").press("Control+Enter")
                     assert page.locator("#universal-response-title").inner_text() == "Decision structure"
 
