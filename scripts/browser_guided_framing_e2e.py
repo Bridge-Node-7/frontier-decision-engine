@@ -80,10 +80,10 @@ def run() -> None:
                     assert page.locator("[data-fde-field='what_matters']").is_visible()
                     assert page.locator("[data-fde-field='options']").is_visible()
                     assert page.locator("[data-fde-field='what_may_change']").is_visible()
-                    assert page.get_by_text("build internally", exact=True).is_visible()
-                    assert page.get_by_text("partner externally", exact=True).is_visible()
-                    assert page.get_by_text("Time", exact=True).is_visible()
-                    assert page.get_by_text("Quality", exact=True).is_visible()
+                    assert page.get_by_text("qualify an alternate source", exact=True).is_visible()
+                    assert page.get_by_text("redesign around the dependency", exact=True).is_visible()
+                    assert page.get_by_text("Schedule risk", exact=True).is_visible()
+                    assert page.get_by_text("Resilience", exact=True).is_visible()
                     assert page.get_by_text("Timing gets worse", exact=True).is_visible()
                     assert page.locator("script").filter(has_text="alert(1)").count() == 0
 
@@ -113,10 +113,10 @@ def run() -> None:
                     assert page.get_by_text("Compliance", exact=True).is_visible()
                     page.get_by_role("button", name="Yes").click()
                     assert page.locator("#universal-response-title").inner_text() == "What conditions or uncertainties could change the choice?"
-                    page.locator("#universal-input").fill("Should I hire a CFO this year?")
+                    page.locator("#universal-input").fill("Should we retire the legacy test stand?")
                     page.get_by_role("button", name="Continue").click()
                     assert page.locator("#universal-response-title").inner_text() == "Decision structure"
-                    assert page.get_by_text("Should I hire a CFO this year", exact=True).is_visible()
+                    assert page.get_by_text("Should we retire the legacy test stand", exact=True).is_visible()
                     current_text = page.locator("main").inner_text()
                     assert "Cost" not in current_text
                     assert "Schedule risk" not in current_text
@@ -163,10 +163,10 @@ def run() -> None:
 
                     # Refresh preserves in-progress first-run work.
                     page.get_by_role("button", name="Adjust").click()
-                    page.locator("#universal-input").fill("Refresh should not erase this situation.")
+                    page.locator("#universal-input").fill("Refresh should not erase this qualification context.")
                     assert page.evaluate(f"Boolean(sessionStorage.getItem('{SESSION_KEY}'))")
                     page.reload(wait_until="networkidle")
-                    assert page.locator("#universal-input").input_value() == "Refresh should not erase this situation."
+                    assert page.locator("#universal-input").input_value() == "Refresh should not erase this qualification context."
 
                     # Guided framing remains reachable and intact.
                     page.evaluate(f"sessionStorage.removeItem('{GUIDED_SESSION_KEY}')")
