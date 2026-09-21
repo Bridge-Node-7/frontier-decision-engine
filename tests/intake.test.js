@@ -17,8 +17,8 @@ test('empty Guided framing intake asks for a useful starting point', () => {
 });
 
 test('Guided framing preserves multiline human language while normalizing line endings', () => {
-  const raw = '  Supplier is late.\r\nI am not sure what to do.  ';
-  assert.equal(normalizeIntakeText(raw), 'Supplier is late.\nI am not sure what to do.');
+  const raw = '  Qualification evidence is late.\r\nI am not sure what to do.  ';
+  assert.equal(normalizeIntakeText(raw), 'Qualification evidence is late.\nI am not sure what to do.');
   assert.equal(validateIntakeText(raw).ok, true);
 });
 
@@ -42,7 +42,7 @@ test('oversized Guided framing intake is bounded', () => {
 });
 
 test('selection normalization removes blanks and duplicates without inventing choices', () => {
-  assert.deepEqual(uniqueSelections(['Time', '', 'Time', 'Reliability']), ['Time', 'Reliability']);
+  assert.deepEqual(uniqueSelections(['Readiness', '', 'Readiness', 'Resilience']), ['Readiness', 'Resilience']);
 });
 
 test('selection normalization preserves explicit human selections instead of silently truncating them', () => {
@@ -53,22 +53,22 @@ test('selection normalization preserves explicit human selections instead of sil
 
 test('full-comparison handoff requires a confirmed decision and a 2 by 2 by 2 frame', () => {
   assert.equal(decisionFrameReady(buildDecisionFrame({
-    decision: 'Should we move now or test first?',
-    goals: ['Time', 'Reliability'],
-    choices: ['Move now', 'Test first'],
-    futures: ['Things stay roughly the same', 'Timing gets worse'],
+    decision: 'Should we qualify now or run a bounded pilot first?',
+    goals: ['Readiness', 'Resilience'],
+    choices: ['Qualify now', 'Run a bounded pilot first'],
+    futures: ['Current conditions persist', 'Schedule slips'],
   })), true);
   assert.equal(decisionFrameReady(buildDecisionFrame({
     decision: '',
-    goals: ['Time', 'Reliability'],
-    choices: ['Move now', 'Test first'],
-    futures: ['Things stay roughly the same', 'Timing gets worse'],
+    goals: ['Readiness', 'Resilience'],
+    choices: ['Qualify now', 'Run a bounded pilot first'],
+    futures: ['Current conditions persist', 'Schedule slips'],
   })), false);
 });
 
 test('Decision Frame is useful when incomplete and never claims a recommendation', () => {
   const text = frameAsText(buildDecisionFrame({
-    startingPoint: 'Everything is tangled and I need to act soon.',
+    startingPoint: 'Qualification, supply continuity, and schedule evidence are unresolved.',
     intent: 'unsure',
     urgency: 'today',
   }));
