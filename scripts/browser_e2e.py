@@ -701,7 +701,7 @@ def corrective_draft_and_entry_flow(page: Page, completed_file: str) -> None:
     assert_page_clean(page)
 
 
-def checkpoint_b_semantics_flow(page: Page) -> None:
+def assurance_profile_flow(page: Page) -> None:
     set_hash_route(page, "/decision/example")
     page.locator("summary").filter(has_text=re.compile(r"^Choose an assurance profile")).click()
     page.locator("#decision-semantic-mode").select_option("sustainability-seer")
@@ -859,7 +859,7 @@ def run_mode(
         completed_file = decision_flow(page, base)
         print_flow(page)
         corrective_draft_and_entry_flow(page, completed_file)
-        checkpoint_b_semantics_flow(page)
+        assurance_profile_flow(page)
     else:
         route(page, base, "/decision", '[data-surface="fde-hero"] h1', "Frontier Decision Engine")
     assert not console_errors, f"console errors in {label}: {console_errors}"
