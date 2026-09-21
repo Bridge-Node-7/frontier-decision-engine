@@ -14,6 +14,6 @@ Scores are user- or analyst-assigned desirability inputs. They are not probabili
 
 Software validation proves deterministic behavior against declared inputs. It does not prove that a user's evidence is true, complete, or sufficient.
 
-Assurance posture remains separate from comparative ranking: the leading tested choice is not automatically authorized to advance. The optional Sustainability assurance · SEER profile applies the same assurance semantics across People, Planet, Profits, and Product without collapsing them into one score.
+Assurance posture remains separate from comparative ranking: the leading tested choice is not automatically authorized to advance. When relevant, the optional SEER sustainability reminder applies the same assurance semantics across People, Planet, Profits, and Product without collapsing them into one score or overriding the underlying comparison.
 
 The comparison informs. A person decides.
