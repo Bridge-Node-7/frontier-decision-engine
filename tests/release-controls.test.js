@@ -37,6 +37,7 @@ test('production release follows successful Pages UAT and uses a verified main c
   assert.match(workflow, /workflows: \["Deploy Pages"\]/);
   assert.match(workflow, /types: \[completed\]/);
   assert.equal(workflow.includes('workflow_dispatch'), false);
+  assert.equal(/environment:[\s\S]*name: release/.test(workflow), false);
   assert.match(workflow, /workflow_run\.conclusion == 'success'/);
   assert.match(workflow, /workflow_run\.event == 'push'/);
   assert.match(workflow, /workflow_run\.head_branch == 'main'/);

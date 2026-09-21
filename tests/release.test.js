@@ -210,7 +210,7 @@ test('Pages workflow runs the complete UX gate against the deployed HTTPS origin
 
 test('Release workflow requires a verified commit anchor and hosted verification', async () => {
   const release = await read('.github/workflows/release.yml');
-  assert.match(release, /environment:[\s\S]*name: release/);
+  assert.equal(/environment:[\s\S]*name: release/.test(release), false);
   assert.match(release, /workflow_run\.conclusion == 'success'/);
   assert.match(release, /workflow_run\.head_branch == 'main'/);
   assert.match(release, /verification\.verified/);
