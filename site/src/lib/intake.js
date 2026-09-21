@@ -10,27 +10,28 @@ export const GUIDED_INTENTS = Object.freeze([
 ]);
 
 export const GUIDED_GOALS = Object.freeze([
-  'Time', 'Cost', 'Safety', 'Quality', 'Reliability',
-  'People', 'Revenue', 'Flexibility', 'Compliance', 'Learning',
+  'Readiness', 'Mission performance', 'Supply continuity', 'Schedule',
+  'Cost exposure', 'Compliance', 'Resilience', 'Interoperability',
+  'Evidence confidence', 'Reversibility',
 ]);
 
 export const GUIDED_CHOICES = Object.freeze([
-  'Keep things as they are',
-  'Make a change',
-  'Wait or delay',
-  'Test or pilot first',
-  'Gather information first',
-  'Stage the decision',
+  'Maintain the current path',
+  'Qualify an alternate source',
+  'Redesign around the dependency',
+  'Run a bounded pilot first',
+  'Gather decision-relevant evidence',
+  'Hold pending a defined threshold',
 ]);
 
 export const GUIDED_FUTURES = Object.freeze([
-  'Things stay roughly the same',
-  'Timing gets worse',
-  'Cost increases',
+  'Current conditions persist',
+  'Schedule slips',
+  'Cost exposure rises',
   'Demand changes',
-  'A key dependency fails',
-  'Requirements change',
-  'A key constraint improves',
+  'A critical dependency fails',
+  'Requirements or regulations change',
+  'New evidence resolves a key uncertainty',
 ]);
 
 export function normalizeIntakeText(value) {
