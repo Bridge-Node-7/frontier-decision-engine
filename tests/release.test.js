@@ -145,17 +145,21 @@ test('browser gate includes semantic accessibility, reflow, forced-colors, and P
   assert.match(runner, /%PDF/);
 });
 
-test('tag-driven release workflow verifies identity and publishes deterministic artifacts', async () => {
+test('Pages-gated release workflow verifies identity and publishes deterministic artifacts', async () => {
   const workflow = await read('.github/workflows/release.yml');
   const verifier = await read('scripts/verify_release_tag.py');
-  assert.match(workflow, /tags:/);
-  assert.match(workflow, /git cat-file -t/);
+  assert.match(workflow, /workflow_run:/);
+  assert.match(workflow, /workflows: \["Deploy Pages"\]/);
+  assert.match(workflow, /workflow_run\.head_sha/);
   assert.match(workflow, /verify_release_tag\.py/);
+  assert.match(workflow, /\.commit\.verification\.verified/);
+  assert.match(workflow, /\.commit\.verification\.reason/);
   assert.match(workflow, /npm run check/);
   assert.match(workflow, /npm run package:release/);
   assert.match(workflow, /cd dist[\s\S]*sha256sum --check/);
+  assert.match(workflow, /Create annotated release tag/);
   assert.match(workflow, /gh release create/);
-  assert.match(workflow, /release_commit=\$TAG_COMMIT/);
+  assert.match(workflow, /release_commit=\$RELEASE_COMMIT/);
   assert.match(workflow, /--target "\$RELEASE_COMMIT"/);
   assert.match(workflow, /actions\/attest@508db95dd578ae2727ebd6217d5ba78e4fbda05d/);
   assert.match(workflow, /persist-credentials: false/);
@@ -204,19 +208,20 @@ test('Pages workflow runs the complete UX gate against the deployed HTTPS origin
   assert.match(runner, /attempts=12/);
 });
 
-test('Release workflow requires a verified signature and hosted immutable verification', async () => {
+test('Release workflow requires a verified commit anchor and hosted verification', async () => {
   const release = await read('.github/workflows/release.yml');
   assert.match(release, /environment:[\s\S]*name: release/);
+  assert.match(release, /workflow_run\.conclusion == 'success'/);
+  assert.match(release, /workflow_run\.head_branch == 'main'/);
   assert.match(release, /verification\.verified/);
   assert.match(release, /verification\.reason/);
   assert.match(release, /test "\$TAG_OBJECT_TYPE" = "tag"/);
-  assert.match(release, /test "\$TAG_COMMIT" = "\$CHECKOUT_COMMIT"/);
-  assert.match(release, /git merge-base --is-ancestor/);
+  assert.match(release, /git rev-parse origin\/main/);
   assert.equal(release.includes('RELEASE_ADMIN_TOKEN'), false);
-  assert.match(release, /gh release download "\$GITHUB_REF_NAME"/);
+  assert.match(release, /gh release download "\$TAG"/);
   assert.match(release, /hosted-verification/);
   assert.match(release, /sha256sum --check/);
-  assert.match(release, /gh release verify "\$GITHUB_REF_NAME"/);
+  assert.match(release, /gh release verify "\$TAG"/);
   assert.equal((release.match(/gh release verify-asset/g) || []).length, 2);
   assert.equal((release.match(/gh attestation verify/g) || []).length, 2);
 });
