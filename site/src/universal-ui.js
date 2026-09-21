@@ -1,5 +1,5 @@
 import { createGuidedDecisionCase, DRAFT_TOPOLOGY_BOUNDS } from './lib/decision.js';
-import { RESCUE_MAX_INPUT_CHARS } from './lib/intake.js';
+import { GUIDED_MAX_INPUT_CHARS } from './lib/intake.js';
 import { DECISION_STORAGE_KEY, getBrowserStorage, saveDecision } from './lib/persistence.js';
 import { boundaryForInput } from './lib/input-boundaries.js';
 
@@ -245,11 +245,11 @@ function entryMarkup(state, hasSavedDecision) {
     <p class="universal-subtitle">Share a technical, organizational, mission, or strategic decision in your own words.</p>
     <div class="universal-entry">
       <label class="sr-only" for="universal-input">What are you considering?</label>
-      <textarea id="universal-input" maxlength="${RESCUE_MAX_INPUT_CHARS}" rows="7" aria-describedby="universal-help" placeholder="Decision, choices, criteria, uncertainties, notes, or context…">${escapeHtml(state.startingPoint)}</textarea>
+      <textarea id="universal-input" maxlength="${GUIDED_MAX_INPUT_CHARS}" rows="7" aria-describedby="universal-help" placeholder="Decision, choices, criteria, uncertainties, notes, or context…">${escapeHtml(state.startingPoint)}</textarea>
       <p id="universal-help" class="help">Use your own words. Press Ctrl or Command + Enter to continue. Natural-language intake currently supports English.</p>
       <div class="universal-actions"><button id="universal-analyze" class="primary" type="button">Continue</button></div>
       <p class="universal-lab-link"><a href="#/decision">Already know the decision and choices? Open Decision Lab →</a></p>
-      <p class="universal-lab-link"><a href="#/rescue">Need more help framing the decision? Use guided framing →</a></p>
+      <p class="universal-lab-link"><a href="#/framing">Need more help framing the decision? Use guided framing →</a></p>
       ${hasSavedDecision ? '<p class="universal-return"><a href="#/decision">Continue saved work →</a></p>' : ''}
       <p class="universal-trust">Private by design. Your working decision stays in this browser unless you choose to export it.</p>
       <p id="universal-status" class="sr-only" role="status" aria-live="polite"></p>
@@ -284,7 +284,7 @@ function questionMarkup(state, question) {
     <section class="universal-question" data-fde-field="next_required_input" aria-labelledby="universal-response-title">
       <h2 id="universal-response-title">${escapeHtml(question)}</h2>
       <label class="sr-only" for="universal-input">${escapeHtml(question)}</label>
-      <textarea id="universal-input" maxlength="${RESCUE_MAX_INPUT_CHARS}" rows="5" aria-describedby="universal-help" placeholder="Add only what is needed here…">${escapeHtml(state.answerDraft || '')}</textarea>
+      <textarea id="universal-input" maxlength="${GUIDED_MAX_INPUT_CHARS}" rows="5" aria-describedby="universal-help" placeholder="Add only what is needed here…">${escapeHtml(state.answerDraft || '')}</textarea>
       <p id="universal-help" class="help">One useful answer is enough to continue.</p>
       <div class="universal-actions"><button id="universal-analyze" class="primary" type="button">Continue</button><button id="universal-adjust" class="quiet" type="button">Adjust original input</button></div>
       <p class="universal-trust">Private by design. Your working decision stays in this browser unless you choose to export it.</p>
@@ -408,10 +408,10 @@ export function renderUniversalDecisionExperience(root) {
   function analyzeEntry() {
     const raw = String(root.querySelector('#universal-input')?.value || '');
     state.startingPoint = normalize(raw);
-    if (state.startingPoint.length > RESCUE_MAX_INPUT_CHARS) {
+    if (state.startingPoint.length > GUIDED_MAX_INPUT_CHARS) {
       setBoundary(
         'This input is longer than this browser-local working note supports.',
-        `Shorten it to the decision-relevant context and keep it under ${RESCUE_MAX_INPUT_CHARS.toLocaleString()} characters.`,
+        `Shorten it to the decision-relevant context and keep it under ${GUIDED_MAX_INPUT_CHARS.toLocaleString()} characters.`,
       );
       return;
     }
@@ -513,7 +513,7 @@ export function renderUniversalDecisionExperience(root) {
     else root.innerHTML = entryMarkup(state, hasSavedDecision());
 
     root.querySelector('#universal-input')?.addEventListener('input', (event) => {
-      const value = String(event.currentTarget.value || '').slice(0, RESCUE_MAX_INPUT_CHARS + 1);
+      const value = String(event.currentTarget.value || '').slice(0, GUIDED_MAX_INPUT_CHARS + 1);
       if (state.view === 'entry') state.startingPoint = value;
       else state.answerDraft = value;
       saveSession(state);
