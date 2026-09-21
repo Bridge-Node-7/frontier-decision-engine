@@ -51,7 +51,9 @@ def run() -> None:
                     assert page.locator("h1").inner_text() == "What are you considering?"
                     assert page.get_by_text("Share a technical, organizational, mission, or strategic decision in your own words.", exact=True).is_visible()
                     assert page.get_by_role("button", name="Continue").is_visible()
-                    assert page.get_by_role("link", name="Already know the decision and choices? Open Decision Lab →").is_visible()\n                    assert page.get_by_role("link", name="Need more help framing the decision? Use guided framing →").is_visible()\n                    assert page.get_by_text("Private by design. Your working decision stays in this browser unless you choose to export it.", exact=True).is_visible()
+                    assert page.get_by_role("link", name="Already know the decision and choices? Open Decision Lab →").is_visible()
+                    assert page.get_by_role("link", name="Need more help framing the decision? Use guided framing →").is_visible()
+                    assert page.get_by_text("Private by design. Your working decision stays in this browser unless you choose to export it.", exact=True).is_visible()
                     assert page.locator("#universal-input").get_attribute("placeholder") == "Decision, choices, criteria, uncertainties, notes, or context…"
                     assert page.locator(".universal-surface").count() == 0
                     assert "Decision Map" not in page.locator("main").inner_text()
