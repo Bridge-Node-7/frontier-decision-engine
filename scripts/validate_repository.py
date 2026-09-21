@@ -31,7 +31,7 @@ required = [
     "site/src/decision-map.js",
     "scripts/browser_e2e.py", "scripts/browser_rescue_e2e.py", "scripts/browser_release_regressions.py",
     "scripts/validate_version_integrity.py", "scripts/package_release.py", "scripts/verify_release_tag.py",
-    "tests/universal-response.test.js",
+    "tests/universal-response.test.js", "site/src/lib/input-boundaries.js",
     "requirements-dev.txt", ".github/workflows/ci.yml", ".github/workflows/pages.yml", ".github/workflows/release.yml",
 ]
 for item in required:
@@ -106,23 +106,23 @@ theme_text = (SITE / "src/theme.js").read_text(encoding="utf-8")
 
 if len(re.findall(r'id="decision-step-heading-[0-5]" tabindex="-1"', decision_text)) != 7:
     errors.append("FDE must expose six focusable decision-stage headings and one incomplete-analysis variant")
-if "rescue-intake" not in rescue_text or "Decision Frame" not in rescue_text or "fde.rescue.session.v1" not in rescue_text:
-    errors.append("Decision Rescue public entry/session boundary is incomplete")
+if "rescue-intake" not in rescue_text or "Decision Frame" not in rescue_text or "fde.rescue.session.v1" not in rescue_text or "Guided framing" not in rescue_text:
+    errors.append("Guided framing public entry/session boundary is incomplete")
 if "A decision is already saved in this browser." not in rescue_text:
-    errors.append("Decision Rescue saved-work collision boundary is missing")
+    errors.append("Guided framing saved-work collision boundary is missing")
 if "renderUniversalDecisionExperience" not in app_text:
     errors.append("first-run decision intake is not the public root experience")
 
 required_front_door = [
     "What are you considering?",
-    "Share a situation, decision, question, or context in your own words.",
-    "Decision, question, options, constraints, notes, or other context…",
+    "Share a technical, organizational, mission, or strategic decision in your own words.",
+    "Decision, choices, criteria, uncertainties, notes, or context…",
     ">Continue<",
-    "Already know the decision and options? Open Decision Lab →",
+    "Already know the decision and choices? Open Decision Lab →",
     "Private by design. Your working decision stays in this browser unless you choose to export it.",
     "supportableSection('Decision', 'decision'",
     "supportableSection('What matters', 'what_matters'",
-    "supportableSection('Options', 'options'",
+    "supportableSection('Choices', 'options'",
     "supportableSection('What may change', 'what_may_change'",
     "Which decision or question should we focus on?",
     "Needs confirmation",
@@ -178,6 +178,6 @@ if errors:
 
 print("REPOSITORY VALIDATION PASS")
 print("- first-run UX provides structure, one clarification, or an explicit capability boundary")
-print("- Decision Rescue and deterministic Decision Lab preserve human authority and browser-local boundaries")
+print("- Guided framing and deterministic Decision Lab preserve human authority and browser-local boundaries")
 print("- public decision schemas, release identity, accessibility controls, and publication checks are aligned")
 print("- static site has no external runtime dependencies")
