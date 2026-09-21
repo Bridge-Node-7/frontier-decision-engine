@@ -78,7 +78,7 @@ function renderVerified(main, packet, result) {
   const view = decisionContextView(packet);
   main.replaceChildren();
 
-  const hero = element('section', '', 'fde-hero');
+  const hero = element('section', '', 'fde-hero governed-context-hero');
   hero.append(element('span', 'Governed context', 'eyebrow'));
   hero.append(element('h1', 'Mission Graph context'));
   hero.append(element('p', packet.question, 'hero-line'));
@@ -188,7 +188,7 @@ function showErrors(status, messages) {
 export function renderGovernedContext(main) {
   clearGovernedContextHandoff();
   main.innerHTML = `
-    <section class="fde-hero" aria-labelledby="context-title">
+    <section class="fde-hero governed-context-hero" aria-labelledby="context-title">
       <span class="eyebrow">Frontier Decision Engine</span>
       <h1 id="context-title">Open governed Mission Graph context</h1>
       <p class="hero-line">Bring bounded preparation context into a human-owned decision.</p>
