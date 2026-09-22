@@ -27,121 +27,414 @@
     "provenance"
   ],
   "properties": {
-    "schema_version": {"const": "0.3.0"},
-    "packet_id": {"type": "string", "pattern": "^DCP-[A-Z0-9-]+$"},
-    "compatibility": {"const": "FDE_PREPARATION_ONLY"},
-    "classification": {"enum": ["PRIVATE", "PROTECTED"]},
+    "schema_version": {
+      "const": "0.3.0"
+    },
+    "packet_id": {
+      "type": "string",
+      "pattern": "^DCP-[A-Z0-9-]+$"
+    },
+    "compatibility": {
+      "const": "FDE_PREPARATION_ONLY"
+    },
+    "classification": {
+      "enum": [
+        "PRIVATE",
+        "PROTECTED"
+      ]
+    },
     "handling": {
       "type": "object",
-      "required": ["label", "government_classification", "release_eligible", "instruction"],
+      "required": [
+        "label",
+        "government_classification",
+        "release_eligible",
+        "instruction"
+      ],
       "properties": {
-        "label": {"enum": ["BN7_PRIVATE", "BN7_PROTECTED"]},
-        "government_classification": {"const": false},
-        "release_eligible": {"const": false},
-        "instruction": {"type": "string", "minLength": 1}
+        "label": {
+          "enum": [
+            "BN7_PRIVATE",
+            "BN7_PROTECTED"
+          ]
+        },
+        "government_classification": {
+          "const": false
+        },
+        "release_eligible": {
+          "const": false
+        },
+        "instruction": {
+          "type": "string",
+          "minLength": 1
+        }
       },
       "additionalProperties": false
     },
     "freshness": {
       "type": "object",
-      "required": ["issued_at", "source_as_of", "review_due_at", "valid_until", "supersedes_packet_id", "state"],
+      "required": [
+        "issued_at",
+        "source_as_of",
+        "review_due_at",
+        "valid_until",
+        "supersedes_packet_id",
+        "state"
+      ],
       "properties": {
-        "issued_at": {"type": "string", "format": "date-time"},
-        "source_as_of": {"type": "string", "format": "date-time"},
-        "review_due_at": {"type": ["string", "null"], "format": "date-time"},
-        "valid_until": {"type": ["string", "null"], "format": "date-time"},
-        "supersedes_packet_id": {"type": ["string", "null"], "pattern": "^DCP-[A-Z0-9-]+$"},
-        "state": {"enum": ["CURRENT", "REVIEW_REQUIRED", "EXPIRED", "NOT_ESTABLISHED"]}
+        "issued_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "source_as_of": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "review_due_at": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "format": "date-time"
+        },
+        "valid_until": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "format": "date-time"
+        },
+        "supersedes_packet_id": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "pattern": "^DCP-[A-Z0-9-]+$"
+        },
+        "state": {
+          "enum": [
+            "CURRENT",
+            "REVIEW_REQUIRED",
+            "EXPIRED",
+            "NOT_ESTABLISHED"
+          ]
+        }
       },
       "additionalProperties": false
     },
     "integrity": {
       "type": "object",
-      "required": ["payload_sha256", "envelope_sha256", "payload_scope", "envelope_scope"],
+      "required": [
+        "payload_sha256",
+        "envelope_sha256",
+        "payload_scope",
+        "envelope_scope"
+      ],
       "properties": {
-        "payload_sha256": {"type": "string", "pattern": "^[a-f0-9]{64}$"},
-        "envelope_sha256": {"type": "string", "pattern": "^[a-f0-9]{64}$"},
-        "payload_scope": {"const": "decision-relevant packet content excluding integrity, origin, freshness, and provenance"},
-        "envelope_scope": {"const": "packet excluding the envelope digest field and origin.attestation_ref"}
+        "payload_sha256": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$"
+        },
+        "envelope_sha256": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$"
+        },
+        "payload_scope": {
+          "const": "decision-relevant packet content excluding integrity, origin, freshness, and provenance"
+        },
+        "envelope_scope": {
+          "const": "packet excluding the envelope digest field and origin.attestation_ref"
+        }
       },
       "additionalProperties": false
     },
     "origin": {
       "type": "object",
-      "required": ["authentication_state", "issuer_ref", "attestation_ref"],
+      "required": [
+        "authentication_state",
+        "issuer_ref",
+        "attestation_ref"
+      ],
       "properties": {
-        "authentication_state": {"enum": ["UNAUTHENTICATED", "AUTHENTICATED"]},
-        "issuer_ref": {"type": "string", "minLength": 1},
-        "attestation_ref": {"type": ["string", "null"], "minLength": 1}
+        "authentication_state": {
+          "enum": [
+            "UNAUTHENTICATED",
+            "AUTHENTICATED"
+          ]
+        },
+        "issuer_ref": {
+          "type": "string",
+          "minLength": 1
+        },
+        "attestation_ref": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "minLength": 1
+        }
       },
       "additionalProperties": false
     },
     "evidence_assurance": {
       "type": "object",
-      "required": ["state", "limitations"],
+      "required": [
+        "state",
+        "limitations"
+      ],
       "properties": {
-        "state": {"enum": ["BOUNDED", "REVIEW_REQUIRED", "NOT_ASSESSED"]},
-        "limitations": {"type": "array", "items": {"type": "string", "minLength": 1}}
+        "state": {
+          "enum": [
+            "BOUNDED",
+            "REVIEW_REQUIRED",
+            "NOT_ASSESSED"
+          ]
+        },
+        "limitations": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        }
       },
       "additionalProperties": false
     },
-    "source_graph_id": {"type": "string"},
-    "question": {"type": "string", "minLength": 1},
-    "decision_owner": {"type": "string", "minLength": 1},
+    "source_graph_id": {
+      "type": "string"
+    },
+    "question": {
+      "type": "string",
+      "minLength": 1
+    },
+    "decision_owner": {
+      "type": "string",
+      "minLength": 1
+    },
     "evidence_summary": {
       "type": "object",
-      "required": ["known", "assumed", "unknown", "contradicted", "expired"],
+      "required": [
+        "known",
+        "assumed",
+        "unknown",
+        "contradicted",
+        "expired"
+      ],
       "properties": {
-        "known": {"type": "array", "items": {"type": "string"}},
-        "assumed": {"type": "array", "items": {"type": "string"}},
-        "unknown": {"type": "array", "items": {"type": "string"}},
-        "contradicted": {"type": "array", "items": {"type": "string"}},
-        "expired": {"type": "array", "items": {"type": "string"}}
+        "known": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "assumed": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "unknown": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "contradicted": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "expired": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
       },
       "additionalProperties": false
     },
-    "critical_unknowns": {"type": "array", "items": {"type": "string"}},
-    "candidate_pathways": {"type": "array", "items": {"type": "object"}},
-    "shared_failure_domains": {"type": "array", "items": {"type": "object"}},
+    "critical_unknowns": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "candidate_pathways": {
+      "type": "array",
+      "items": {
+        "type": "object"
+      }
+    },
+    "shared_failure_domains": {
+      "type": "array",
+      "items": {
+        "type": "object"
+      }
+    },
     "false_redundancy_pairs": {
       "type": "array",
       "items": {
         "type": "object",
-        "required": ["left_id", "right_id", "failure_domain_id"],
+        "required": [
+          "left_id",
+          "right_id",
+          "failure_domain_id"
+        ],
         "properties": {
-          "left_id": {"type": "string"},
-          "right_id": {"type": "string"},
-          "failure_domain_id": {"type": "string"}
+          "left_id": {
+            "type": "string"
+          },
+          "right_id": {
+            "type": "string"
+          },
+          "failure_domain_id": {
+            "type": "string"
+          }
         },
         "additionalProperties": false
       }
     },
-    "proof_requests": {"type": "array", "items": {"type": "object"}},
+    "proof_requests": {
+      "type": "array",
+      "items": {
+        "type": "object"
+      }
+    },
     "attention_queue": {
       "type": "array",
       "items": {
         "type": "object",
-        "required": ["proof_request_id", "human_owner", "status", "attention"],
+        "required": [
+          "proof_request_id",
+          "human_owner",
+          "status",
+          "attention"
+        ],
         "properties": {
-          "proof_request_id": {"type": "string", "minLength": 1},
-          "human_owner": {"type": "string", "minLength": 1},
-          "status": {"type": "string", "minLength": 1},
-          "attention": {"type": "object"}
+          "proof_request_id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "human_owner": {
+            "type": "string",
+            "minLength": 1
+          },
+          "status": {
+            "type": "string",
+            "minLength": 1
+          },
+          "attention": {
+            "type": "object",
+            "required": [
+              "mission_consequence",
+              "uncertainty",
+              "evidence_age",
+              "change_velocity",
+              "shared_failure_exposure",
+              "decision_imminence",
+              "human_priority"
+            ],
+            "properties": {
+              "mission_consequence": {
+                "enum": [
+                  "LOW",
+                  "MODERATE",
+                  "HIGH",
+                  "CRITICAL"
+                ]
+              },
+              "uncertainty": {
+                "enum": [
+                  "LOW",
+                  "MODERATE",
+                  "HIGH",
+                  "UNKNOWN"
+                ]
+              },
+              "evidence_age": {
+                "enum": [
+                  "FRESH",
+                  "MODERATE",
+                  "STALE",
+                  "UNKNOWN"
+                ]
+              },
+              "change_velocity": {
+                "enum": [
+                  "LOW",
+                  "MODERATE",
+                  "HIGH",
+                  "UNKNOWN"
+                ]
+              },
+              "shared_failure_exposure": {
+                "enum": [
+                  "NONE",
+                  "LOW",
+                  "MODERATE",
+                  "HIGH",
+                  "UNKNOWN"
+                ]
+              },
+              "decision_imminence": {
+                "enum": [
+                  "IMMEDIATE",
+                  "NEAR_TERM",
+                  "PLANNED",
+                  "UNSCHEDULED"
+                ]
+              },
+              "human_priority": {
+                "enum": [
+                  "ROUTINE",
+                  "ELEVATED",
+                  "IMMEDIATE"
+                ]
+              }
+            },
+            "additionalProperties": false
+          }
         },
         "additionalProperties": false
       }
     },
-    "conditions_to_watch": {"type": "array", "items": {"type": "string"}},
+    "conditions_to_watch": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
     "provenance": {
       "type": "object",
-      "required": ["source_record_id", "source_record_sha256", "model_type", "probability_model_used", "values_are_analyst_assigned", "fde_recorded_decision"],
+      "required": [
+        "source_record_id",
+        "source_record_sha256",
+        "model_type",
+        "probability_model_used",
+        "values_are_analyst_assigned",
+        "fde_recorded_decision"
+      ],
       "properties": {
-        "source_record_id": {"type": "string"},
-        "source_record_sha256": {"type": "string", "pattern": "^[a-f0-9]{64}$"},
-        "model_type": {"type": "string"},
-        "probability_model_used": {"const": false},
-        "values_are_analyst_assigned": {"const": false},
-        "fde_recorded_decision": {"const": false}
+        "source_record_id": {
+          "type": "string"
+        },
+        "source_record_sha256": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$"
+        },
+        "model_type": {
+          "type": "string"
+        },
+        "probability_model_used": {
+          "const": false
+        },
+        "values_are_analyst_assigned": {
+          "const": false
+        },
+        "fde_recorded_decision": {
+          "const": false
+        }
       },
       "additionalProperties": true
     }

@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 from __future__ import annotations
 import argparse
+import hashlib
 import json
 import re
 import sys
@@ -31,6 +32,7 @@ def main() -> int:
     package = load_json("package.json")
     lock = load_json("package-lock.json")
     facts = load_json("project-facts.json")
+    interfaces = load_json("INTERFACES.json")
     decision = load_json("examples/synthetic-source-qualification/decision.fde.json")
     semantic_schema = load_json("schemas/decision-0.3.0.schema.json")
     deployed_semantic_schema = load_json("site/schemas/decision-0.3.0.schema.json")
@@ -131,6 +133,32 @@ def main() -> int:
         fail("Mission Graph origin-authentication contract changed unexpectedly", errors)
     if mission_context_schema != deployed_mission_context_schema:
         fail("source and deployed Mission Graph Decision Context 0.3.0 schemas differ", errors)
+
+    if interfaces.get("format") != "bn7.interfaces/0.1":
+        fail("INTERFACES.json format is invalid", errors)
+    if interfaces.get("system") != "frontier-decision-engine":
+        fail("INTERFACES.json system identity is invalid", errors)
+    if "application_version" in interfaces:
+        fail("INTERFACES.json must remain independent from application version", errors)
+    accepts = interfaces.get("accepts", [])
+    if not isinstance(accepts, list) or len(accepts) != 1 or not isinstance(accepts[0], dict):
+        fail("INTERFACES.json must declare exactly one bounded accepted DCP interface", errors)
+    else:
+        accepted = accepts[0]
+        expected_path = "schemas/mission-graph-decision-context-0.3.0.schema.json"
+        if accepted.get("contract_id") != "urn:bn7:decision-context:0.3.0":
+            fail("accepted DCP contract identity is invalid", errors)
+        if accepted.get("contract_version") != "0.3.0":
+            fail("accepted DCP contract version is invalid", errors)
+        if accepted.get("schema_path") != expected_path:
+            fail("accepted DCP schema path is invalid", errors)
+        if accepted.get("profile") != "FDE_PREPARATION_ONLY":
+            fail("accepted DCP semantic profile is invalid", errors)
+        if accepted.get("authority") != "CONSUMER_VALIDATES_PRODUCER_OWNED_PORTABLE_CONTRACT":
+            fail("accepted DCP authority declaration is invalid", errors)
+        actual_digest = hashlib.sha256((root / expected_path).read_bytes()).hexdigest()
+        if accepted.get("sha256") != actual_digest:
+            fail("accepted DCP raw schema SHA-256 does not match source bytes", errors)
 
     governed_context = load_text("site/src/lib/governed-context.js")
     if "const ENVELOPE_SCOPE = 'packet excluding the envelope digest field and origin.attestation_ref';" not in governed_context:

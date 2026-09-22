@@ -1,0 +1,15 @@
+{
+  "format": "bn7.interfaces/0.1",
+  "system": "frontier-decision-engine",
+  "provides": [],
+  "accepts": [
+    {
+      "contract_id": "urn:bn7:decision-context:0.3.0",
+      "contract_version": "0.3.0",
+      "schema_path": "schemas/mission-graph-decision-context-0.3.0.schema.json",
+      "sha256": "dd93662b76972e3dddca28869b802bd6b9fa0cc8bb9ca5a5d35ec087196392dd",
+      "profile": "FDE_PREPARATION_ONLY",
+      "authority": "CONSUMER_VALIDATES_PRODUCER_OWNED_PORTABLE_CONTRACT"
+    }
+  ]
+}
