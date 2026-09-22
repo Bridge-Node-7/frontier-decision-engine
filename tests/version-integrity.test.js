@@ -10,7 +10,7 @@ const pythonLauncher = path.join(root, "scripts", "run-python.mjs");
 async function fixture() {
   const dir = await mkdtemp(path.join(os.tmpdir(), "fde-version-"));
   for (const item of [
-    "package.json", "package-lock.json", "CITATION.cff", "project-facts.json",
+    "package.json", "package-lock.json", "CITATION.cff", "project-facts.json", "INTERFACES.json",
     "README.md", "examples", "docs", "site", "schemas", "scripts",
   ]) await cp(path.join(root, item), path.join(dir, item), { recursive: true });
   return dir;
