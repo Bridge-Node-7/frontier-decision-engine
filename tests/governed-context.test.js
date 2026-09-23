@@ -71,7 +71,22 @@ async function packetFixture(overrides = {}) {
         status: 'DRAFT',
       },
     ],
-    attention_queue: [],
+    attention_queue: [
+      {
+        proof_request_id: 'PR-1',
+        human_owner: 'Human Owner',
+        status: 'DRAFT',
+        attention: {
+          mission_consequence: 'HIGH',
+          uncertainty: 'HIGH',
+          evidence_age: 'STALE',
+          change_velocity: 'MODERATE',
+          shared_failure_exposure: 'LOW',
+          decision_imminence: 'NEAR_TERM',
+          human_priority: 'IMMEDIATE',
+        },
+      },
+    ],
     conditions_to_watch: ['Supplier status changes'],
     provenance: {
       source_record_id: 'CLM-SYNTHETIC-001',
@@ -214,8 +229,47 @@ test('context projection preserves epistemic categories and active ProofRequests
   assert.ok(view.unknown.includes('E-3: Capacity remains unknown'));
   assert.ok(view.unknown.includes('PR-1: Verify current capacity'));
   assert.equal(view.needsProof[0].id, 'PR-1');
+  assert.equal(view.nextProof.id, 'PR-1');
+  assert.equal(view.nextProof.attention.human_priority, 'IMMEDIATE');
+  assert.equal(view.nextProof.attention.decision_imminence, 'NEAR_TERM');
   assert.deepEqual(view.expired, ['E-5: Prior observation is stale']);
   assert.deepEqual(view.conditionsToWatch, ['Supplier status changes']);
+});
+
+test('next proof preserves Mission Graph attention order instead of calculating a local score', async () => {
+  const proofRequests = [
+    { proof_request_id: 'PR-1', question: 'First proof', human_owner: 'Human Owner', status: 'DRAFT' },
+    { proof_request_id: 'PR-2', question: 'Second proof', human_owner: 'Human Owner', status: 'DRAFT' },
+  ];
+  const attention = {
+    mission_consequence: 'HIGH',
+    uncertainty: 'HIGH',
+    evidence_age: 'FRESH',
+    change_velocity: 'LOW',
+    shared_failure_exposure: 'NONE',
+    decision_imminence: 'NEAR_TERM',
+    human_priority: 'ELEVATED',
+  };
+  const packet = await packetFixture({
+    proof_requests: proofRequests,
+    attention_queue: [
+      { proof_request_id: 'PR-2', human_owner: 'Human Owner', status: 'DRAFT', attention },
+      { proof_request_id: 'PR-1', human_owner: 'Human Owner', status: 'DRAFT', attention: { ...attention, human_priority: 'IMMEDIATE' } },
+    ],
+  });
+  const view = decisionContextView(packet);
+  assert.equal(view.nextProof.id, 'PR-2');
+  assert.match(governedContextSummary(packet), /Next proof \(Mission Graph human-owned attention order\): PR-2: Second proof/);
+});
+
+test('next proof ignores queue entries whose ProofRequest is no longer active', async () => {
+  const packet = await packetFixture({
+    proof_requests: [
+      { proof_request_id: 'PR-1', question: 'Closed proof', human_owner: 'Human Owner', status: 'SATISFIED' },
+    ],
+  });
+  const view = decisionContextView(packet);
+  assert.equal(view.nextProof, null);
 });
 
 test('governed context handoff is memory-only and single-use', async () => {
