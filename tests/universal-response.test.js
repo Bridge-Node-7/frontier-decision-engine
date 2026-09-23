@@ -260,3 +260,33 @@ test('ordinary criteria-list forms do not override explicit choices', () => {
   }
 });
 
+
+
+test('explicit criteria outside the keyword dictionary remain visible for human confirmation', () => {
+  const draft = draftFromInput('Should we qualify Supplier Alpha or Supplier Bravo? Data residency, capex, measurement traceability, and corrosion resistance matter.');
+  assert.equal(draft.criteriaListAmbiguous, false);
+  assert.deepEqual(draft.goals, ['Data residency', 'Capex', 'Measurement traceability', 'Corrosion resistance']);
+  assert.equal(responseFor(draft).kind, 'structure');
+});
+
+test('oversized explicit criteria sets ask for bounded human selection instead of silently truncating', () => {
+  const draft = draftFromInput('Should we qualify Supplier Alpha or Supplier Bravo? Data residency, capex, measurement traceability, corrosion resistance, and repairability matter.');
+  assert.equal(draft.criteriaListAmbiguous, true);
+  assert.equal(draft.detectedCriterionCount, 5);
+  assert.deepEqual(draft.goals, []);
+  const response = responseFor(draft);
+  assert.equal(response.kind, 'question');
+  assert.equal(response.question, 'I found 5 possible criteria. Choose up to 4 to keep.');
+});
+
+test('informational versus language is not converted into a decision choice set', () => {
+  const information = draftFromInput('Explain qualification versus redesign for a new engineer.');
+  assert.equal(information.intent, 'information');
+  assert.deepEqual(information.choices, []);
+  assert.equal(responseFor(information).kind, 'boundary');
+
+  const decision = draftFromInput('Should we qualify Supplier Alpha versus Supplier Bravo?');
+  assert.equal(decision.intent, 'decision');
+  assert.deepEqual(decision.choices, ['qualify Supplier Alpha', 'Supplier Bravo']);
+  assert.equal(responseFor(decision).kind, 'structure');
+});
