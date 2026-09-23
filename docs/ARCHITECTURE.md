@@ -49,3 +49,30 @@ The first-run experience uses bounded tab-scoped session storage for accidental-
 ## Privacy and security
 
 The public application has no backend, account system, analytics, telemetry, cookies, remote AI provider, or default upload endpoint. User input is rendered as text, not executable markup. Local files remain in the browser unless the person explicitly downloads or shares them.
+
+
+## Accountable decision authority
+
+FDE distinguishes the accountable owner, a delegated decider, an advisor, and unknown ownership. Analysis capability does not imply decision authority. Advisors may frame and compare and may prepare a brief for the owner; they cannot create an accountable Decision Receipt. Unknown ownership preserves the frame but gates comparison until an accountable owner is established.
+
+## Evidence readiness
+
+Decision evidence can be ready or require proof before additional confidence is warranted. Required criteria with partial, unknown, contested, stale, invalid, or otherwise not-assessable evidence surface a proof-first gate. An accountable owner may explicitly proceed under residual uncertainty only when that unresolved evidence and the reason for proceeding are preserved in the receipt.
+
+## Decision Receipts
+
+Decision Receipt v2 is separate from the Decision Case. It binds the substantive decision state, decision authority, evidence disposition, and human attestation with SHA-256 over canonical JSON. Legacy v1 FNV-1a records remain readable as historical change-detection records.
+
+Recording a human decision is not the same as organizational approval, legal authorization, certification, qualification, consent, investment authority, or execution authority.
+
+## Lifecycle and historical truth
+
+The application-facing lifecycle is Draft -> Ready for owner review -> Human decision recorded -> Superseded/Closed. Recorded historical decisions are not rewritten after outcomes become known; new evidence produces reassessment and, when needed, a new receipt.
+
+## Deployment handling boundary
+
+The public deployment is for public or sanitized decision material only. Handling authority is a deployment property, not a user-selectable privilege. A public build cannot elevate itself into an approved confidential, controlled, classified, or otherwise restricted environment.
+
+## Pilot proof instrumentation
+
+Pilot usefulness measurements are kept in the separate Pilot Proof Envelope contract. They do not expand the Decision Case schema and are not collected through hidden telemetry or analytics.
