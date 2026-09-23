@@ -261,17 +261,31 @@ export async function validateDecisionContextPacket(packet, options = {}) {
 
 export function decisionContextView(packet) {
   const activeProofRequests = (packet.proof_requests || []).filter((item) => !['SATISFIED', 'CANCELLED'].includes(item.status));
+  const needsProof = activeProofRequests.map((item) => ({
+    id: String(item.proof_request_id || 'PROOF_REQUEST'),
+    question: String(item.question || 'Additional proof is required.'),
+    owner: String(item.human_owner || ''),
+    status: String(item.status || ''),
+  }));
+  const proofById = new Map(needsProof.map((item) => [item.id, item]));
+  const nextQueueItem = (packet.attention_queue || []).find((item) => {
+    const id = String(item.proof_request_id || '');
+    return proofById.has(id) && !['SATISFIED', 'CANCELLED'].includes(String(item.status || ''));
+  });
+  const nextProof = nextQueueItem
+    ? {
+        ...proofById.get(String(nextQueueItem.proof_request_id)),
+        attention: { ...(nextQueueItem.attention || {}) },
+      }
+    : null;
+
   return {
     known: [...packet.evidence_summary.known],
     assumed: [...packet.evidence_summary.assumed],
     disputed: [...packet.evidence_summary.contradicted],
     unknown: [...new Set([...packet.evidence_summary.unknown, ...packet.critical_unknowns])],
-    needsProof: activeProofRequests.map((item) => ({
-      id: String(item.proof_request_id || 'PROOF_REQUEST'),
-      question: String(item.question || 'Additional proof is required.'),
-      owner: String(item.human_owner || ''),
-      status: String(item.status || ''),
-    })),
+    needsProof,
+    nextProof,
     expired: [...packet.evidence_summary.expired],
     conditionsToWatch: [...packet.conditions_to_watch],
   };
@@ -305,6 +319,7 @@ export function governedContextSummary(packet) {
   add('Assumed', view.assumed);
   add('Disputed', view.disputed);
   add('Unknown', view.unknown);
+  if (view.nextProof) lines.push(`Next proof (Mission Graph human-owned attention order): ${view.nextProof.id}: ${view.nextProof.question}`);
   add('Needs proof', view.needsProof.map((item) => `${item.id}: ${item.question}`));
   add('Expired', view.expired);
   add('Conditions to watch', view.conditionsToWatch);

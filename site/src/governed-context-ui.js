@@ -49,6 +49,34 @@ function proofSection(items) {
   return section;
 }
 
+function nextProofSection(proof) {
+  const section = element('section', '', 'panel stack');
+  section.append(element('h2', 'Next proof to reduce uncertainty'));
+  const question = element('p');
+  question.append(element('strong', `${proof.id}: ${proof.question}`));
+  section.append(question);
+
+  const attention = proof.attention || {};
+  const dimensions = [
+    ['Human priority', attention.human_priority],
+    ['Decision imminence', attention.decision_imminence],
+    ['Mission consequence', attention.mission_consequence],
+    ['Uncertainty', attention.uncertainty],
+  ].filter(([, value]) => value);
+
+  if (dimensions.length) {
+    const detail = element('p', '', 'muted');
+    detail.textContent = dimensions.map(([label, value]) => `${label}: ${value}`).join(' · ');
+    section.append(detail);
+  }
+  section.append(element(
+    'p',
+    'This is the first active item carried in Mission Graph’s human-owned attention queue. FDE does not calculate a priority score or make a recommendation.',
+    'muted',
+  ));
+  return section;
+}
+
 function trustPanel(packet, result) {
   const section = element('section', '', 'panel stack');
   section.append(element('h2', 'Trust state'));
@@ -105,6 +133,7 @@ function renderVerified(main, packet, result) {
   }
   main.append(boundary);
   main.append(trustPanel(packet, result));
+  if (view.nextProof) main.append(nextProofSection(view.nextProof));
 
   const grid = element('div', '', 'grid-2');
   grid.append(listSection('What we know', view.known, 'No supported evidence statements are carried in this packet.'));
