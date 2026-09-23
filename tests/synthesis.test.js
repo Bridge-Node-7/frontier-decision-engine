@@ -8,6 +8,13 @@ import { deriveDecisionSynthesis } from '../site/src/lib/synthesis.js';
 import { createDecisionRecord } from '../site/src/lib/recording.js';
 import { buildDecisionHtml } from '../site/src/decision-ui.js';
 
+const receiptOptions = (value) => ({
+  authority: { role: 'accountable_owner', owner: value.decision_owner || 'Decision owner', basis: 'Test owner.' },
+  evidenceDisposition: { state: 'ready', unresolved_evidence: [], rationale: '' },
+  attestation: { confirmed: true, attested_by: 'Test Owner', attested_role: 'Decision owner' },
+  recordedAt: '2026-08-15T12:00:00.000Z',
+});
+
 function decision() {
   const value = createDecisionCase();
   activateDecisionSemantics(value, SEER_PROFILE_ID);
@@ -32,7 +39,7 @@ test('shared synthesis keeps posture, comparison, and human decision distinct', 
   assert.ok(result.strongest_alternative?.label);
   assert.ok(result.selected_human_choice?.label);
   assert.equal(result.recorded_human_decision, null);
-  const recorded = deriveDecisionSynthesis(value, createDecisionRecord(value));
+  const recorded = deriveDecisionSynthesis(value, createDecisionRecord(value, receiptOptions(value)));
   assert.equal(recorded.recorded_human_decision.label, result.selected_human_choice.label);
 });
 
@@ -50,7 +57,7 @@ test('shared synthesis reports a structured controlling reason', () => {
 test('readable brief consumes the shared synthesis', () => {
   const value = decision();
   const synthesis = deriveDecisionSynthesis(value);
-  const html = buildDecisionHtml(createDecisionRecord(value));
+  const html = buildDecisionHtml(createDecisionRecord(value, receiptOptions(value)));
   assert.match(html, /Decision signature/);
   assert.ok(html.includes(synthesis.controlling_issue));
   assert.ok(html.includes(synthesis.strongest_alternative.label));
