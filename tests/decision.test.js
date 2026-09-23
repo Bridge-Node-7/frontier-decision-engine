@@ -15,6 +15,13 @@ import {
 } from '../site/src/lib/decision.js';
 import { createDecisionRecord } from '../site/src/lib/recording.js';
 
+const receiptOptions = (decision) => ({
+  authority: { role: 'accountable_owner', owner: decision.decision_owner || 'Decision owner', basis: 'Test owner.' },
+  evidenceDisposition: { state: 'ready', unresolved_evidence: [], rationale: '' },
+  attestation: { confirmed: true, attested_by: 'Test Owner', attested_role: 'Decision owner' },
+  recordedAt: '2026-08-15T12:00:00.000Z',
+});
+
 test('reference decision case is structurally valid', () => {
   const decision = createDecisionCase();
   const result = validateDecisionCase(decision);
@@ -183,7 +190,7 @@ test('exported decision brief preserves assumptions, vulnerabilities, and adapti
   decision.human_decision.selected_strategy_id = 'STR-002';
   decision.human_decision.rationale = 'The human selected this choice.';
   decision.human_decision.next_action = 'Begin review.';
-  const html = buildDecisionHtml(createDecisionRecord(decision));
+  const html = buildDecisionHtml(createDecisionRecord(decision, receiptOptions(decision)));
   assert.match(html, /<h3>Assumed<\/h3>/);
   assert.match(html, /Recorded human choice vulnerabilities/);
   assert.match(html, /Recorded human decision/);
@@ -199,6 +206,6 @@ test('machine candidate discloses critical gaps in the exported brief', async ()
   decision.human_decision.selected_strategy_id = 'STR-002';
   decision.human_decision.rationale = 'Human rationale.';
   decision.human_decision.next_action = 'Human next action.';
-  const html = buildDecisionHtml(createDecisionRecord(decision));
+  const html = buildDecisionHtml(createDecisionRecord(decision, receiptOptions(decision)));
   assert.match(html, /critical gaps in 2 included futures/);
 });
