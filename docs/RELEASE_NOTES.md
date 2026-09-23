@@ -1,9 +1,11 @@
-# v0.5.5
+# v0.5.6
 
-Application version is 0.5.5.
+Application version is 0.5.6.
 
-Compatible decision schema: 0.2.10. Semantic decision schema: 0.3.0. Mission Graph Decision Context Packet: 0.3.0.
+Compatible decision schema: 0.2.10. Semantic decision schema: 0.3.0. Mission Graph Decision Context Packet: 0.3.0. Decision Receipt format: 2. Pilot Proof Envelope: 1.
 
-This patch release preserves explicit decision criteria that fall outside the built-in intake vocabulary instead of silently dropping them, asks for bounded human selection when more than four criteria are supplied, and narrows comparison-language extraction so informational "versus" prompts are not converted into decision choices.
+This bounded pilot-readiness release adds explicit decision-authority routing, SHA-256 Decision Receipt v2 integrity, human attestation, deterministic evidence-readiness gating, explicit residual-uncertainty acceptance, independent-review receipt output, and public/sanitized handling guidance.
 
-No decision schema, scoring model, recommendation authority, storage boundary, or external runtime dependency is added. First-run structure remains provisional until the user confirms it; human judgment remains authoritative. Browser-local storage is not encrypted confidential storage.
+Legacy v1 FNV-1a records remain readable as change-detection records and are never relabeled as cryptographic receipts. The Decision Case and scoring model are not replaced. Advisors can frame and compare but cannot record an accountable-owner receipt; recording a human decision does not mean organizational approval or execution authorization.
+
+The public application remains browser-local with no backend, account system, analytics, telemetry, remote AI provider, or default upload endpoint. Browser-local storage is not encrypted confidential storage. Public deployment is for public or sanitized decision material only. Human judgment remains authoritative.
