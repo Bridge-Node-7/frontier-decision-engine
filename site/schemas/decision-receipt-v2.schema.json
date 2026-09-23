@@ -1,0 +1,20 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://bridge-node-7.github.io/frontier-decision-engine/schemas/decision-receipt-v2.schema.json",
+  "title": "Frontier Decision Engine Decision Receipt v2",
+  "type": "object",
+  "required": ["format_version","decision_id","recorded_at","producer","authority","decision_content_sha256","evidence_disposition","attestation","snapshot","receipt_sha256"],
+  "properties": {
+    "format_version": {"const": "2"},
+    "decision_id": {"type": "string", "pattern": "^FDE-[A-Z0-9-]+$"},
+    "recorded_at": {"type": "string", "format": "date-time"},
+    "producer": {"type": "object"},
+    "authority": {"type": "object"},
+    "decision_content_sha256": {"type": "string", "pattern": "^[a-f0-9]{64}$"},
+    "evidence_disposition": {"type": "object"},
+    "attestation": {"type": "object"},
+    "snapshot": {"type": "object"},
+    "receipt_sha256": {"type": "string", "pattern": "^[a-f0-9]{64}$"}
+  },
+  "additionalProperties": false
+}
