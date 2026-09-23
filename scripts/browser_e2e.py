@@ -635,7 +635,7 @@ def draft_and_entry_flow(page: Page, completed_file: str) -> None:
     legacy_completed["human_decision"].pop("recorded_at", None)
     legacy_completed["human_decision"].pop("recorded_fingerprint", None)
     page.locator("#decision-file-input").set_input_files({"name": "legacy.fde.json", "mimeType": "application/json", "buffer": json.dumps(legacy_completed).encode("utf-8")})
-    expect(page.locator(".record-lifecycle")).to_contain_text("Ready to Record")
+    expect(page.locator(".record-lifecycle")).to_contain_text("Decision owner needed")
     assert "recorded" not in page.locator(".record-lifecycle").inner_text().lower()
     set_hash_route(page, "/decision/example")
     page.locator("#decision-title").wait_for(state="attached")
