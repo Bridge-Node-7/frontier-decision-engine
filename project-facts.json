@@ -1,5 +1,5 @@
 {
-  "applicationVersion": "0.5.3",
+  "applicationVersion": "0.5.4",
   "schemaVersions": {
     "decision": "0.2.10",
     "semanticDecision": "0.3.0"
