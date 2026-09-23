@@ -107,6 +107,16 @@ function textarea(label, id, value, help = '', requirement = '') {
 
 function recordingLifecycle() {
   const hasValidRecord = validDecisionRecord(state.record);
+  const permissions = authorityPermissions(state.authority);
+  const evidenceReadiness = decisionEvidenceReadiness(decision);
+  const proofRequestItems = evidenceReadiness.proof_requests.map((item) => `<li><strong>${escapeHtml(item.label)}:</strong> ${escapeHtml(item.evidence_need)}</li>`).join('');
+  const evidenceGate = evidenceReadiness.state === EVIDENCE_READINESS.PROOF_REQUIRED
+    ? `<section class="callout warning" data-surface="evidence-gate"><strong>Decision not ready for additional confidence.</strong><p>Required evidence remains unresolved. Gather the evidence first, or an accountable decision-maker may explicitly proceed under residual uncertainty.</p>${proofRequestItems ? `<ul>${proofRequestItems}</ul>` : '<p class="muted">Name the evidence needed for each required unresolved criterion before recording.</p>'}<label class="field"><span><input id="proceed-residual-uncertainty" type="checkbox"> Proceed under explicit residual uncertainty</span></label>${textarea('Why proceed despite the unresolved evidence?', 'residual-uncertainty-rationale', '', 'Required only when proceeding under residual uncertainty.')}</section>`
+    : '<section class="callout" data-surface="evidence-gate"><strong>Evidence gate: ready.</strong><p>No required criterion is currently blocked by unresolved evidence in the formal decision semantics.</p></section>';
+  const authorityPanel = `<section class="callout" data-surface="authority-gate"><strong>${escapeHtml(AUTHORITY_LABELS[state.authority.role])}</strong><p>Accountable owner: ${escapeHtml(state.authority.owner || 'Not established')}${state.authority.basis ? ` Â· ${escapeHtml(state.authority.basis)}` : ''}</p></section>`;
+  const attestationPanel = permissions.mayRecordDecision
+    ? `<section class="soft-panel stack" data-surface="human-attestation"><h3>Human attestation</h3><p>${escapeHtml(HUMAN_ATTESTATION_STATEMENT)}</p><div class="grid-2">${field('Attested by', 'attestation-name', state.authority.owner || decision.decision_owner, 'text', 'Name or accountable role.', REQUIREMENT_CLASS.RECORD)}${field('Attested role', 'attestation-role', state.authority.owner || decision.decision_owner, 'text', 'Role in the decision.', REQUIREMENT_CLASS.RECORD)}</div><label class="field"><span><input id="attestation-confirmed" type="checkbox"> I confirm this attestation.</span></label><p class="help">This is a human attestation, not a digital signature, identity-verification service, corporate approval, legal authorization, or execution authority.</p></section>`
+    : '<section class="callout warning"><strong>Owner review required.</strong><p>You may prepare and export the analysis, but only an accountable owner or delegated decider can record an accountable Decision Receipt.</p></section>';
   if (hasValidRecord && recordMatchesDecision(state.decision, state.record)) return { key: 'recorded', label: 'Human decision recorded', action: 'Recorded' };
   if (hasValidRecord) return { key: 'changed', label: 'Changed since recording', action: 'Review and Record Again' };
   const permissions = authorityPermissions(state.authority);
@@ -325,7 +335,7 @@ function decisionBriefStep() {
   const semantics = semanticView(decision);
   const posture = decisionPosture(decision);
   const hasValidRecord = validDecisionRecord(state.record);
-  const recordedOutput = hasValidRecord ? `<div class="decision-complete stack" data-surface="decision-complete"><h3 id="decision-recorded-heading" tabindex="-1">${lifecycle.key === 'recorded' ? 'Decision recorded.' : 'Recorded version available.'}</h3><p><strong>Recorded human decision:</strong> ${escapeHtml(synthesis.recorded_human_decision?.label || 'Recorded decision available')}</p><div class="completion-actions"><button id="export-decision-html" data-action="download-readable-summary" class="primary" type="button">Download recorded Decision Brief</button><button id="export-decision-json" data-action="download-decision-file" type="button">Download recorded editable decision</button><button id="reset-decision" class="ghost" type="button">Try an example</button></div></div>` : '';
+  const recordedOutput = hasValidRecord ? `<div class="decision-complete stack" data-surface="decision-complete"><h3 id="decision-recorded-heading" tabindex="-1">${lifecycle.key === 'recorded' ? 'Decision recorded.' : 'Recorded version available.'}</h3><p><strong>Recorded human decision:</strong> ${escapeHtml(synthesis.recorded_human_decision?.label || 'Recorded decision available')}</p><div class="completion-actions"><button id="export-decision-html" data-action="download-readable-summary" class="primary" type="button">Download Decision Receipt</button><button id="export-decision-json" data-action="download-decision-file" type="button">Download Decision Receipt JSON</button><button id="reset-decision" class="ghost" type="button">Try an example</button></div></div>` : '';
   const visibleConditionTarget = semantics.conditions[0]?.criterion_refs?.length === 1 ? semantics.conditions[0].criterion_refs[0] : '';
   const semanticControls = decision.schema_version === '0.3.0' ? `<section class="soft-panel stack" data-surface="semantic-controls"><div><span class="eyebrow">Human-declared proceed conditions</span><h3>Assurance posture controls</h3></div><label class="field"><span><input id="posture-enabled" type="checkbox" ${semantics.posture_enabled ? 'checked' : ''}> Show assurance posture</span></label><label class="field">Have proceed conditions been reviewed?<select id="proceed-conditions-state"><option value="unreviewed" ${semantics.proceed_conditions_state === 'unreviewed' ? 'selected' : ''}>Not reviewed</option><option value="declared" ${semantics.proceed_conditions_state === 'declared' ? 'selected' : ''}>Required criteria declared</option><option value="none-required" ${semantics.proceed_conditions_state === 'none-required' ? 'selected' : ''}>None required — deliberately confirmed</option></select></label><div class="grid-2">${field('Required condition or safeguard', 'semantic-condition-statement', semantics.conditions[0]?.statement || '')}<label class="field">This condition applies to<select id="semantic-condition-target"><option value="" ${visibleConditionTarget ? '' : 'selected'}>Whole decision (not remediation)</option>${semantics.criteria.map((criterion) => `<option value="${escapeHtml(criterion.criterion_id)}" ${visibleConditionTarget === criterion.criterion_id ? 'selected' : ''}>${escapeHtml(criterion.dimension[0].toUpperCase() + criterion.dimension.slice(1))}: ${escapeHtml(criterion.label || criterion.criterion_id)}</option>`).join('')}</select><span class="help">Only an explicitly targeted open condition can remediate that criterion.</span></label><label class="field">Condition state<select id="semantic-condition-state"><option value="open" ${semantics.conditions[0]?.state !== 'satisfied' ? 'selected' : ''}>Open</option><option value="satisfied" ${semantics.conditions[0]?.state === 'satisfied' ? 'selected' : ''}>Satisfied</option></select></label>${field('Monitoring obligation', 'semantic-monitoring-observable', semantics.monitoring[0]?.observable || '')}${field('Reassessment', 'semantic-reassessment', semantics.reassessment || '')}</div><p class="help">This compact view edits the first condition and monitoring record only; additional imported records remain preserved.</p><label class="field">Cautious human posture override<select id="posture-override"><option value="">No override</option>${['ADVANCE WITH CONDITIONS','REWORK','HOLD','STOP'].map((value) => `<option value="${value}" ${semantics.posture_override === value ? 'selected' : ''}>${value}</option>`).join('')}</select></label>${textarea('Why use a more cautious posture?', 'posture-override-reason', semantics.posture_override_reason || '')}<p><strong>Current Assurance posture:</strong> ${escapeHtml(posture.posture || 'Inactive')}</p><p class="help">These controls do not choose a strategy. Your final decision remains below.</p></section>` : '';
   return `<div class="stack">
@@ -343,6 +353,9 @@ function decisionBriefStep() {
       <label class="field" for="human-strategy">Choice<span class="requirement">* ${REQUIREMENT_CLASS.RECORD}</span><select id="human-strategy" required aria-describedby="human-strategy-help"><option value="" ${selected ? '' : 'selected'}>Choose only when a person decides</option>${decision.strategies.map((strategy, index) => `<option value="${strategy.strategy_id}" ${strategy.strategy_id === selected?.strategy_id ? 'selected' : ''}>${escapeHtml(strategy.label || `Choice ${index + 1}`)}</option>`).join('')}</select><span id="human-strategy-help" class="help">Selecting is not recording. Record only after reviewing the human choice.</span></label>
       ${textarea('Reason', 'human-rationale', decision.human_decision.rationale, 'State the trade-off and important uncertainty.', REQUIREMENT_CLASS.RECORD)}
       ${textarea('Next action', 'human-next-action', decision.human_decision.next_action, 'Name one action, one owner, and when to check progress.', REQUIREMENT_CLASS.RECORD)}
+      ${authorityPanel}
+      ${evidenceGate}
+      ${attestationPanel}
       ${semanticControls ? `<details class="decision-section soft-panel" data-surface="advanced-governance"><summary><strong>Review conditions, safeguards, monitoring, and reassessment</strong><span class="help">Optional decision-governance controls</span></summary><div class="decision-section-body">${semanticControls}</div></details>` : ''}
       <details class="decision-section soft-panel" open><summary><strong>What we know, what we estimated, and what to strengthen</strong></summary><div class="grid-2 decision-section-body">
         <div class="stack"><h3>What is known</h3><ul>${decision.evidence_summary.known.map((item) => `<li>${escapeHtml(item)}</li>`).join('')}</ul></div>
@@ -352,7 +365,7 @@ function decisionBriefStep() {
       </div></details>
       <details class="decision-section soft-panel" open><summary><strong>Plan for change <span class="method-word">(adaptive planning)</span></strong></summary><div class="grid-2 decision-section-body"><div class="stack"><h3>Act now</h3><ul>${decision.adaptive_pathway.act_now.map((item) => `<li>${escapeHtml(item)}</li>`).join('')}</ul></div><div class="stack"><h3>Monitor</h3><ul>${decision.adaptive_pathway.monitor.map((item) => `<li>${escapeHtml(item)}</li>`).join('')}</ul></div><div class="stack"><h3>Trigger</h3><ul>${decision.adaptive_pathway.triggers.map((item) => `<li>${escapeHtml(item)}</li>`).join('')}</ul></div><div class="stack"><h3>Contingencies</h3><ul>${decision.adaptive_pathway.contingencies.map((item) => `<li>${escapeHtml(item)}</li>`).join('')}</ul></div></div><p><strong>Reassessment:</strong> ${escapeHtml(decision.adaptive_pathway.reassessment)}</p></details>
     </section>
-    <div class="self-service-panel decision-output" data-recorded="${lifecycle.key === 'recorded'}" data-surface="decision-output"><div class="record-state ${lifecycle.key}" aria-live="polite"><strong>${escapeHtml(lifecycle.label)}</strong>${lifecycle.key === 'changed' ? `<p>The working decision changed after ${escapeHtml(state.record.recorded_at)}. Recorded outputs still use the prior recorded version until you review and record again.</p>` : lifecycle.key === 'recorded' ? `<p>Recorded ${escapeHtml(state.record.recorded_at)}. Recording does not mean approval or authorization.</p>` : '<p>The comparison informs. A person decides.</p>'}</div><div class="record-prompt actions"><button id="record-decision" class="primary" type="button">${escapeHtml(lifecycle.key === 'changed' ? 'Review and Record Again' : 'Record decision')} →</button></div>${recordedOutput}</div>
+    <div class="self-service-panel decision-output" data-recorded="${lifecycle.key === 'recorded'}" data-surface="decision-output"><div class="record-state ${lifecycle.key}" aria-live="polite"><strong>${escapeHtml(lifecycle.label)}</strong>${lifecycle.key === 'changed' ? `<p>The working decision changed after ${escapeHtml(state.record.recorded_at)}. Recorded outputs still use the prior recorded version until you review and record again.</p>` : lifecycle.key === 'recorded' ? `<p>Recorded ${escapeHtml(state.record.recorded_at)}. Recording does not mean approval or authorization.</p>` : '<p>The comparison informs. A person decides.</p>'}</div><div class="record-prompt actions">${permissions.mayRecordDecision ? `<button id="record-decision" class="primary" type="button">${escapeHtml(lifecycle.key === 'changed' ? 'Review and Record Again' : 'Record human decision')} →</button>` : '<span class="help">Prepare this analysis for the accountable decision owner. Recording is unavailable in advisor mode.</span>'}</div>${recordedOutput}</div>
     <div id="decision-validation" class="status-line" role="alert" tabindex="-1" aria-live="assertive">${state.validationIssues.map((issue) => escapeHtml(issue.message)).join(' ')}</div>
     <details class="technical-inspect"><summary>Inspect technical validation</summary><div class="decision-section-body"><p>${validation.valid ? `Decision structure passes v${escapeHtml(decision.schema_version)} validation.` : escapeHtml(validation.errors.join(' '))}</p><p>Current substantive fingerprint: ${escapeHtml(decisionFingerprint(decision))}</p></div></details>
   </div>`;
@@ -520,21 +533,25 @@ async function openDecisionFile(file, main, input) {
     return;
   }
   const isDraftBackup = parsed.kind === 'draft-backup';
-  const importedRecord = isDraftBackup
-    ? (validDecisionRecord(parsed.record) ? parsed.record : null)
-    : recordFromPortableDecision(parsed.decision);
+  const isCompletedRecord = parsed.kind === 'completed-record';
+  const importedRecord = isCompletedRecord
+    ? parsed.record
+    : isDraftBackup
+      ? (validDecisionRecord(parsed.record) ? parsed.record : null)
+      : recordFromPortableDecision(parsed.decision);
   startDecision(
     parsed.decision,
-    isDraftBackup ? 'imported-draft-backup' : 'imported-file',
-    isDraftBackup ? 'Opened from an in-progress draft backup and saved in this browser.' : 'Opened from a completed decision file and saved in this browser.',
+    isDraftBackup ? 'imported-draft-backup' : isCompletedRecord ? 'imported-record' : 'imported-file',
+    isDraftBackup ? 'Opened from an in-progress draft backup and saved in this browser.' : isCompletedRecord ? 'Opened from a verified Decision Receipt and saved in this browser.' : 'Opened from a completed decision file and saved in this browser.',
     importedRecord,
+    parsed.authority || importedRecord?.authority || null,
   );
   persistDecision();
   renderInto(main, { focusStep: true });
 }
 
 function renderDraftReturn(main, { openFile = false, focusMethod = false } = {}) {
-  const backupAvailable = canDownloadDraftBackup(state.pendingDraft, state.pendingRecord);
+  const backupAvailable = canDownloadDraftBackup(state.pendingDraft, state.pendingRecord, state.pendingAuthority);
   main.innerHTML = `
     ${onePageIntro()}
     <section class="panel stack" data-surface="saved-draft-return" aria-labelledby="saved-draft-title">
@@ -552,12 +569,12 @@ function renderDraftReturn(main, { openFile = false, focusMethod = false } = {})
     renderInto(main, { focusStep: true });
   };
   main.querySelector('#resume-browser-draft')?.addEventListener('click', () => {
-    startDecision(state.pendingDraft, 'restored-browser-draft', 'Restored from this browser.', state.pendingRecord);
+    startDecision(state.pendingDraft, 'restored-browser-draft', 'Restored from this browser.', state.pendingRecord, state.pendingAuthority);
     renderInto(main, { focusStep: true });
   });
   main.querySelector('#download-browser-draft')?.addEventListener('click', () => {
     if (!backupAvailable) return;
-    const backup = createDraftBackup(state.pendingDraft, state.pendingRecord);
+    const backup = createDraftBackup(state.pendingDraft, state.pendingRecord, state.pendingAuthority);
     downloadText(safeFilename(state.pendingDraft.title || 'frontier-decision', 'fde-draft.json'), `${JSON.stringify(backup, null, 2)}\n`, 'application/json');
   });
   main.querySelector('#clear-browser-draft')?.addEventListener('click', () => {
@@ -722,6 +739,12 @@ function bindEvents(root) {
   }));
   root.querySelector('#record-decision')?.addEventListener('click', () => {
     syncStep();
+    const authorityResult = authorityValidation(state.authority, { forRecord: true });
+    if (!authorityResult.valid) {
+      state.validationIssues = [{ stage: 5, fieldId: 'decision-validation', message: authorityResult.errors[0] }];
+      focusValidationFailure(root, state.validationIssues);
+      return;
+    }
     const result = validateCompletedDecisionCase(state.decision);
     if (!result.valid) {
       const issues = requirementIssues(state.decision, 'record');
@@ -733,7 +756,38 @@ function bindEvents(root) {
       focusValidationFailure(root, state.validationIssues);
       return;
     }
-    state.record = createDecisionRecord(state.decision);
+    const readiness = decisionEvidenceReadiness(state.decision);
+    const proceedResidual = Boolean(root.querySelector('#proceed-residual-uncertainty')?.checked);
+    const residualRationale = root.querySelector('#residual-uncertainty-rationale')?.value.trim() || '';
+    if (readiness.state === EVIDENCE_READINESS.PROOF_REQUIRED && !proceedResidual) {
+      state.validationIssues = [{ stage: 5, fieldId: 'proceed-residual-uncertainty', message: 'Required evidence remains unresolved. Gather the evidence first or explicitly proceed under residual uncertainty.' }];
+      focusValidationFailure(root, state.validationIssues);
+      return;
+    }
+    if (proceedResidual && !residualRationale) {
+      state.validationIssues = [{ stage: 5, fieldId: 'residual-uncertainty-rationale', message: 'Explain why the accountable decision-maker is proceeding despite unresolved evidence.' }];
+      focusValidationFailure(root, state.validationIssues);
+      return;
+    }
+    const confirmed = Boolean(root.querySelector('#attestation-confirmed')?.checked);
+    const attestedBy = root.querySelector('#attestation-name')?.value.trim() || '';
+    const attestedRole = root.querySelector('#attestation-role')?.value.trim() || '';
+    if (!confirmed || !attestedBy || !attestedRole) {
+      const fieldId = !attestedBy ? 'attestation-name' : !attestedRole ? 'attestation-role' : 'attestation-confirmed';
+      state.validationIssues = [{ stage: 5, fieldId, message: 'Complete and confirm the human attestation before recording.' }];
+      focusValidationFailure(root, state.validationIssues);
+      return;
+    }
+    const disposition = evidenceDisposition({
+      readiness,
+      proceedUnderResidualUncertainty: proceedResidual,
+      rationale: residualRationale,
+    });
+    state.record = createDecisionRecord(state.decision, {
+      authority: state.authority,
+      evidenceDisposition: disposition,
+      attestation: { confirmed, attested_by: attestedBy, attested_role: attestedRole },
+    });
     state.validationIssues = [];
     persistDecision();
     renderInto(root.closest('main') || root);
@@ -741,7 +795,7 @@ function bindEvents(root) {
   });
   root.querySelector('#export-decision-json')?.addEventListener('click', () => {
     if (!validDecisionRecord(state.record)) return;
-    downloadText(safeFilename(state.record.snapshot.title, 'fde.json'), `${JSON.stringify(state.record.snapshot, null, 2)}\n`, 'application/json');
+    downloadText(safeFilename(state.record.snapshot.title, 'decision-receipt.json'), `${JSON.stringify(state.record, null, 2)}\n`, 'application/json');
   });
   root.querySelector('#export-decision-html')?.addEventListener('click', () => {
     if (!validDecisionRecord(state.record)) return;
