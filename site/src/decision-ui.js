@@ -35,7 +35,9 @@ import {
 import { SEER_DIMENSIONS, SEER_DIMENSION_PROMPTS, SEER_PROFILE_ID, isSeerProfile } from './lib/profiles/seer.js';
 import { deriveDecisionSynthesis } from './lib/synthesis.js';
 import { boundaryForInput } from './lib/input-boundaries.js';
-import { createDecisionRecord, decisionFingerprint, recordFromPortableDecision, recordMatchesDecision, validDecisionRecord } from './lib/recording.js';
+import { AUTHORITY_LABELS, AUTHORITY_ROLES, authorityPermissions, authorityValidation, createAuthority } from './lib/authority.js';
+import { decisionEvidenceReadiness, evidenceDisposition, EVIDENCE_READINESS } from './lib/evidence-readiness.js';
+import { HUMAN_ATTESTATION_STATEMENT, createDecisionRecord, decisionContentSha256, decisionFingerprint, recordFromPortableDecision, recordMatchesDecision, validDecisionRecord } from './lib/recording.js';
 
 const steps = ['Decision', 'What matters', 'Choices', 'What may change', 'What the comparison shows', 'Choose next step'];
 
@@ -47,6 +49,8 @@ const state = {
   source: 'blank',
   pendingDraft: restored.decision,
   pendingRecord: restored.record,
+  pendingAuthority: restored.authority,
+  authority: createAuthority(restored.authority || { owner: restored.decision?.decision_owner || '' }),
   record: null,
   entryResolved: !restored.decision,
   maxReached: 0,
@@ -55,11 +59,13 @@ const state = {
   validationIssues: [],
 };
 
-function startDecision(decision, source, status, record = null) {
+function startDecision(decision, source, status, record = null, authority = null) {
   state.decision = decision;
   state.source = source;
   state.pendingDraft = null;
   state.pendingRecord = null;
+  state.pendingAuthority = null;
+  state.authority = createAuthority(authority || record?.authority || { owner: decision.decision_owner || '' });
   state.record = validDecisionRecord(record) && record.decision_id === decision.decision_id ? record : null;
   state.entryResolved = true;
   state.saveStatus = status;
@@ -69,7 +75,7 @@ function startDecision(decision, source, status, record = null) {
   state.validationIssues = [];
 }
 function persistDecision() {
-  const result = saveDecision(browserStorage, state.decision, state.record);
+  const result = saveDecision(browserStorage, state.decision, state.record, state.authority);
   state.saveStatus = result.status;
   return result;
 }
@@ -101,9 +107,12 @@ function textarea(label, id, value, help = '', requirement = '') {
 
 function recordingLifecycle() {
   const hasValidRecord = validDecisionRecord(state.record);
-  if (hasValidRecord && recordMatchesDecision(state.decision, state.record)) return { key: 'recorded', label: 'Recorded', action: 'Recorded' };
+  if (hasValidRecord && recordMatchesDecision(state.decision, state.record)) return { key: 'recorded', label: 'Human decision recorded', action: 'Recorded' };
   if (hasValidRecord) return { key: 'changed', label: 'Changed since recording', action: 'Review and Record Again' };
-  if (requirementIssues(state.decision, 'record').length === 0 && validateAnalysisReady(state.decision).valid) return { key: 'ready-record', label: 'Ready to Record', action: 'Record decision' };
+  const permissions = authorityPermissions(state.authority);
+  if (state.authority.role === 'ownership_unknown') return { key: 'ownership-needed', label: 'Decision owner needed', action: 'Confirm decision owner' };
+  if (!permissions.mayRecordDecision && validateAnalysisReady(state.decision).valid) return { key: 'owner-review', label: 'Ready for owner review', action: 'Prepare owner brief' };
+  if (requirementIssues(state.decision, 'record').length === 0 && validateAnalysisReady(state.decision).valid) return { key: 'ready-record', label: 'Ready to Record', action: 'Record human decision' };
   if (validateAnalysisReady(state.decision).valid) return { key: 'ready-compare', label: 'Ready to Compare', action: 'Complete the human decision' };
   return { key: 'draft', label: 'Draft', action: 'Continue decision' };
 }
