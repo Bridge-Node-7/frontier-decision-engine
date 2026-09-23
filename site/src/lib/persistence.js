@@ -1,5 +1,8 @@
+import { validDecisionRecord } from './recording.js';
+
 export const DECISION_STORAGE_KEY = 'fde.decision.autosave.v0.2.11';
 export const DECISION_RECORD_STORAGE_KEY = 'fde.decision.record.v0.3.1';
+export const DECISION_AUTHORITY_STORAGE_KEY = 'fde.decision.authority.v1';
 export const MAX_DECISION_FILE_BYTES = 1_000_000;
 export const MAX_DECISION_DEPTH = 40;
 export const MAX_DECISION_NODES = 20_000;
@@ -42,11 +45,11 @@ export function getBrowserStorage(scope = globalThis) {
   try { return scope?.localStorage || null; } catch { return null; }
 }
 
-export function saveDecision(storage, decision, record = null) {
+export function saveDecision(storage, decision, record = null, authority = null) {
   if (!storage || !decision) return { ok: false, status: 'Autosave unavailable in this browser.' };
   try {
     const serialized = JSON.stringify(decision);
-    const backup = createDraftBackup(decision, record);
+    const backup = createDraftBackup(decision, record, authority);
     const backupSerialized = JSON.stringify(backup);
     if (byteLength(backupSerialized) > MAX_DECISION_FILE_BYTES || !inspectStructure(backup).ok) {
       return { ok: false, status: 'This decision is too large for browser autosave or draft backup. Remove some content and try again.' };
@@ -54,6 +57,8 @@ export function saveDecision(storage, decision, record = null) {
     storage.setItem(DECISION_STORAGE_KEY, serialized);
     if (record) storage.setItem(DECISION_RECORD_STORAGE_KEY, JSON.stringify(record));
     else storage.removeItem(DECISION_RECORD_STORAGE_KEY);
+    if (authority) storage.setItem(DECISION_AUTHORITY_STORAGE_KEY, JSON.stringify(authority));
+    else storage.removeItem(DECISION_AUTHORITY_STORAGE_KEY);
     return { ok: true, status: 'Saved in this browser.' };
   } catch (error) {
     return { ok: false, status: `Autosave unavailable: ${error?.message || 'storage error'}` };
@@ -61,19 +66,21 @@ export function saveDecision(storage, decision, record = null) {
 }
 
 export function loadSavedDecision(storage, validateDecision) {
-  if (!storage) return { decision: null, status: 'Autosave unavailable in this browser.' };
+  if (!storage) return { decision: null, record: null, authority: null, status: 'Autosave unavailable in this browser.' };
   try {
     const raw = storage.getItem(DECISION_STORAGE_KEY);
-    if (!raw) return { decision: null, record: null, status: 'Ready. Changes will save in this browser.' };
+    if (!raw) return { decision: null, record: null, authority: null, status: 'Ready. Changes will save in this browser.' };
     const parsed = parseDecisionText(raw, validateDecision);
     if (!parsed.ok) {
-      return { decision: null, record: null, status: 'A saved decision needs attention and was not opened automatically.' };
+      return { decision: null, record: null, authority: null, status: 'A saved decision needs attention and was not opened automatically.' };
     }
     let record = null;
+    let authority = null;
     try { record = parseJsonSafely(storage.getItem(DECISION_RECORD_STORAGE_KEY) || 'null'); } catch { record = null; }
-    return { decision: parsed.decision, record, status: 'Restored from this browser.' };
+    try { authority = parseJsonSafely(storage.getItem(DECISION_AUTHORITY_STORAGE_KEY) || 'null'); } catch { authority = null; }
+    return { decision: parsed.decision, record, authority, status: 'Restored from this browser.' };
   } catch {
-    return { decision: null, record: null, status: 'A saved decision could not be opened. The ready example was restored.' };
+    return { decision: null, record: null, authority: null, status: 'A saved decision could not be opened. The ready example was restored.' };
   }
 }
 
@@ -81,19 +88,21 @@ export function clearSavedDecision(storage) {
   if (!storage) return;
   try { storage.removeItem(DECISION_STORAGE_KEY); } catch { /* no-op */ }
   try { storage.removeItem(DECISION_RECORD_STORAGE_KEY); } catch { /* no-op */ }
+  try { storage.removeItem(DECISION_AUTHORITY_STORAGE_KEY); } catch { /* no-op */ }
 }
 
-export function createDraftBackup(decision, record = null) {
+export function createDraftBackup(decision, record = null, authority = null) {
   return {
     file_type: DRAFT_BACKUP_TYPE,
     format_version: DRAFT_BACKUP_VERSION,
     decision,
     ...(record ? { record } : {}),
+    ...(authority ? { authority } : {}),
   };
 }
 
-export function canDownloadDraftBackup(decision, record = null) {
-  const backup = createDraftBackup(decision, record);
+export function canDownloadDraftBackup(decision, record = null, authority = null) {
+  const backup = createDraftBackup(decision, record, authority);
   return byteLength(JSON.stringify(backup)) <= MAX_DECISION_FILE_BYTES && inspectStructure(backup).ok;
 }
 
@@ -133,7 +142,7 @@ export function parseDraftBackupText(text, validateDraftDecision) {
     return validateDraftDecision(value.decision);
   });
   return parsed.ok
-    ? { ok: true, decision: parsed.decision.decision, record: parsed.decision.record || null, kind: 'draft-backup', errors: [] }
+    ? { ok: true, decision: parsed.decision.decision, record: parsed.decision.record || null, authority: parsed.decision.authority || null, kind: 'draft-backup', errors: [] }
     : { ...parsed, kind: null };
 }
 
@@ -144,6 +153,26 @@ export async function parseDecisionFile(file, validateDecision, validateDraftDec
   }
   try {
     const text = await file.text();
+    const raw = String(text);
+    if (byteLength(raw) <= MAX_DECISION_FILE_BYTES) {
+      try {
+        const candidateRecord = parseJsonSafely(raw);
+        const structure = inspectStructure(candidateRecord);
+        if (structure.ok && validDecisionRecord(candidateRecord)) {
+          const validated = validateDecision(candidateRecord.snapshot);
+          if (validated?.valid) {
+            return {
+              ok: true,
+              decision: candidateRecord.snapshot,
+              record: candidateRecord,
+              authority: candidateRecord.authority || null,
+              kind: 'completed-record',
+              errors: [],
+            };
+          }
+        }
+      } catch { /* continue with portable decision parsing */ }
+    }
     const portable = parseDecisionText(text, validateDecision);
     if (portable.ok) return { ...portable, kind: 'completed-decision' };
     if (validateDraftDecision) {
