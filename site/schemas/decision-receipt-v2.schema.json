@@ -8,11 +8,52 @@
     "format_version": {"const": "2"},
     "decision_id": {"type": "string", "pattern": "^FDE-[A-Z0-9-]+$"},
     "recorded_at": {"type": "string", "format": "date-time"},
-    "producer": {"type": "object"},
-    "authority": {"type": "object"},
+    "producer": {
+      "type": "object",
+      "required": ["application","application_version","decision_schema_version","semantic_schema_version"],
+      "properties": {
+        "application": {"const": "Frontier Decision Engine"},
+        "application_version": {"type": "string"},
+        "decision_schema_version": {"type": "string"},
+        "semantic_schema_version": {"type": "string"}
+      },
+      "additionalProperties": false
+    },
+    "authority": {
+      "type": "object",
+      "required": ["role","owner","basis"],
+      "properties": {
+        "role": {"enum": ["accountable_owner","delegated_decider"]},
+        "owner": {"type": "string", "minLength": 1},
+        "basis": {"type": "string"}
+      },
+      "additionalProperties": false
+    },
     "decision_content_sha256": {"type": "string", "pattern": "^[a-f0-9]{64}$"},
-    "evidence_disposition": {"type": "object"},
-    "attestation": {"type": "object"},
+    "evidence_disposition": {
+      "type": "object",
+      "required": ["state","unresolved_evidence","rationale"],
+      "properties": {
+        "state": {"enum": ["ready","residual-uncertainty"]},
+        "unresolved_evidence": {"type": "array", "items": {"type": "string"}},
+        "rationale": {"type": "string"}
+      },
+      "additionalProperties": false
+    },
+    "attestation": {
+      "type": "object",
+      "required": ["type","statement_version","statement","attested_by","attested_role","attested_at","decision_content_sha256"],
+      "properties": {
+        "type": {"const": "human-decision-attestation"},
+        "statement_version": {"const": "1"},
+        "statement": {"const": "I confirm that this records my decision, rationale, and next action. FDE informed the process but did not authorize this decision."},
+        "attested_by": {"type": "string", "minLength": 1},
+        "attested_role": {"type": "string", "minLength": 1},
+        "attested_at": {"type": "string", "format": "date-time"},
+        "decision_content_sha256": {"type": "string", "pattern": "^[a-f0-9]{64}$"}
+      },
+      "additionalProperties": false
+    },
     "snapshot": {"type": "object"},
     "receipt_sha256": {"type": "string", "pattern": "^[a-f0-9]{64}$"}
   },
