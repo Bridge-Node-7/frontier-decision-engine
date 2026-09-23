@@ -183,6 +183,8 @@ function frameStep() {
     <details class="soft-panel"><summary><strong>Add context</strong><span class="help">Name, responsibility, timing, urgency, and reversibility</span></summary><div class="grid-2 decision-section-body">
       ${field('Short name', 'decision-title', item.title, 'text', 'Optional here; FDE derives one from the decision when needed.')}
       ${field('Who is responsible for deciding?', 'decision-owner', item.decision_owner, 'text', 'Use a person or role, such as Research lead.', REQUIREMENT_CLASS.RECORD)}
+      <label class="field" for="decision-authority-role">My role in this decision<span class="requirement">* ${REQUIREMENT_CLASS.COMPARE}</span><select id="decision-authority-role" required aria-describedby="decision-authority-role-help"><option value="accountable_owner" ${state.authority.role === 'accountable_owner' ? 'selected' : ''}>I am the accountable decision-maker</option><option value="delegated_decider" ${state.authority.role === 'delegated_decider' ? 'selected' : ''}>I have delegated authority to decide</option><option value="advisor" ${state.authority.role === 'advisor' ? 'selected' : ''}>I am supporting or recommending to the decision-maker</option><option value="ownership_unknown" ${state.authority.role === 'ownership_unknown' ? 'selected' : ''}>I am not sure who owns this decision</option></select><span id="decision-authority-role-help" class="help">Analysis does not imply decision authority. Advisors can prepare a brief; only accountable or delegated decision-makers can record the human decision.</span></label>
+      ${field('Authority basis', 'decision-authority-basis', state.authority.basis, 'text', state.authority.role === 'delegated_decider' ? 'Required for delegated authority.' : 'Optional context, such as role charter or delegated authority.')}
       ${field('How far ahead are you thinking?', 'decision-horizon', item.time_horizon, 'text', 'Example: 90 days, one year, or five years.')}
       <label class="field">How soon is the choice needed?<select id="decision-urgency"><option value="" ${item.urgency ? '' : 'selected'}>Choose when known</option><option value="immediate" ${item.urgency === 'immediate' ? 'selected' : ''}>Immediate</option><option value="near-term" ${item.urgency === 'near-term' ? 'selected' : ''}>Near term</option><option value="planned" ${item.urgency === 'planned' ? 'selected' : ''}>Planned</option></select></label>
       <label class="field">Can the choice be changed later?<select id="decision-reversibility"><option value="" ${item.reversibility ? '' : 'selected'}>Choose when known</option><option value="reversible" ${item.reversibility === 'reversible' ? 'selected' : ''}>Reversible</option><option value="partially-reversible" ${item.reversibility === 'partially-reversible' ? 'selected' : ''}>Partially reversible</option><option value="irreversible" ${item.reversibility === 'irreversible' ? 'selected' : ''}>Irreversible</option></select></label>
@@ -374,6 +376,11 @@ function syncStep() {
     decision.title = readTrimmedText(document.querySelector('#decision-title'), decision.title);
     decision.question = readTrimmedText(document.querySelector('#decision-question'), decision.question);
     decision.decision_owner = readTrimmedText(document.querySelector('#decision-owner'), decision.decision_owner);
+    state.authority = createAuthority({
+      role: document.querySelector('#decision-authority-role')?.value || state.authority.role,
+      owner: decision.decision_owner,
+      basis: readTrimmedText(document.querySelector('#decision-authority-basis'), state.authority.basis),
+    });
     decision.time_horizon = readTrimmedText(document.querySelector('#decision-horizon'), decision.time_horizon);
     decision.urgency = document.querySelector('#decision-urgency')?.value ?? decision.urgency;
     decision.reversibility = document.querySelector('#decision-reversibility')?.value ?? decision.reversibility;
@@ -608,6 +615,18 @@ function validateStage(index, root) {
     if (message) message.textContent = issue.message;
     focusValidationFailure(root, [issue]);
     return false;
+  }
+  if (index === 0) {
+    const authorityResult = authorityValidation(state.authority);
+    if (!authorityResult.valid) {
+      const fieldId = state.authority.role === 'ownership_unknown' ? 'decision-authority-role' : state.authority.role === 'delegated_decider' && !state.authority.basis ? 'decision-authority-basis' : 'decision-owner';
+      const issue = { stage: 0, fieldId, category: REQUIREMENT_CLASS.COMPARE, message: authorityResult.errors[0] };
+      state.validationIssues = [issue];
+      const message = root.querySelector('[data-stage-validation="0"]');
+      if (message) message.textContent = issue.message;
+      focusValidationFailure(root, [issue]);
+      return false;
+    }
   }
   const result = index === 4
     ? { valid: validateAnalysisReady(state.decision).valid, issues: requirementIssues(state.decision, 'compare') }
