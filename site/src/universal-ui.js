@@ -103,7 +103,7 @@ function extractChoices(text) {
   const choices = [];
   const clauses = normalize(text).split(/[.!?\n]+/).map((value) => value.trim()).filter(Boolean);
   for (const clause of clauses) {
-    const decisionLike = decisionPattern.test(clause) || /^(?:choose|pick|select|decide)\b/i.test(clause);
+    const decisionLike = decisionPattern.test(clause) || /^(?:should\b|choose|pick|select|decide)\b/i.test(clause);
     if (!decisionLike) continue;
     for (const match of clause.matchAll(/(?:either\s+)?([^\n,.!?]{2,80})\s+(?:or|versus|vs\.?|instead of)\s+([^\n,.!?]{2,80})/gi)) {
       choices.push(cleanChoice(match[1]), cleanChoice(match[2]));
