@@ -405,6 +405,13 @@ def decision_flow(page: Page, base: str) -> str:
     activate_ready_example(page)
     wait_for_render_settle(page)
 
+    # Authority is deliberately not synthesized by the ready example.
+    page.locator('[data-decision-stage="0"] [data-stage-next]').click()
+    page.locator("#decision-authority-role:focus").wait_for(state="attached")
+    assert page.locator("#decision-authority-role").get_attribute("aria-invalid") == "true"
+    assert "Confirm the accountable decision owner" in page.locator('[data-stage-validation="0"]').inner_text()
+    page.locator("#decision-authority-role").select_option("accountable_owner")
+
     headings = [
         "What decision needs to be made?",
         "What needs to be true?",
@@ -472,13 +479,16 @@ def decision_flow(page: Page, base: str) -> str:
     page.locator("#human-next-action").fill(
         "Confirm the qualification evidence plan, owner, milestones, and review date."
     )
+    page.locator("#attestation-name").fill("Program decision owner")
+    page.locator("#attestation-role").fill("Program decision owner")
+    page.locator("#attestation-confirmed").check()
     page.locator("#record-decision").click()
     page.locator("#decision-recorded-heading").wait_for(state="visible")
     assert "Recorded human decision: Qualify a second source" in page.locator("body").inner_text()
 
     with page.expect_download() as json_download:
         page.locator("#export-decision-json").click()
-    assert json_download.value.suggested_filename.endswith(".fde.json")
+    assert json_download.value.suggested_filename.endswith(".decision-receipt.json")
     completed_file = json_download.value.path()
     assert completed_file is not None
 
@@ -548,6 +558,7 @@ def draft_and_entry_flow(page: Page, completed_file: str) -> None:
     assert page.locator("#decision-title").input_value() == ""
     page.locator("#decision-title").fill("Partial blank recovery")
     page.locator("#decision-owner").fill("Partial owner")
+    page.locator("#decision-authority-role").select_option("accountable_owner")
     page.wait_for_timeout(350)
     assert page.evaluate("localStorage.getItem('fde.decision.autosave.v0.2.11')") is not None
     page.reload(wait_until="networkidle")
@@ -618,7 +629,9 @@ def draft_and_entry_flow(page: Page, completed_file: str) -> None:
     assert "recorded" in page.locator(".record-lifecycle").inner_text().lower()
 
     # The same legacy completed payload without record proof is selected but not Recorded.
-    legacy_completed = json.loads(Path(completed_file).read_text(encoding="utf-8"))
+    legacy_receipt = json.loads(Path(completed_file).read_text(encoding="utf-8"))
+    assert legacy_receipt["format_version"] == "2"
+    legacy_completed = legacy_receipt["snapshot"]
     legacy_completed["human_decision"].pop("recorded_at", None)
     legacy_completed["human_decision"].pop("recorded_fingerprint", None)
     page.locator("#decision-file-input").set_input_files({"name": "legacy.fde.json", "mimeType": "application/json", "buffer": json.dumps(legacy_completed).encode("utf-8")})
@@ -636,6 +649,7 @@ def draft_and_entry_flow(page: Page, completed_file: str) -> None:
     page.locator("#decision-question").fill("Which bounded path should we choose?")
     page.locator("summary").filter(has_text=re.compile(r"^Add context")).click()
     page.locator("#decision-owner").fill("Decision owner")
+    page.locator("#decision-authority-role").select_option("accountable_owner")
     page.locator('[data-decision-stage="0"] [data-stage-next]').click()
     assert "✓" in page.locator('[data-decision-stage="0"] .stage-number').inner_text()
 
@@ -677,6 +691,9 @@ def draft_and_entry_flow(page: Page, completed_file: str) -> None:
     page.locator("#human-strategy").select_option("STR-003")
     page.locator("#human-rationale").fill("Human chose a different path & reviewed unknowns. ✓")
     page.locator("#human-next-action").fill("Owner checks progress next week.")
+    page.locator("#attestation-name").fill("Decision owner")
+    page.locator("#attestation-role").fill("Decision owner")
+    page.locator("#attestation-confirmed").check()
     selected_summary = page.locator(".brief-grid > div").filter(has_text="Selected choice").inner_text()
     assert "Choice 3" in selected_summary
     assert "Recorded human decision: Choice 3" not in page.locator("body").inner_text()
@@ -692,6 +709,9 @@ def draft_and_entry_flow(page: Page, completed_file: str) -> None:
     lifecycle_text = page.locator(".record-lifecycle").inner_text()
     assert "changed since recording" in lifecycle_text.lower(), lifecycle_text
     assert "Recorded human decision: Choice 3" in page.locator("body").inner_text()
+    page.locator("#attestation-name").fill("Decision owner")
+    page.locator("#attestation-role").fill("Decision owner")
+    page.locator("#attestation-confirmed").check()
     page.locator("#record-decision").click()
     assert "recorded" in page.locator(".record-lifecycle").inner_text().lower()
     page.reload(wait_until="networkidle")
@@ -711,6 +731,7 @@ def seer_sustainability_reminder_flow(page: Page) -> None:
     set_hash_route(page, "/decision/example")
     page.locator("summary").filter(has_text=re.compile(r"^Optional considerations")).click()
     page.locator("#enable-seer-reminder").check()
+    page.locator("#decision-authority-role").select_option("accountable_owner")
     page.locator('[data-decision-stage="0"] [data-stage-next]').click()
     semantic_model = page.locator('[data-surface="semantic-model"]')
     assert semantic_model.get_attribute("open") is None
