@@ -168,6 +168,26 @@ def run() -> None:
                     assert page.get_by_text("impose export controls", exact=True).is_visible()
                     assert page.get_by_text("negotiate supply agreements with allies", exact=True).is_visible()
 
+                    # Explicit criteria outside the built-in vocabulary stay visible for human confirmation.
+                    page.get_by_role("button", name="Adjust").click()
+                    page.locator("#universal-input").fill("Should we qualify Supplier Alpha or Supplier Bravo? Data residency, capex, measurement traceability, and corrosion resistance matter.")
+                    page.get_by_role("button", name="Continue").click()
+                    assert page.locator("#universal-response-title").inner_text() == "Decision structure"
+                    for criterion in ("Data residency", "Capex", "Measurement traceability", "Corrosion resistance"):
+                        assert page.get_by_text(criterion, exact=True).is_visible()
+
+                    # More criteria than the bounded draft can hold must never be silently truncated.
+                    page.get_by_role("button", name="Adjust").click()
+                    page.locator("#universal-input").fill("Should we qualify Supplier Alpha or Supplier Bravo? Data residency, capex, measurement traceability, corrosion resistance, and repairability matter.")
+                    page.get_by_role("button", name="Continue").click()
+                    assert page.locator("#universal-response-title").inner_text() == "I found 5 possible criteria. Choose up to 4 to keep."
+
+                    # Informational comparison language remains informational rather than inventing a choice set.
+                    page.get_by_role("button", name="Adjust original input").click()
+                    page.locator("#universal-input").fill("Explain qualification versus redesign for a new engineer.")
+                    page.get_by_role("button", name="Continue").click()
+                    assert "does not retrieve outside facts" in page.locator("#universal-response-title").inner_text().lower()
+
                     # Ctrl/Cmd + Enter activates Continue.
                     page.get_by_role("button", name="Adjust").click()
                     page.locator("#universal-input").fill("Should we qualify the alternate source or hold for evidence? Mission safety and cost exposure matter. Schedule slips and demand changes are possible.")
