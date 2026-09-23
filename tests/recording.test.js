@@ -12,7 +12,7 @@ import {
   validateCompletedDecisionCase,
   validateStageRequirements,
 } from '../site/src/lib/decision.js';
-import { createDecisionRecord, decisionFingerprint, recordFromPortableDecision, recordMatchesDecision, validDecisionRecord } from '../site/src/lib/recording.js';
+import { createDecisionRecord, decisionContentSha256, decisionFingerprint, recordFromPortableDecision, recordMatchesDecision, validDecisionRecord } from '../site/src/lib/recording.js';
 import { createDraftBackup, loadSavedDecision, parseDraftBackupText, saveDecision } from '../site/src/lib/persistence.js';
 
 function storage() {
@@ -30,6 +30,15 @@ function recordableDecision() {
   decision.human_decision.rationale = 'A person chose a different path after reviewing the trade-offs.\nSecond line & Unicode: ✓ 🚀';
   decision.human_decision.next_action = 'Owner reviews next week.';
   return decision;
+}
+
+function recordOptions(decision, recordedAt = '2026-08-15T12:00:00.000Z') {
+  return {
+    authority: { role: 'accountable_owner', owner: decision.decision_owner || 'Program decision owner', basis: 'Accountable owner for this test decision.' },
+    evidenceDisposition: { state: 'ready', unresolved_evidence: [], rationale: '' },
+    attestation: { confirmed: true, attested_by: 'Test Owner', attested_role: 'Program decision owner' },
+    recordedAt,
+  };
 }
 
 test('requirement contract classifies every runtime field family without hidden required prose', () => {
@@ -80,21 +89,22 @@ test('blank, explicit zero, and unknown future effects remain distinct', () => {
   assert.equal(scenario.strategy_modifiers[decision.strategies[0].strategy_id][decision.objectives[0].objective_id], 7);
 });
 
-test('selected is not recorded; record survives unchanged state and becomes stale after substantive edit', () => {
+test('SHA-256 receipt survives unchanged state and becomes stale after substantive edit', () => {
   const decision = recordableDecision();
   assert.equal(validateCompletedDecisionCase(decision).valid, true);
-  const record = createDecisionRecord(decision, '2026-08-15T12:00:00.000Z');
+  const record = createDecisionRecord(decision, recordOptions(decision));
+  assert.equal(record.format_version, '2');
+  assert.match(record.decision_content_sha256, /^[a-f0-9]{64}$/);
+  assert.match(record.receipt_sha256, /^[a-f0-9]{64}$/);
   assert.equal(validDecisionRecord(record), true);
   assert.equal(recordMatchesDecision(decision, record), true);
   assert.equal(record.snapshot.status, 'draft');
   assert.equal(record.snapshot.human_decision.approved_by, '');
   assert.equal(record.snapshot.human_decision.approved_at, null);
-  assert.equal(record.snapshot.human_decision.recorded_at, record.recorded_at);
-  assert.equal(record.snapshot.human_decision.recorded_fingerprint, record.fingerprint);
   for (const mutate of [
     (value) => { value.snapshot.decision_id = 'FDE-DIFFERENT'; },
-    (value) => { value.fingerprint = 'fnv1a32-00000000'; },
-    (value) => { value.snapshot.human_decision.recorded_at = '2026-08-16T12:00:00.000Z'; },
+    (value) => { value.receipt_sha256 = '0'.repeat(64); },
+    (value) => { value.attestation.attested_role = 'Changed role'; },
     (value) => { value.snapshot.question = 'Tampered question'; },
   ]) {
     const tampered = structuredClone(record);
@@ -104,46 +114,56 @@ test('selected is not recorded; record survives unchanged state and becomes stal
   decision.human_decision.rationale += ' Changed.';
   assert.equal(validDecisionRecord(record), true);
   assert.equal(recordMatchesDecision(decision, record), false);
-  assert.notEqual(decisionFingerprint(decision), record.fingerprint);
+  assert.notEqual(decisionContentSha256(decision), record.decision_content_sha256);
   assert.doesNotMatch(record.snapshot.human_decision.rationale, /Changed/);
 });
 
-test('portable imports restore Recorded only from verified v0.3.1 record metadata', () => {
-  const legacy = recordableDecision();
-  assert.equal(recordFromPortableDecision(legacy), null);
-  const record = createDecisionRecord(legacy, '2026-08-15T12:00:00.000Z');
-  const restored = recordFromPortableDecision(record.snapshot);
+test('legacy portable imports remain verifiable without being relabeled as cryptographic receipts', () => {
+  const decision = recordableDecision();
+  assert.equal(recordFromPortableDecision(decision), null);
+  const snapshot = structuredClone(decision);
+  const recordedAt = '2026-08-15T12:00:00.000Z';
+  const fingerprint = decisionFingerprint(snapshot);
+  snapshot.human_decision.recorded_at = recordedAt;
+  snapshot.human_decision.recorded_fingerprint = fingerprint;
+  const restored = recordFromPortableDecision(snapshot);
+  assert.equal(restored.format_version, '1');
   assert.equal(validDecisionRecord(restored), true);
-  assert.equal(recordMatchesDecision(record.snapshot, restored), true);
-  const tampered = structuredClone(record.snapshot);
+  assert.equal(recordMatchesDecision(snapshot, restored), true);
+  const tampered = structuredClone(snapshot);
   tampered.human_decision.rationale = 'Changed without a new Record action.';
   assert.equal(recordFromPortableDecision(tampered), null);
 });
 
-test('record metadata and immutable snapshot survive browser reload and draft import', () => {
+test('record metadata, authority, and immutable snapshot survive browser reload and draft import', () => {
   const local = storage();
   const decision = recordableDecision();
-  const record = createDecisionRecord(decision, '2026-08-15T12:00:00.000Z');
-  assert.equal(saveDecision(local, decision, record).ok, true);
+  const options = recordOptions(decision);
+  const record = createDecisionRecord(decision, options);
+  assert.equal(saveDecision(local, decision, record, options.authority).ok, true);
   const restored = loadSavedDecision(local, () => ({ valid: true, errors: [] }));
   assert.deepEqual(restored.record, record);
+  assert.deepEqual(restored.authority, options.authority);
   assert.equal(recordMatchesDecision(restored.decision, restored.record), true);
 
-  const backup = createDraftBackup(decision, record);
+  const backup = createDraftBackup(decision, record, options.authority);
   const parsed = parseDraftBackupText(JSON.stringify(backup), () => ({ valid: true, errors: [] }));
   assert.deepEqual(parsed.record, record);
+  assert.deepEqual(parsed.authority, options.authority);
 });
 
-test('hostile user text remains inert in the Decision Brief', async () => {
+test('hostile user text remains inert in the Decision Receipt', async () => {
   const { buildDecisionHtml } = await import('../site/src/decision-ui.js');
   const decision = recordableDecision();
   decision.title = '<script>alert(1)</script> "quotes" & emoji 🚀';
   decision.human_decision.rationale = '<img src=x onerror=alert(1)>\nmultiline & longword'.repeat(20);
   assert.throws(() => buildDecisionHtml(decision), /valid Decision Record/);
-  const html = buildDecisionHtml(createDecisionRecord(decision));
+  const html = buildDecisionHtml(createDecisionRecord(decision, recordOptions(decision)));
   assert.doesNotMatch(html, /<script>alert\(1\)<\/script>/);
   assert.doesNotMatch(html, /<img src=x/);
   assert.match(html, /&lt;script&gt;alert\(1\)&lt;\/script&gt;/);
+  assert.match(html, /What FDE did not establish/);
+  assert.match(html, /Decision content SHA-256/);
   assert.match(html, /&amp;/);
   assert.match(html, /🚀/);
 });

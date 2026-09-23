@@ -21,6 +21,7 @@ errors: list[str] = []
 required = [
     "CITATION.cff", "CONTRIBUTING.md", "LICENSE", "README.md", "SECURITY.md",
     "docs/ARCHITECTURE.md", "docs/METHODOLOGY.md", "docs/DATA_DICTIONARY.md", "docs/PRIVACY.md",
+    "docs/DECISION_RECEIPTS.md", "docs/PILOT_READINESS.md",
     "docs/RELEASE_NOTES.md", "docs/RELEASING.md", "docs/STYLE_LAYERS.md",
     "site/schemas/decision.schema.json", "site/schemas/decision-0.3.0.schema.json",
     "site/index.html", "site/404.html",
@@ -28,6 +29,9 @@ required = [
     "site/src/app.js", "site/src/decision-ui.js", "site/src/guided-framing-ui.js", "site/src/universal-ui.js", "site/src/theme.js",
     "site/src/lib/case.js", "site/src/lib/decision-core.js", "site/src/lib/decision.js", "site/src/lib/intake.js",
     "site/src/lib/persistence.js", "site/src/lib/recording.js", "site/src/lib/semantics.js", "site/src/lib/synthesis.js",
+    "site/src/lib/authority.js", "site/src/lib/evidence-readiness.js", "site/src/lib/integrity.js",
+    "schemas/decision-receipt-v2.schema.json", "schemas/pilot-proof-envelope-1.schema.json",
+    "site/schemas/decision-receipt-v2.schema.json", "site/schemas/pilot-proof-envelope-1.schema.json",
     "site/src/decision-map.js",
     "scripts/browser_e2e.py", "scripts/browser_guided_framing_e2e.py", "scripts/browser_release_regressions.py",
     "scripts/validate_version_integrity.py", "scripts/package_release.py", "scripts/verify_release_tag.py",
@@ -45,6 +49,7 @@ if root_markdown != expected_root_markdown:
 
 allowed_docs_markdown = {
     "docs/ARCHITECTURE.md", "docs/METHODOLOGY.md", "docs/DATA_DICTIONARY.md", "docs/PRIVACY.md",
+    "docs/DECISION_RECEIPTS.md", "docs/PILOT_READINESS.md",
     "docs/RELEASE_NOTES.md", "docs/RELEASING.md", "docs/STYLE_LAYERS.md",
 }
 docs_markdown = {str(path.relative_to(ROOT)).replace("\\", "/") for path in (ROOT / "docs").rglob("*.md")}

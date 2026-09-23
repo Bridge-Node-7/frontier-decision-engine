@@ -1,3 +1,6 @@
+import { canonicalJson, sha256Hex } from './integrity.js';
+export { canonicalJson } from './integrity.js';
+
 const REQUIRED_V02 = [
   'attention_queue', 'candidate_pathways', 'classification', 'compatibility',
   'conditions_to_watch', 'content_sha256', 'critical_unknowns', 'decision_owner',
@@ -47,20 +50,6 @@ function parseTimestamp(value) {
   if (typeof value !== 'string' || !value.trim()) return null;
   const date = new Date(value);
   return Number.isFinite(date.getTime()) ? date : null;
-}
-
-export function canonicalJson(value) {
-  if (value === null || typeof value !== 'object') return JSON.stringify(value);
-  if (Array.isArray(value)) return `[${value.map((item) => canonicalJson(item)).join(',')}]`;
-  return `{${Object.keys(value).sort().map((key) => `${JSON.stringify(key)}:${canonicalJson(value[key])}`).join(',')}}`;
-}
-
-async function sha256Hex(text) {
-  const cryptoObject = globalThis.crypto;
-  if (!cryptoObject?.subtle) throw new Error('Web Crypto SHA-256 is unavailable in this browser.');
-  const bytes = new TextEncoder().encode(text);
-  const digest = await cryptoObject.subtle.digest('SHA-256', bytes);
-  return [...new Uint8Array(digest)].map((byte) => byte.toString(16).padStart(2, '0')).join('');
 }
 
 async function legacyDecisionContextDigest(packet) {

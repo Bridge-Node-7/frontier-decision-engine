@@ -1,0 +1,53 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://bridge-node-7.github.io/frontier-decision-engine/schemas/pilot-proof-envelope-1.schema.json",
+  "title": "FDE Pilot Proof Envelope v1",
+  "type": "object",
+  "required": ["format_version","decision_id","receipt_sha256","before","after"],
+  "properties": {
+    "format_version": {"const": "1"},
+    "decision_id": {"type": "string"},
+    "receipt_sha256": {"type": "string", "pattern": "^[a-f0-9]{64}$"},
+    "before": {
+      "type": "object",
+      "required": ["initial_inclination","initial_confidence","primary_uncertainty","time_already_spent","expected_action_without_fde"],
+      "properties": {
+        "initial_inclination": {"type": "string"},
+        "initial_confidence": {"enum": ["low","medium","high"]},
+        "primary_uncertainty": {"type": "string"},
+        "time_already_spent": {"type": "string"},
+        "expected_action_without_fde": {"type": "string"}
+      },
+      "additionalProperties": false
+    },
+    "after": {
+      "type": "object",
+      "required": ["final_choice","choice_changed","rationale_changed","evidence_request_changed","conditions_changed","next_action_changed","material_insight_surfaced","time_with_fde","would_use_again"],
+      "properties": {
+        "final_choice": {"type": "string"},
+        "choice_changed": {"type": "boolean"},
+        "rationale_changed": {"type": "boolean"},
+        "evidence_request_changed": {"type": "boolean"},
+        "conditions_changed": {"type": "boolean"},
+        "next_action_changed": {"type": "boolean"},
+        "material_insight_surfaced": {"type": "boolean"},
+        "time_with_fde": {"type": "string"},
+        "would_use_again": {"type": "boolean"}
+      },
+      "additionalProperties": false
+    },
+    "outcome_review": {
+      "type": "object",
+      "properties": {
+        "outcome_observed": {"type": "string"},
+        "assumptions_that_held": {"type": "array","items":{"type":"string"}},
+        "assumptions_that_failed": {"type": "array","items":{"type":"string"}},
+        "new_evidence": {"type": "array","items":{"type":"string"}},
+        "decision_still_defensible_ex_ante": {"type": ["boolean","null"]},
+        "reviewer_notes": {"type": "string"}
+      },
+      "additionalProperties": false
+    }
+  },
+  "additionalProperties": false
+}

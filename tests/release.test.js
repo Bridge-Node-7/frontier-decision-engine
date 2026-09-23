@@ -263,7 +263,9 @@ test('public repository surface stays lean and user-focused', async () => {
   assert.deepEqual(docsMarkdown, [
     'ARCHITECTURE.md',
     'DATA_DICTIONARY.md',
+    'DECISION_RECEIPTS.md',
     'METHODOLOGY.md',
+    'PILOT_READINESS.md',
     'PRIVACY.md',
     'RELEASE_NOTES.md',
     'RELEASING.md',
