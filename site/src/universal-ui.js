@@ -34,7 +34,7 @@ const KEYWORDS = {
 };
 
 const decisionPattern = /should i|should we|do i|do we|whether|which should|choose|decid(?:e|ing)\s+(?:between|whether)/i;
-const informationPattern = /^(how much|what is|what's|when is|where is|who is|can you explain|what does|how does|tell me about)\b/i;
+const informationPattern = /^(how much|what is|what's|when is|where is|who is|can you explain|explain|compare|what does|how does|tell me about)\b/i;
 function normalize(value) {
   return String(value ?? '').replace(/\r\n?/g, '\n').trim();
 }
@@ -101,8 +101,13 @@ function hasUnresolvedOptionList(text) {
 
 function extractChoices(text) {
   const choices = [];
-  for (const match of text.matchAll(/(?:either\s+)?([^\n,.!?]{2,80})\s+(?:or|versus|vs\.?|instead of)\s+([^\n,.!?]{2,80})/gi)) {
-    choices.push(cleanChoice(match[1]), cleanChoice(match[2]));
+  const clauses = normalize(text).split(/[.!?\n]+/).map((value) => value.trim()).filter(Boolean);
+  for (const clause of clauses) {
+    const decisionLike = decisionPattern.test(clause) || /^(?:choose|pick|select|decide)\b/i.test(clause);
+    if (!decisionLike) continue;
+    for (const match of clause.matchAll(/(?:either\s+)?([^\n,.!?]{2,80})\s+(?:or|versus|vs\.?|instead of)\s+([^\n,.!?]{2,80})/gi)) {
+      choices.push(cleanChoice(match[1]), cleanChoice(match[2]));
+    }
   }
   const numbered = [...text.matchAll(/(?:^|\n)\s*(?:\d+[.)]?|[-*•])\s+([^\n]{2,100})/g)]
     .map((match) => cleanChoice(match[1]));
@@ -139,6 +144,42 @@ function extractGoals(text) {
   return extractKeywordLabels(text, KEYWORDS.goals, MAX_SUGGESTIONS.goals);
 }
 
+function criterionLabel(value) {
+  const clean = normalize(value)
+    .replace(/^(?:and|or)\s+/i, '')
+    .replace(/[;:]+$/g, '')
+    .trim();
+  if (!clean) return '';
+  const recognized = extractKeywordLabels(clean, KEYWORDS.goals, 1);
+  if (recognized.length) return recognized[0];
+  return clean.charAt(0).toUpperCase() + clean.slice(1);
+}
+
+function extractExplicitCriteria(text) {
+  const criteria = [];
+  const clauses = normalize(text).split(/[.!?\n]+/).map((value) => value.trim()).filter(Boolean);
+  const prefixCue = /\b(?:care about|what matters(?: most)?(?: is| are)?|(?:criteria|goals?|priorities|requirements?)\s+(?:are|include)|(?:must|need(?:s)?\s+to)\s+(?:balance|protect|preserve|meet))\b/i;
+  const suffixCue = /\b(?:matter|matters|are important|is important)\s*$/i;
+
+  for (const clause of clauses) {
+    if (!prefixCue.test(clause) && !suffixCue.test(clause)) continue;
+    let body = clause
+      .replace(/^.*?\bcare about\b\s*/i, '')
+      .replace(/^.*?\bwhat matters(?: most)?(?: is| are)?\b\s*/i, '')
+      .replace(/^.*?\b(?:criteria|goals?|priorities|requirements?)\s+(?:are|include)\b\s*/i, '')
+      .replace(/^.*?\b(?:must|need(?:s)?\s+to)\s+(?:balance|protect|preserve|meet)\b\s*/i, '')
+      .replace(/\s+\b(?:matter|matters|are important|is important)\b\s*$/i, '')
+      .trim();
+    if (!body) continue;
+    const items = body
+      .split(/\s*,\s*(?:\b(?:and|or)\b\s*)?|\s+\b(?:and|or)\b\s+/i)
+      .map((value) => criterionLabel(value))
+      .filter((value) => value.length >= 2);
+    criteria.push(...items);
+  }
+  return [...new Set(criteria)];
+}
+
 function extractFutures(text) {
   return extractKeywordLabels(text, KEYWORDS.futures, MAX_SUGGESTIONS.futures);
 }
@@ -161,7 +202,12 @@ export function draftFromInput(text) {
   const detectedChoiceCount = listedChoices.length;
   const optionListAmbiguous = detectedChoiceCount > MAX_SUGGESTIONS.choices;
   const choices = optionListAmbiguous ? [] : unique([...extractChoices(clean), ...listedChoices], MAX_SUGGESTIONS.choices);
-  const goals = extractGoals(clean);
+  const explicitCriteria = extractExplicitCriteria(clean);
+  const detectedCriterionCount = explicitCriteria.length;
+  const criteriaListAmbiguous = detectedCriterionCount > MAX_SUGGESTIONS.goals;
+  const goals = criteriaListAmbiguous
+    ? []
+    : unique([...extractGoals(clean), ...explicitCriteria], MAX_SUGGESTIONS.goals);
   const futures = extractFutures(clean);
   const possibleDecision = intent !== 'multi' && (decisionPattern.test(clean) || (choices.length >= 2 && clean.includes('?'))) ? titleFrom(clean) : '';
   return {
@@ -170,6 +216,8 @@ export function draftFromInput(text) {
     possibleDecision,
     optionListAmbiguous,
     detectedChoiceCount,
+    criteriaListAmbiguous,
+    detectedCriterionCount,
     choices,
     goals,
     futures,
@@ -185,6 +233,10 @@ export function responseFor(state) {
   if (state?.optionListAmbiguous) {
     const count = Number(state.detectedChoiceCount) || 4;
     return { kind: 'question', question: `I found ${count} possible choices. Choose up to ${MAX_SUGGESTIONS.choices} to compare.` };
+  }
+  if (state?.criteriaListAmbiguous) {
+    const count = Number(state.detectedCriterionCount) || (MAX_SUGGESTIONS.goals + 1);
+    return { kind: 'question', question: `I found ${count} possible criteria. Choose up to ${MAX_SUGGESTIONS.goals} to keep.` };
   }
   if (!clean || (!state?.possibleDecision && state?.intent !== 'information' && state?.intent !== 'multi')) {
     return { kind: 'question', question: 'Which decision or question should we focus on?' };
@@ -330,6 +382,8 @@ export function renderUniversalDecisionExperience(root) {
     possibleDecision: restored.possibleDecision || '',
     optionListAmbiguous: Boolean(restored.optionListAmbiguous),
     detectedChoiceCount: Number(restored.detectedChoiceCount) || 0,
+    criteriaListAmbiguous: Boolean(restored.criteriaListAmbiguous),
+    detectedCriterionCount: Number(restored.detectedCriterionCount) || 0,
     choices: Array.isArray(restored.choices) ? restored.choices.slice(0, MAX_SUGGESTIONS.choices) : [],
     goals: Array.isArray(restored.goals) ? restored.goals.slice(0, MAX_SUGGESTIONS.goals) : [],
     futures: Array.isArray(restored.futures) ? restored.futures.slice(0, MAX_SUGGESTIONS.futures) : [],
@@ -435,7 +489,7 @@ export function renderUniversalDecisionExperience(root) {
     Object.assign(state, draft);
     const response = responseFor(state);
     if (response.kind === 'question') {
-      setQuestion(state.optionListAmbiguous ? 'choices' : 'decision', response.question);
+      setQuestion(state.optionListAmbiguous ? 'choices' : state.criteriaListAmbiguous ? 'goals' : 'decision', response.question);
       return;
     }
     if (response.kind === 'boundary') {
@@ -469,7 +523,7 @@ export function renderUniversalDecisionExperience(root) {
       Object.assign(state, replacementDraft);
       const replacementResponse = responseFor(state);
       if (replacementResponse.kind === 'question') {
-        setQuestion(state.optionListAmbiguous ? 'choices' : 'decision', replacementResponse.question);
+        setQuestion(state.optionListAmbiguous ? 'choices' : state.criteriaListAmbiguous ? 'goals' : 'decision', replacementResponse.question);
         return;
       }
       if (replacementResponse.kind === 'boundary') {
@@ -511,7 +565,11 @@ export function renderUniversalDecisionExperience(root) {
       return;
     }
     if (state.questionKind === 'choices') state.choices = unique([...state.choices, ...splitUserItems(answer, MAX_SUGGESTIONS.choices)], MAX_SUGGESTIONS.choices);
-    if (state.questionKind === 'goals') state.goals = unique([...state.goals, ...splitUserItems(answer, MAX_SUGGESTIONS.goals)], MAX_SUGGESTIONS.goals);
+    if (state.questionKind === 'goals') {
+      state.goals = unique([...state.goals, ...splitUserItems(answer, MAX_SUGGESTIONS.goals)], MAX_SUGGESTIONS.goals);
+      state.criteriaListAmbiguous = false;
+      state.detectedCriterionCount = state.goals.length;
+    }
     if (state.questionKind === 'futures') state.futures = unique([...state.futures, ...splitUserItems(answer, MAX_SUGGESTIONS.futures)], MAX_SUGGESTIONS.futures);
     state.answerDraft = '';
     const missing = missingRequirement(state);
