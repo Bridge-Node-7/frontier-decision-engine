@@ -731,6 +731,7 @@ def seer_sustainability_reminder_flow(page: Page) -> None:
     set_hash_route(page, "/decision/example")
     page.locator("summary").filter(has_text=re.compile(r"^Optional considerations")).click()
     page.locator("#enable-seer-reminder").check()
+    page.locator("summary").filter(has_text=re.compile(r"^Add context")).click()
     page.locator("#decision-authority-role").select_option("accountable_owner")
     page.locator('[data-decision-stage="0"] [data-stage-next]').click()
     semantic_model = page.locator('[data-surface="semantic-model"]')
