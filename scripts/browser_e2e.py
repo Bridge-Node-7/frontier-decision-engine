@@ -510,6 +510,9 @@ def decision_flow(page: Page, base: str) -> str:
 
 def unnamed_required_proof_flow(page: Page, base: str) -> None:
     route(page, base, "/decision", '[data-surface="fde-hero"] h1', "Frontier Decision Engine")
+    page.evaluate("() => { localStorage.clear(); sessionStorage.clear(); }")
+    page.reload(wait_until="networkidle")
+    page.locator('[data-surface="fde-hero"] h1').wait_for(state="visible")
     activate_ready_example(page)
     wait_for_render_settle(page)
     page.evaluate("document.querySelector('#enable-decision-posture').checked = true")
