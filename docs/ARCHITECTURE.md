@@ -22,7 +22,7 @@ FDE follows this interaction rule:
 
 > Continue without bothering the person when the system can proceed safely; otherwise ask for the smallest human contribution that materially advances the decision.
 
-No ordinary in-scope input is treated as an error-only dead end. Sparse or ambiguous input receives one clarification question. A hinge-derived question may preempt the ordinary schema order only when the answer can deterministically change a requirement, criterion, evidence need, choice, constraint, or modeled future; otherwise the deterministic choices → goals → futures fallback remains in force. A small pre-interpretation scope boundary fails closed on high-risk personal decisions before they can become comparison choices; that boundary is infrastructure, not FDE's product domain.
+No ordinary in-scope input is treated as an error-only dead end. Sparse or ambiguous input receives one clarification question. A hinge-derived question may preempt the ordinary schema order only when the answer can deterministically change a requirement, criterion, evidence need, choice, constraint, or modeled future; otherwise the deterministic choices → goals → futures fallback remains in force. A pre-interpretation scope boundary keeps FDE inside its technical, organizational, mission, and strategic product domain. High-confidence personal safety language receives the established safety boundary; otherwise first-person personal-life decisions are redirected neutrally unless explicit organizational or decision-support context makes the work in scope. The neutral redirect is a product-scope decision, not a clinical judgment.
 
 ## Formal Decision Lab
 
