@@ -133,7 +133,6 @@ export function clearSavedDecision(storage) {
   try { storage.removeItem(DECISION_STORAGE_KEY); } catch { /* no-op */ }
   try { storage.removeItem(DECISION_RECORD_STORAGE_KEY); } catch { /* no-op */ }
   try { storage.removeItem(DECISION_AUTHORITY_STORAGE_KEY); } catch { /* no-op */ }
-  try { storage.removeItem(DECISION_RECORD_HISTORY_STORAGE_KEY); } catch { /* no-op */ }
 }
 
 export function createDraftBackup(decision, record = null, authority = null) {
