@@ -11,6 +11,7 @@ Frontier Decision Engine operationalizes the human decision layer of Frontier Mi
 7. Compare threshold passes, critical failures, and vulnerabilities.
 8. Review the result-first decision value: what held up, why, what could change it, and any required next proof.
 9. Record the human-owned decision, rationale, and next action.
+10. When evidence, assumptions, framing, modeled futures, or the human decision changes, review the deterministic reassessment delta and record a new Receipt only if the accountable human decides again. Prior valid Receipt v2 records remain historical records rather than being rewritten.
 
 Scores are user- or analyst-assigned desirability inputs. They are not probabilities or empirical forecasts. Inputs remain inspectable so results can be challenged and revised.
 
