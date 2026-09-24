@@ -9,7 +9,8 @@ Frontier Decision Engine operationalizes the human decision layer of Frontier Mi
 5. Name plausible futures that could change the answer.
 6. Enter explicit performance assumptions and future-specific changes.
 7. Compare threshold passes, critical failures, and vulnerabilities.
-8. Record the human-owned decision, rationale, and next action.
+8. Review the result-first decision value: what held up, why, what could change it, and any required next proof.
+9. Record the human-owned decision, rationale, and next action.
 
 Scores are user- or analyst-assigned desirability inputs. They are not probabilities or empirical forecasts. Inputs remain inspectable so results can be challenged and revised.
 
