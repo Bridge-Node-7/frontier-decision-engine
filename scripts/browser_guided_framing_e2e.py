@@ -49,8 +49,10 @@ def run() -> None:
 
                     assert page.title() == "Frontier Decision Engine"
                     assert page.locator("h1").inner_text() == "What are you considering?"
-                    assert page.get_by_text("Share a technical, organizational, mission, or strategic decision in your own words.", exact=True).is_visible()
+                    assert page.get_by_text("Share the situation, decision, question, or context in your own words.", exact=True).is_visible()
                     assert page.get_by_role("button", name="Continue").is_visible()
+                    assert page.get_by_text("Advanced paths", exact=True).is_visible()
+                    page.get_by_text("Advanced paths", exact=True).click()
                     assert page.get_by_role("link", name="Already know the decision and choices? Open Decision Lab →").is_visible()
                     assert page.get_by_role("link", name="Need more help framing the decision? Use guided framing →").is_visible()
                     assert page.get_by_text("Private by design. Your working decision stays in this browser unless you choose to export it.", exact=True).is_visible()
@@ -61,6 +63,24 @@ def run() -> None:
                     assert page.locator("#theme-toggle").inner_text() == "Appearance"
                     assert "Current:" in (page.locator("#theme-toggle").get_attribute("aria-label") or "")
                     assert page.evaluate("document.documentElement.scrollWidth <= window.innerWidth + 1")
+
+                    # Long input stays visible and produces an explicit bounded-processing message.
+                    long_input = "x" * 12001
+                    page.locator("#universal-input").fill(long_input)
+                    page.get_by_role("button", name="Continue").click()
+                    assert page.locator("#universal-limit").is_visible()
+                    assert len(page.locator("#universal-input").input_value()) == len(long_input)
+
+                    # A grounded controlling condition is shown before schema completion.
+                    page.locator("#universal-input").fill("Should we qualify Supplier A or Supplier B? November is our integration window.")
+                    page.get_by_role("button", name="Continue").click()
+                    assert page.locator("[data-fde-field='decision_hinge']").is_visible()
+                    assert page.get_by_text("November is our integration window", exact=True).is_visible()
+                    page.get_by_role("button", name="Yes").click()
+                    assert page.locator("#universal-response-title").inner_text() == "Does this condition need to be true for the decision?"
+                    page.get_by_role("button", name="Yes").click()
+                    assert "What else matters" in page.locator("#universal-response-title").inner_text()
+                    page.get_by_role("button", name="Adjust original input").click()
 
                     # Sparse input yields one question, not an invalid state or empty structural cards.
                     page.locator("#universal-input").fill("qualification evidence incomplete")

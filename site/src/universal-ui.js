@@ -2,6 +2,7 @@ import { createGuidedDecisionCase, DRAFT_TOPOLOGY_BOUNDS } from './lib/decision.
 import { GUIDED_MAX_INPUT_CHARS } from './lib/intake.js';
 import { DECISION_STORAGE_KEY, getBrowserStorage, saveDecision } from './lib/persistence.js';
 import { boundaryForInput } from './lib/input-boundaries.js';
+import { deriveDecisionHinge } from './lib/decision-hinge.js';
 
 const MAX_SUGGESTIONS = Object.freeze({ choices: 3, goals: 4, futures: 4 });
 const SESSION_KEY = 'fde.universal.session.v1';
@@ -218,6 +219,7 @@ export function draftFromInput(text) {
     detectedChoiceCount,
     criteriaListAmbiguous,
     detectedCriterionCount,
+    hingeCandidate: deriveDecisionHinge(clean),
     choices,
     goals,
     futures,
@@ -282,6 +284,24 @@ function clearSession() {
   try { storage()?.removeItem(SESSION_KEY); } catch { /* no-op */ }
 }
 
+function hingeTarget(state) {
+  const hinge = state.hingeCandidate;
+  if (!hinge || state.hingeStatus) return '';
+  if (['hard_requirement', 'deadline'].includes(hinge.basis_type)) {
+    if (state.goals.includes(hinge.text)) return '';
+    return state.goals.length < MAX_SUGGESTIONS.goals ? 'goals' : '';
+  }
+  if (state.futures.includes(hinge.text)) return '';
+  return state.futures.length < MAX_SUGGESTIONS.futures ? 'futures' : '';
+}
+
+function hingeQuestion(state) {
+  if (['hard_requirement', 'deadline'].includes(state.hingeCandidate?.basis_type)) {
+    return 'Does this condition need to be true for the decision?';
+  }
+  return 'Could this condition change which choice holds up?';
+}
+
 function missingRequirement(state) {
   if (state.choices.length < DRAFT_TOPOLOGY_BOUNDS.strategies.min) return 'choices';
   if (state.goals.length < DRAFT_TOPOLOGY_BOUNDS.objectives.min) return 'goals';
@@ -305,18 +325,35 @@ function supportableSection(label, semantic, value) {
   return `<section class="universal-field" data-fde-field="${semantic}"><h3>${escapeHtml(label)}</h3><p>${escapeHtml(value)}</p></section>`;
 }
 
+function hingeMarkup(state) {
+  const hinge = state.hingeCandidate;
+  if (!hinge) return '';
+  const status = state.hingeStatus === 'yes'
+    ? 'You confirmed'
+    : state.hingeStatus === 'no'
+      ? 'You did not keep this as a controlling condition'
+      : state.hingeStatus === 'not_sure'
+        ? 'You marked this as uncertain'
+        : 'FDE suggests';
+  return `<section class="universal-hinge" data-fde-field="decision_hinge">
+    <div class="universal-hinge-meta"><span>${escapeHtml(status)}</span><span>From your words</span></div>
+    <h3>This decision may turn on</h3>
+    <p>${escapeHtml(hinge.text)}</p>
+  </section>`;
+}
+
 function entryMarkup(state, hasSavedDecision) {
   return `<section class="universal-hero universal-front-door" data-surface="fde-hero" aria-labelledby="universal-title">
     <span class="eyebrow">Frontier Decision Engine</span>
     <h1 id="universal-title">What are you considering?</h1>
-    <p class="universal-subtitle">Share a technical, organizational, mission, or strategic decision in your own words.</p>
+    <p class="universal-subtitle">Share the situation, decision, question, or context in your own words.</p>
     <div class="universal-entry">
       <label class="sr-only" for="universal-input">What are you considering?</label>
-      <textarea id="universal-input" maxlength="${GUIDED_MAX_INPUT_CHARS}" rows="7" aria-describedby="universal-help" placeholder="Decision, choices, criteria, uncertainties, notes, or context…">${escapeHtml(state.startingPoint)}</textarea>
+      <textarea id="universal-input" rows="7" aria-describedby="universal-help universal-limit" placeholder="Decision, choices, criteria, uncertainties, notes, or context…">${escapeHtml(state.startingPoint)}</textarea>
       <p id="universal-help" class="help">Use your own words. Press Ctrl or Command + Enter to continue. Natural-language intake currently supports English.</p>
+      <p id="universal-limit" class="universal-limit" role="status" hidden></p>
       <div class="universal-actions"><button id="universal-analyze" class="primary" type="button">Continue</button></div>
-      <p class="universal-lab-link"><a href="#/decision">Already know the decision and choices? Open Decision Lab →</a></p>
-      <p class="universal-lab-link"><a href="#/framing">Need more help framing the decision? Use guided framing →</a></p>
+      <details class="universal-advanced"><summary>Advanced paths</summary><p><a href="#/decision">Already know the decision and choices? Open Decision Lab →</a></p><p><a href="#/framing">Need more help framing the decision? Use guided framing →</a></p></details>
       ${hasSavedDecision ? '<p class="universal-return"><a href="#/decision">Continue saved work →</a></p>' : ''}
       <p class="universal-trust">Private by design. Your working decision stays in this browser unless you choose to export it.</p>
       <p id="universal-status" class="sr-only" role="status" aria-live="polite"></p>
@@ -330,6 +367,7 @@ function structureMarkup(state) {
     <h1 id="universal-title">What are you considering?</h1>
     <div class="universal-structure" data-fde-status="needs-confirmation" aria-labelledby="universal-response-title">
       <div class="universal-structure-head"><h2 id="universal-response-title">Decision structure</h2><span class="universal-badge">Needs confirmation</span></div>
+      ${hingeMarkup(state)}
       ${supportableSection('Decision', 'decision', state.possibleDecision)}
       ${supportableSection('What matters', 'what_matters', state.goals)}
       ${supportableSection('Choices', 'options', state.choices)}
@@ -351,10 +389,32 @@ function questionMarkup(state, question) {
     <section class="universal-question" data-fde-field="next_required_input" aria-labelledby="universal-response-title">
       <h2 id="universal-response-title">${escapeHtml(question)}</h2>
       <label class="sr-only" for="universal-input">${escapeHtml(question)}</label>
-      <textarea id="universal-input" maxlength="${GUIDED_MAX_INPUT_CHARS}" rows="5" aria-describedby="universal-help" placeholder="Add only what is needed here…">${escapeHtml(state.answerDraft || '')}</textarea>
+      <textarea id="universal-input" rows="5" aria-describedby="universal-help universal-limit" placeholder="Add only what is needed here…">${escapeHtml(state.answerDraft || '')}</textarea>
       <p id="universal-help" class="help">One useful answer is enough to continue.</p>
+      <p id="universal-limit" class="universal-limit" role="status" hidden></p>
       <div class="universal-actions"><button id="universal-analyze" class="primary" type="button">Continue</button><button id="universal-adjust" class="quiet" type="button">Adjust original input</button></div>
       <p class="universal-trust">Private by design. Your working decision stays in this browser unless you choose to export it.</p>
+      <p id="universal-status" class="sr-only" role="status" aria-live="polite"></p>
+    </section>
+  </section>`;
+}
+
+function hingeQuestionMarkup(state) {
+  const hinge = state.hingeCandidate;
+  return `<section class="universal-hero universal-post-input" data-surface="fde-hero" aria-labelledby="universal-title">
+    <span class="eyebrow">Frontier Decision Engine</span>
+    <h1 id="universal-title">What are you considering?</h1>
+    <section class="universal-question universal-hinge-question" data-fde-field="next_required_input" aria-labelledby="universal-response-title">
+      <div class="universal-hinge-meta"><span>FDE suggests</span><span>From your words</span></div>
+      <h2 id="universal-response-title">${escapeHtml(hingeQuestion(state))}</h2>
+      <p class="universal-hinge-quote">${escapeHtml(hinge?.text || '')}</p>
+      <div class="universal-confirm-row">
+        <button data-hinge-answer="yes" class="primary" type="button">Yes</button>
+        <button data-hinge-answer="no" class="quiet" type="button">No</button>
+        <button data-hinge-answer="not_sure" class="quiet" type="button">Not sure</button>
+      </div>
+      <div class="universal-actions"><button id="universal-adjust" class="quiet" type="button">Adjust original input</button></div>
+      <p class="universal-trust">FDE is organizing your input. You remain the decision-maker.</p>
       <p id="universal-status" class="sr-only" role="status" aria-live="polite"></p>
     </section>
   </section>`;
@@ -384,6 +444,9 @@ export function renderUniversalDecisionExperience(root) {
     detectedChoiceCount: Number(restored.detectedChoiceCount) || 0,
     criteriaListAmbiguous: Boolean(restored.criteriaListAmbiguous),
     detectedCriterionCount: Number(restored.detectedCriterionCount) || 0,
+    hingeCandidate: restored.hingeCandidate || null,
+    hingeStatus: restored.hingeStatus || '',
+    hingeApplied: Boolean(restored.hingeApplied),
     choices: Array.isArray(restored.choices) ? restored.choices.slice(0, MAX_SUGGESTIONS.choices) : [],
     goals: Array.isArray(restored.goals) ? restored.goals.slice(0, MAX_SUGGESTIONS.goals) : [],
     futures: Array.isArray(restored.futures) ? restored.futures.slice(0, MAX_SUGGESTIONS.futures) : [],
@@ -427,11 +490,19 @@ export function renderUniversalDecisionExperience(root) {
     state.boundaryBody = '';
     state.savedBoundary = false;
     state.answerDraft = '';
+    state.hingeCandidate = null;
+    state.hingeStatus = '';
+    state.hingeApplied = false;
     saveSession(state);
     paint('#universal-input');
   }
 
   function handoffWhenReady() {
+    const hingeNext = hingeTarget(state);
+    if (hingeNext) {
+      setQuestion('hinge', hingeQuestion(state));
+      return;
+    }
     const missing = missingRequirement(state);
     if (missing) {
       setQuestion(missing);
@@ -475,18 +546,26 @@ export function renderUniversalDecisionExperience(root) {
     location.hash = '#/decision';
   }
 
+  function showInputLimit() {
+    const message = root.querySelector('#universal-limit');
+    if (message) {
+      message.hidden = false;
+      message.textContent = `This is longer than FDE can safely structure at once. Choose or paste the section containing the decision, question, or conditions you want to evaluate, and keep it under ${GUIDED_MAX_INPUT_CHARS.toLocaleString()} characters.`;
+    }
+    root.querySelector('#universal-input')?.focus({ preventScroll: true });
+  }
+
   function analyzeEntry() {
     const raw = String(root.querySelector('#universal-input')?.value || '');
-    state.startingPoint = normalize(raw);
-    if (state.startingPoint.length > GUIDED_MAX_INPUT_CHARS) {
-      setBoundary(
-        'This input is longer than this browser-local working note supports.',
-        `Shorten it to the decision-relevant context and keep it under ${GUIDED_MAX_INPUT_CHARS.toLocaleString()} characters.`,
-      );
+    if (raw.length > GUIDED_MAX_INPUT_CHARS) {
+      state.startingPoint = normalize(raw.slice(0, GUIDED_MAX_INPUT_CHARS + 1));
+      saveSession(state);
+      showInputLimit();
       return;
     }
+    state.startingPoint = normalize(raw);
     const draft = draftFromInput(state.startingPoint);
-    Object.assign(state, draft);
+    Object.assign(state, draft, { hingeStatus: '', hingeApplied: false });
     const response = responseFor(state);
     if (response.kind === 'question') {
       setQuestion(state.optionListAmbiguous ? 'choices' : state.criteriaListAmbiguous ? 'goals' : 'decision', response.question);
@@ -504,8 +583,38 @@ export function renderUniversalDecisionExperience(root) {
     paint('#universal-response-title');
   }
 
+  function applyHingeAnswer(answer) {
+    const hinge = state.hingeCandidate;
+    if (!hinge || !['yes', 'no', 'not_sure'].includes(answer)) return;
+    state.hingeStatus = answer;
+    state.hingeApplied = false;
+    if (answer === 'yes' && ['hard_requirement', 'deadline'].includes(hinge.basis_type) && state.goals.length < MAX_SUGGESTIONS.goals) {
+      const before = state.goals.length;
+      state.goals = unique([...state.goals, hinge.text], MAX_SUGGESTIONS.goals);
+      state.hingeApplied = state.goals.length > before;
+    } else if (answer === 'yes' && state.futures.length < MAX_SUGGESTIONS.futures) {
+      const before = state.futures.length;
+      state.futures = unique([...state.futures, hinge.text], MAX_SUGGESTIONS.futures);
+      state.hingeApplied = state.futures.length > before;
+    } else if (answer === 'not_sure' && state.futures.length < MAX_SUGGESTIONS.futures) {
+      const before = state.futures.length;
+      state.futures = unique([...state.futures, hinge.text], MAX_SUGGESTIONS.futures);
+      state.hingeApplied = state.futures.length > before;
+    }
+    state.questionKind = '';
+    state.question = '';
+    state.answerDraft = '';
+    saveSession(state);
+    handoffWhenReady();
+  }
+
   function applyQuestionAnswer() {
-    const answer = normalize(root.querySelector('#universal-input')?.value);
+    const raw = String(root.querySelector('#universal-input')?.value || '');
+    if (raw.length > GUIDED_MAX_INPUT_CHARS) {
+      showInputLimit();
+      return;
+    }
+    const answer = normalize(raw);
     state.answerDraft = answer;
     if (!answer) {
       saveSession(state);
@@ -520,7 +629,7 @@ export function renderUniversalDecisionExperience(root) {
       || replacementDraft.intent === 'multi'
       || replacementDraft.intent === 'information';
     if (answerDefinesNewFocus) {
-      Object.assign(state, replacementDraft);
+      Object.assign(state, replacementDraft, { hingeStatus: '', hingeApplied: false });
       const replacementResponse = responseFor(state);
       if (replacementResponse.kind === 'question') {
         setQuestion(state.optionListAmbiguous ? 'choices' : state.criteriaListAmbiguous ? 'goals' : 'decision', replacementResponse.question);
@@ -582,14 +691,18 @@ export function renderUniversalDecisionExperience(root) {
 
   function paint(focusSelector = '') {
     if (state.view === 'structure') root.innerHTML = structureMarkup(state);
+    else if (state.view === 'question' && state.questionKind === 'hinge') root.innerHTML = hingeQuestionMarkup(state);
     else if (state.view === 'question') root.innerHTML = questionMarkup(state, state.question || nextQuestion(state, state.questionKind));
     else if (state.view === 'boundary') root.innerHTML = boundaryMarkup(state, state.boundaryTitle, state.boundaryBody, state.savedBoundary);
     else root.innerHTML = entryMarkup(state, hasSavedDecision());
 
     root.querySelector('#universal-input')?.addEventListener('input', (event) => {
-      const value = String(event.currentTarget.value || '').slice(0, GUIDED_MAX_INPUT_CHARS + 1);
+      const rawValue = String(event.currentTarget.value || '');
+      const value = rawValue.slice(0, GUIDED_MAX_INPUT_CHARS + 1);
       if (state.view === 'entry') state.startingPoint = value;
       else state.answerDraft = value;
+      const limit = root.querySelector('#universal-limit');
+      if (limit && rawValue.length <= GUIDED_MAX_INPUT_CHARS) limit.hidden = true;
       saveSession(state);
     });
     root.querySelector('#universal-input')?.addEventListener('keydown', (event) => {
@@ -605,6 +718,7 @@ export function renderUniversalDecisionExperience(root) {
     });
     root.querySelector('#universal-adjust')?.addEventListener('click', returnToEntry);
     root.querySelector('#universal-confirm')?.addEventListener('click', handoffWhenReady);
+    root.querySelectorAll('[data-hinge-answer]').forEach((button) => button.addEventListener('click', () => applyHingeAnswer(button.dataset.hingeAnswer)));
 
     if (focusSelector) root.querySelector(focusSelector)?.focus({ preventScroll: true });
   }

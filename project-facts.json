@@ -1,10 +1,10 @@
 {
-  "applicationVersion": "0.5.6",
+  "applicationVersion": "0.5.7",
   "schemaVersions": {
     "decision": "0.2.10",
     "semanticDecision": "0.3.0"
   },
-  "testCount": 174,
+  "testCount": 184,
   "discoveredHashRouteLiteralCount": 8,
   "browserModes": [
     "desktop-light",
@@ -15,5 +15,5 @@
     "reflow-400-equivalent",
     "forced-colors"
   ],
-  "manifestEntryCount": 39
+  "manifestEntryCount": 40
 }
