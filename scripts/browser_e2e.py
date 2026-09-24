@@ -512,6 +512,7 @@ def unnamed_required_proof_flow(page: Page, base: str) -> None:
     route(page, base, "/decision", '[data-surface="fde-hero"] h1', "Frontier Decision Engine")
     activate_ready_example(page)
     wait_for_render_settle(page)
+    page.evaluate("document.querySelector('#enable-decision-posture').checked = true")
 
     page.locator('[data-decision-stage="0"] [data-stage-next]').click()
     page.locator("#decision-authority-role:focus").wait_for(state="attached")
