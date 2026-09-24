@@ -34,6 +34,7 @@ import {
 } from './lib/semantics.js';
 import { SEER_DIMENSIONS, SEER_DIMENSION_PROMPTS, SEER_PROFILE_ID, isSeerProfile } from './lib/profiles/seer.js';
 import { deriveDecisionSynthesis } from './lib/synthesis.js';
+import { buildDecisionBriefText } from './lib/decision-brief.js';
 import { boundaryForInput } from './lib/input-boundaries.js';
 import { AUTHORITY_LABELS, AUTHORITY_ROLES, authorityPermissions, authorityValidation, createAuthority } from './lib/authority.js';
 import { decisionEvidenceReadiness, evidenceDisposition, EVIDENCE_READINESS } from './lib/evidence-readiness.js';
@@ -271,11 +272,36 @@ function resultsStep() {
   const compactSemanticSummary = semanticSummary
     ? `<details class="projection soft-panel" data-projection="decision-signature"><summary><strong>Assurance posture and conditions</strong><span class="help">Optional decision-semantics detail</span></summary><div class="projection-body">${semanticSummary}</div></details>`
     : '';
+  const evidenceReadiness = decisionEvidenceReadiness(state.decision);
+  const comparisonOutcome = candidateResult.status === CANDIDATE_STATE.UNIQUE_LEADER
+    ? candidateResult.candidates[0].label
+    : candidateResult.status === CANDIDATE_STATE.TIED_LEADERS
+      ? `Tie: ${candidateResult.candidates.map((item) => item.label).join('; ')}`
+      : candidateResult.status === CANDIDATE_STATE.NO_ACCEPTABLE_STRATEGY
+        ? 'No acceptable choice under the declared critical-goal rules'
+        : 'More complete information needed';
+  const comparisonWhy = candidateResult.status === CANDIDATE_STATE.TIED_LEADERS
+    ? 'The declared ranking rules do not separate the leading choices.'
+    : candidateResult.status === CANDIDATE_STATE.NO_ACCEPTABLE_STRATEGY
+      ? 'No tested choice satisfies the declared critical-goal gate across the included futures.'
+      : candidateResult.status === CANDIDATE_STATE.INSUFFICIENT_DATA
+        ? 'Required comparison outcomes are incomplete.'
+        : (synthesis.controlling_issue || 'The comparison reflects the declared goals, thresholds, and modeled futures.');
+  const decisionValueChanges = synthesis.changes.length
+    ? synthesis.changes
+    : vulnerabilities.filter((item) => item.vulnerable).map((item) => item.label);
+  const nextProofItems = evidenceReadiness.proof_requests.map((item) => `${item.label}: ${item.evidence_need}`);
+  const nextActionText = nextProofItems.length
+    ? 'Resolve the required proof before adding confidence to the decision basis.'
+    : 'Continue to Choose next step. The comparison informs; a person decides.';
+  const resultFirstSummary = `<section class="decision-value-summary panel stack" data-surface="result-first"><span class="eyebrow">Decision value</span><div class="decision-value-grid"><div><span class="help">What held up</span><strong>${escapeHtml(comparisonOutcome)}</strong></div><div><span class="help">Why</span><strong>${escapeHtml(comparisonWhy)}</strong></div></div><div><h3>What could change it</h3>${decisionValueChanges.length ? `<ul>${decisionValueChanges.map((item) => `<li>${escapeHtml(item)}</li>`).join('')}</ul>` : '<p class="muted">No tested vulnerability or explicit change condition is currently surfaced for the comparison target.</p>'}</div><div><h3>Next Proof</h3>${nextProofItems.length ? `<ul>${nextProofItems.map((item) => `<li>${escapeHtml(item)}</li>`).join('')}</ul>` : '<p class="muted">No required proof currently blocks the formal evidence gate.</p>'}</div><div><h3>Next action</h3><p>${escapeHtml(nextActionText)}</p></div><div class="callout"><strong>You decide.</strong><p class="muted">The comparison informs. A person decides.</p></div></section>`;
   const candidateNotice = candidateResult.status === CANDIDATE_STATE.TIED_LEADERS
     ? `<div class="callout warning"><strong>Tied leading choices</strong><p class="muted">${candidateResult.candidates.map((item) => escapeHtml(item.label)).join('; ')} are indistinguishable under the declared ranking rules. FDE does not resolve the tie by array order.</p></div>`
-    : candidateResult.status === CANDIDATE_STATE.INSUFFICIENT_DATA
-      ? '<div class="callout warning"><strong>More complete information needed</strong><p class="muted">A strongest tested alignment appears after every expected outcome is complete and usable.</p></div>'
-      : '';
+    : candidateResult.status === CANDIDATE_STATE.NO_ACCEPTABLE_STRATEGY
+      ? '<div class="callout warning"><strong>No acceptable choice under the current rules</strong><p class="muted">The declared critical-goal gate does not produce an acceptable tested choice. FDE does not force a winner.</p></div>'
+      : candidateResult.status === CANDIDATE_STATE.INSUFFICIENT_DATA
+        ? '<div class="callout warning"><strong>More complete information needed</strong><p class="muted">A strongest tested alignment appears after every expected outcome is complete and usable.</p></div>'
+        : '';
   const failureLabel = (failure) => {
     const objective = objectives.get(failure.objective_id);
     const relation = objective?.direction === 'at-most' ? '>' : '<';
@@ -289,6 +315,7 @@ function resultsStep() {
   const scoreTraceability = state.decision.schema_version === '0.3.0' ? `<details class="soft-panel score-traceability"><summary><strong>Why these normalized inputs?</strong></summary><div class="stack">${state.decision.strategies.map((strategy) => `<section><h4>${escapeHtml(strategy.label)}</h4><ul>${state.decision.objectives.map((objective) => { const trace = strategy.score_rationales?.[objective.objective_id]; return `<li><strong>${escapeHtml(objective.label)} ${strategy.baseline[objective.objective_id]}</strong> · ${trace ? `${escapeHtml(trace.basis)} · ${escapeHtml(trace.rationale)}` : 'No rationale recorded.'}</li>`; }).join('')}</ul></section>`).join('')}</div></details>` : '';
   return `<div class="stack">
     <div><h2 id="decision-step-heading-4" tabindex="-1">What the comparison shows</h2><p class="muted">Meaning first. Evidence on demand.</p></div>
+    ${resultFirstSummary}
     ${candidateNotice}
     ${compactSemanticSummary}
     <details class="projection soft-panel" data-projection="brief" open><summary><strong>Brief</strong><span class="help">Conclusion and control point</span></summary><div class="projection-body"><p><strong>Leading tested choice:</strong> ${escapeHtml(synthesis.strongest_alternative?.label || 'No unique leader')}</p><p>${synthesis.posture ? `The controlling issue determines posture. ` : ''}The comparison identifies a leading tested choice; a person records the decision.</p></div></details>
@@ -300,6 +327,34 @@ function resultsStep() {
     <section class="panel stack"><div class="section-head"><div><span class="eyebrow">Conditions to watch and strengthen</span><h3>${escapeHtml(state.decision.strategies.find((item) => item.strategy_id === selectedStrategyId)?.label || '')}</h3></div><p>The tested conditions where the ${vulnerabilitySubject} may need more support to reach a good-enough line.</p></div>${vulnerabilities.map((scenario) => `<div class="vulnerability ${scenario.vulnerable ? 'is-vulnerable' : 'is-resilient'}"><div><strong>${escapeHtml(scenario.label)}</strong><p class="help">${escapeHtml(scenario.description)}</p></div><div>${scenario.invalids.length ? badge('Outcome needs attention · comparison paused', 'assumed') : scenario.failures.length ? scenario.failures.map((failure) => badge(failureLabel(failure), failure.critical ? 'interpreted' : 'assumed')).join('') : badge('All selected goals reached', 'measured')}</div></div>`).join('')}</section>
     <div class="callout"><strong>The comparison informs. A person decides.</strong><p class="muted">FDE shows ties, information that needs attention, and goals that are not yet met. You may choose differently, but you should explain why.</p></div>
   </div>`;
+}
+function workingDecisionBriefText() {
+  const decision = state.decision;
+  const synthesis = deriveDecisionSynthesis(decision, state.record);
+  const candidateResult = robustCandidateDecision(decision);
+  const leadingChoice = candidateResult.status === CANDIDATE_STATE.UNIQUE_LEADER
+    ? candidateResult.candidates[0].label
+    : candidateResult.status === CANDIDATE_STATE.TIED_LEADERS
+      ? `Tie: ${candidateResult.candidates.map((item) => item.label).join('; ')}`
+      : candidateResult.status === CANDIDATE_STATE.NO_ACCEPTABLE_STRATEGY
+        ? 'No acceptable choice under the declared critical-goal rules'
+        : 'More complete information needed';
+  const selected = decision.strategies.find((item) => item.strategy_id === decision.human_decision.selected_strategy_id);
+  const targetId = selected?.strategy_id || (candidateResult.status === CANDIDATE_STATE.UNIQUE_LEADER ? candidateResult.candidates[0].strategy_id : '');
+  const testedChanges = targetId ? vulnerabilityMap(decision, targetId).filter((item) => item.vulnerable).map((item) => item.label) : [];
+  const readiness = decisionEvidenceReadiness(decision);
+  return buildDecisionBriefText({
+    decision: decision.question,
+    owner: decision.decision_owner,
+    authority: AUTHORITY_LABELS[state.authority.role],
+    leadingChoice,
+    selectedChoice: selected?.label || 'No human selection',
+    assurancePosture: synthesis.posture || 'Inactive',
+    controllingIssue: synthesis.controlling_issue || '',
+    changes: synthesis.changes.length ? synthesis.changes : testedChanges,
+    nextProof: readiness.proof_requests.map((item) => `${item.label}: ${item.evidence_need}`),
+    nextAction: decision.human_decision.next_action || '',
+  });
 }
 function decisionBriefStep() {
   const decision = state.decision;
@@ -342,6 +397,7 @@ function decisionBriefStep() {
     <div><h2 id="decision-step-heading-5" tabindex="-1">Choose a path.</h2></div>
     <section class="decision-brief">
       <div class="brief-head"><div><span class="eyebrow">Decision question</span><h3>${escapeHtml(decision.question || 'Decision not yet framed')}</h3></div></div>
+      <div class="brief-actions actions"><button id="copy-decision-brief" type="button">Copy Decision Brief</button><button id="download-decision-brief" type="button">Download Decision Brief</button><span id="decision-brief-status" class="status-line" role="status" aria-live="polite"></span></div>
       <div class="brief-grid">
         <div><span class="help">Decision owner</span><strong>${escapeHtml(decision.decision_owner)}</strong></div>
         <div><span class="help">Time horizon</span><strong>${escapeHtml(decision.time_horizon)}</strong></div>
@@ -792,6 +848,23 @@ function bindEvents(root) {
     persistDecision();
     renderInto(root.closest('main') || root);
     requestAnimationFrame(() => document.querySelector('#decision-recorded-heading')?.focus());
+  });
+  root.querySelector('#copy-decision-brief')?.addEventListener('click', async () => {
+    syncStep();
+    const status = root.querySelector('#decision-brief-status');
+    try {
+      if (!globalThis.navigator?.clipboard?.writeText) throw new Error('clipboard unavailable');
+      await globalThis.navigator.clipboard.writeText(workingDecisionBriefText());
+      if (status) status.textContent = 'Decision Brief copied.';
+    } catch {
+      if (status) status.textContent = 'Copy is unavailable here. Use Download Decision Brief.';
+    }
+  });
+  root.querySelector('#download-decision-brief')?.addEventListener('click', () => {
+    syncStep();
+    downloadText(safeFilename(state.decision.title || 'decision', 'decision-brief.txt'), workingDecisionBriefText(), 'text/plain');
+    const status = root.querySelector('#decision-brief-status');
+    if (status) status.textContent = 'Decision Brief downloaded.';
   });
   root.querySelector('#export-decision-json')?.addEventListener('click', () => {
     if (!validDecisionRecord(state.record)) return;

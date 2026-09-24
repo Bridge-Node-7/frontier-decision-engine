@@ -1,13 +1,15 @@
-# v0.5.7
+# v0.5.8
 
-Application version is 0.5.7.
+Application version is 0.5.8.
 
 Compatible decision schema: 0.2.10. Semantic decision schema: 0.3.0. Mission Graph Decision Context Packet: 0.3.0. Decision Receipt format: 2. Pilot Proof Envelope: 1.
 
-This release reduces first-run effort while preserving the existing deterministic comparison and human-authority model. Natural-language intake now accepts broader situation and context framing, keeps advanced routes behind progressive disclosure, and can surface a conservative decision-hinge candidate when an explicit requirement, time gate, dependency, conditional, or blocker is present in the user's own words.
+This release improves decision-value presentation without changing the deterministic comparison model or decision-authority boundary. The comparison result now leads with what held up, why, what could change it, the next required proof, the next action, and the reminder that the person decides.
 
-Decision-hinge candidates preserve exact source provenance, begin as suggestions with no formal influence, and require human confirmation before they can populate bounded comparison inputs. When no grounded hinge can materially advance the model, FDE falls back to the existing choices → goals → futures clarification order.
+`Next Proof` is derived only from the existing deterministic evidence-readiness proof requests. When no required proof blocks the formal evidence gate, FDE says so rather than inventing an evidence source.
 
-Long first-run input is no longer silently clipped by a browser text limit. FDE preserves the entered text on screen and shows an explicit bounded-processing message. Regression coverage includes negation and Unicode/source-span behavior.
+A lightweight Decision Brief can now be copied or downloaded before a Decision Receipt is recorded. The brief is explicitly non-authoritative; the Decision Receipt remains the formal historical record of the accountable human decision.
 
-The Decision Case, scoring model, Decision Receipt v2, authority roles, Mission Graph context contract, evidence semantics, and browser-local architecture are unchanged. The public application still has no backend, account system, analytics, telemetry, remote AI provider, or default upload endpoint. Browser-local storage is not encrypted confidential storage. Public deployment is for public or sanitized decision material only. Human judgment remains authoritative.
+The decision schemas, Mission Graph context contract, Decision Receipt v2, evidence semantics, scoring model, browser-local architecture, and human-authority model are unchanged. Human judgment remains authoritative.
+
+Browser-local storage is not encrypted confidential storage. Public deployment is for public or sanitized decision material only.
