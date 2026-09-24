@@ -36,7 +36,7 @@ required = [
     "site/src/decision-map.js",
     "scripts/browser_e2e.py", "scripts/browser_guided_framing_e2e.py", "scripts/browser_release_regressions.py",
     "scripts/validate_version_integrity.py", "scripts/package_release.py", "scripts/verify_release_tag.py",
-    "tests/universal-response.test.js", "tests/recordability.test.js", "tests/decision-hinge.test.js", "tests/decision-brief.test.js", "tests/reassessment.test.js", "tests/receipt-history.test.js", "site/src/lib/input-boundaries.js",
+    "tests/universal-response.test.js", "tests/input-boundary-generalization.test.js", "tests/recordability.test.js", "tests/decision-hinge.test.js", "tests/decision-brief.test.js", "tests/reassessment.test.js", "tests/receipt-history.test.js", "site/src/lib/input-boundaries.js",
     "requirements-dev.txt", ".github/workflows/ci.yml", ".github/workflows/pages.yml", ".github/workflows/release.yml",
 ]
 for item in required:

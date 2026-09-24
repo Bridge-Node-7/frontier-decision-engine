@@ -527,6 +527,12 @@ def decision_flow(page: Page, base: str) -> str:
     page.locator("#human-rationale:focus").wait_for(state="attached")
     assert page.locator("#human-rationale").get_attribute("aria-invalid") == "true"
 
+    # Recorded rationale is part of the final recordability boundary.
+    page.locator("#human-rationale").fill("I keep thinking about hurting myself.")
+    page.locator("#record-decision").click()
+    expect(page.locator("#decision-validation")).to_contain_text("outside FDE’s comparison scope")
+    assert page.locator("#decision-recorded-heading").count() == 0
+
     page.locator("#human-rationale").fill(
         "The second-source pathway provides the strongest tested alignment while preserving flexibility."
     )

@@ -27,6 +27,7 @@ export function decisionBearingFields(decision) {
     addField(fields, `strategies[${index}].contingency`, strategy?.contingency);
   });
 
+  addField(fields, 'human_decision.rationale', decision?.human_decision?.rationale);
   addField(fields, 'human_decision.next_action', decision?.human_decision?.next_action);
 
   addArrayFields(fields, 'adaptive_pathway.act_now', decision?.adaptive_pathway?.act_now);
