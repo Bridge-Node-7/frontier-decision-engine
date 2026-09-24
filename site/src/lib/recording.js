@@ -2,6 +2,7 @@ import { APPLICATION_VERSION } from '../version.js';
 import { SEMANTIC_SCHEMA_VERSION } from './semantics.js';
 import { authorityPermissions, authorityValidation, createAuthority } from './authority.js';
 import { canonicalJson, isSha256Hex, sha256Hex } from './integrity.js';
+import { decisionRecordability } from './recordability.js';
 
 export const HUMAN_ATTESTATION_STATEMENT = 'I confirm that this records my decision, rationale, and next action. FDE informed the process but did not authorize this decision.';
 
@@ -104,6 +105,9 @@ export function createDecisionRecord(decision, {
   evidenceDisposition = { state: 'ready', unresolved_evidence: [], rationale: '' },
   recordedAt = new Date().toISOString(),
 } = {}) {
+  const substantive = substantiveDecision(decision);
+  const recordability = decisionRecordability(substantive);
+  if (!recordability.recordable) throw new TypeError('Decision is outside FDE recording scope.');
   const authorityResult = authorityValidation(authority, { forRecord: true });
   if (!authorityResult.valid) throw new TypeError(authorityResult.errors.join(' '));
   if (!attestation?.confirmed) throw new TypeError('Human attestation is required before recording an accountable Decision Receipt.');
@@ -125,7 +129,7 @@ export function createDecisionRecord(decision, {
   if (!snapshot.urgency) delete snapshot.urgency;
   if (!snapshot.reversibility) delete snapshot.reversibility;
   snapshot.provenance.generated_at = recordedAt;
-  const decisionSha = decisionContentSha256(decision);
+  const decisionSha = sha256Hex(canonicalJson(substantive));
   const receipt = {
     format_version: '2',
     decision_id: decision.decision_id,

@@ -10,6 +10,12 @@ New accountable Decision Receipts use SHA-256 over canonical JSON.
 - `receipt_sha256` binds the complete receipt envelope, including authority, evidence disposition, and human attestation, while excluding only the `receipt_sha256` field itself.
 - Legacy v1 FNV-1a records remain readable and verifiable as change-detection records. They are never relabeled as cryptographic receipts.
 
+## Recordability
+
+Before Receipt v2 creation, FDE evaluates scope policy over the operative decision/action surfaces of the substantive Decision Case. The policy check occurs inside receipt construction so every receipt-construction caller applies the same recordability rule regardless of UI route. The same substantive state is then canonicalized and hashed.
+
+Imported receipts are first checked for receipt integrity and decision compatibility, then checked for recordability before their decision state can become active browser work.
+
 ## Human authority
 
 Only an accountable owner or delegated decider can record a v2 Decision Receipt. Advisors may frame, compare, and prepare a brief for the owner, but cannot create an accountable-owner receipt.
@@ -27,3 +33,5 @@ A receipt records whether required evidence was ready or whether the accountable
 ## Historical integrity
 
 Recorded decisions are historical artifacts. New evidence or changed reasoning creates a new recording or reassessment; it does not rewrite the prior receipt.
+
+Prior valid Receipt v2 records may be kept in the bounded **Local Decision Receipt Archive**. Each receipt remains independently hash-verifiable. The archive does not claim cryptographic sequence continuity, completeness, or proof that records were never deleted or reordered.

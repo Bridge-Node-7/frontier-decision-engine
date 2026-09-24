@@ -44,7 +44,7 @@ The default runtime does not use a remote AI provider, retrieve external facts, 
 
 ## Browser storage
 
-The first-run experience uses bounded tab-scoped session storage for accidental-refresh recovery. Decision Lab uses bounded browser autosave for structured work plus a separate bounded store for prior valid Decision Receipt v2 records created during reassessment. Current-draft reset does not erase that history. Browser-local storage is not encrypted confidential storage.
+The first-run experience uses bounded tab-scoped session storage for accidental-refresh recovery. Decision Lab uses bounded browser autosave for structured work plus a separate bounded **Local Decision Receipt Archive** for prior valid Decision Receipt v2 records created during reassessment. Current-draft reset does not erase that archive. The archive does not claim cryptographic continuity, completeness, or protection from browser/profile deletion. Browser-local storage is not encrypted confidential storage.
 
 ## Privacy and security
 
@@ -59,6 +59,12 @@ FDE distinguishes the accountable owner, a delegated decider, an advisor, and un
 
 Decision evidence can be ready or require proof before additional confidence is warranted. Required criteria with partial, unknown, contested, stale, invalid, or otherwise not-assessable evidence surface a proof-first gate. An accountable owner may explicitly proceed under residual uncertainty only when that unresolved evidence and the reason for proceeding are preserved in the receipt.
 
+## Recordability boundary
+
+The scope policy is enforced as a receipt-construction invariant over the same substantive Decision Case that is canonicalized and hashed. The UI performs the same check early for clear feedback, but `createDecisionRecord()` remains the fail-closed boundary for all callers. Imported decisions and receipts are checked after structural/integrity validation and before active state or browser persistence.
+
+The hard gate covers decision- and action-bearing fields rather than recursively treating every evidence or explanatory string as an operative decision. This preserves the distinction between describing sensitive subject matter and asking FDE to compare or record an out-of-scope personal action.
+
 ## Decision Receipts
 
 Decision Receipt v2 is separate from the Decision Case. It binds the substantive decision state, decision authority, evidence disposition, and human attestation with SHA-256 over canonical JSON. Legacy v1 FNV-1a records remain readable as historical change-detection records.
@@ -67,7 +73,7 @@ Recording a human decision is not the same as organizational approval, legal aut
 
 ## Lifecycle and historical truth
 
-The application-facing lifecycle is Draft -> Ready for owner review -> Human decision recorded -> Reassessment -> new human decision when warranted -> Superseded/Closed. Recorded historical decisions are not rewritten after outcomes become known. When a recorded decision changes, FDE deterministically identifies changed field families, preserves the prior valid Receipt v2 in bounded browser-local history, and requires the accountable human to explicitly record any replacement Receipt.
+The application-facing lifecycle is Draft -> Ready for owner review -> Human decision recorded -> Reassessment -> new human decision when warranted -> Superseded/Closed. Recorded historical decisions are not rewritten after outcomes become known. When a recorded decision changes, FDE deterministically identifies changed field families, preserves the prior valid Receipt v2 in the bounded Local Decision Receipt Archive, and requires the accountable human to explicitly record any replacement Receipt.
 
 ## Deployment handling boundary
 

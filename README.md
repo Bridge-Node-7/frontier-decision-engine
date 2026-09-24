@@ -34,7 +34,7 @@ Accepted context stays in JavaScript page memory only and is discarded on refres
 
 FDE is the human-governed decision layer within Bridge Node 7's Frontier Mission Assurance architecture. Materials-to-Mission and other assurance profiles can contribute governed evidence and dependency context; Governed Context carries bounded preparation context into FDE; the accountable human records the consequential decision and reassessment. After confirmation, FDE asks only for the additional explicit inputs required for a deterministic comparison. The formal Decision Lab preserves the existing ranking semantics, published schemas, saved-work protections, and truthful alternate outcomes including ties, no acceptable option, and insufficient information.
 
-The comparison informs. A person decides. The result surface leads with what held up, why, what could change it, the next required proof, and the next action before exposing detailed calculations. A lightweight Decision Brief can be copied or downloaded before recording; when the working decision later changes, FDE shows a deterministic reassessment delta and preserves prior valid Receipt v2 records in bounded browser-local history before a new Receipt is recorded.
+The comparison informs. A person decides. The result surface leads with what held up, why, what could change it, the next required proof, and the next action before exposing detailed calculations. A lightweight Decision Brief can be copied or downloaded before recording; when the working decision later changes, FDE shows a deterministic reassessment delta and preserves prior valid Receipt v2 records in a bounded **Local Decision Receipt Archive** before a new Receipt is recorded. The archive preserves independently verifiable local receipts; it is not a cryptographic continuity chain.
 
 ## Assurance on demand
 
@@ -50,7 +50,7 @@ The repository includes a synthetic critical-material source-qualification case 
 
 The application is static and browser-local. It has no backend, account system, analytics, telemetry, cookies, remote AI provider, or default upload endpoint. Session recovery and browser autosave are convenience features for ordinary FDE drafts, not encrypted confidential storage. Governed Mission Graph context uses a separate memory-only path.
 
-FDE provides decision support. It does not approve, authorize, certify, qualify, consent, authenticate unsigned evidence, or make an investment or other consequential decision. Human final decision authority is preserved.
+FDE provides decision support. It does not approve, authorize, certify, qualify, consent, authenticate unsigned evidence, or make an investment or other consequential decision. Human final decision authority is preserved. Scope policy is re-evaluated before accountable recording and before imported decisions become active work.
 
 ## Verify
 

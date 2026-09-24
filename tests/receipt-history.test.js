@@ -84,7 +84,7 @@ test('history never evicts prior receipts when the item bound is reached', () =>
   }
   const overflow = receipt('2026-09-01T12:00:00.000Z');
   const result = archiveDecisionRecord(local, overflow);
-  assert.equal(result.ok, false); assert.match(result.status, /history is full/i);
+  assert.equal(result.ok, false); assert.match(result.status, /Local Decision Receipt Archive is full/i);
   const loaded = loadDecisionRecordHistory(local);
   assert.equal(loaded.records.length, MAX_DECISION_RECORD_HISTORY_ITEMS);
   assert.equal(loaded.records[0].receipt_sha256, records[0].receipt_sha256);

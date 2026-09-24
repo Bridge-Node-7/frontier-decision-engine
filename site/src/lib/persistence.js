@@ -45,19 +45,19 @@ function inspectStructure(root) {
 }
 
 function readDecisionRecordHistory(storage) {
-  if (!storage) return { ok: false, records: [], status: 'Decision history is unavailable in this browser.' };
+  if (!storage) return { ok: false, records: [], status: 'Local Decision Receipt Archive is unavailable in this browser.' };
   try {
     const raw = storage.getItem(DECISION_RECORD_HISTORY_STORAGE_KEY);
-    if (!raw) return { ok: true, records: [], status: 'No prior Decision Receipts are preserved in this browser.' };
-    if (byteLength(raw) > MAX_DECISION_RECORD_HISTORY_BYTES) return { ok: false, records: [], status: 'Local Decision Receipt history exceeds its verified storage bound.' };
+    if (!raw) return { ok: true, records: [], status: 'No prior Decision Receipts are preserved in the Local Decision Receipt Archive.' };
+    if (byteLength(raw) > MAX_DECISION_RECORD_HISTORY_BYTES) return { ok: false, records: [], status: 'Local Decision Receipt Archive exceeds its verified storage bound.' };
     const parsed = parseJsonSafely(raw);
-    if (!parsed || parsed.format_version !== '1' || !Array.isArray(parsed.records)) return { ok: false, records: [], status: 'Local Decision Receipt history could not be verified.' };
-    if (parsed.records.length > MAX_DECISION_RECORD_HISTORY_ITEMS) return { ok: false, records: [], status: 'Local Decision Receipt history exceeds its verified item bound.' };
-    if (!parsed.records.every((record) => record?.format_version === '2' && validDecisionRecord(record))) return { ok: false, records: [], status: 'Local Decision Receipt history contains an invalid record.' };
+    if (!parsed || parsed.format_version !== '1' || !Array.isArray(parsed.records)) return { ok: false, records: [], status: 'Local Decision Receipt Archive could not be verified.' };
+    if (parsed.records.length > MAX_DECISION_RECORD_HISTORY_ITEMS) return { ok: false, records: [], status: 'Local Decision Receipt Archive exceeds its verified item bound.' };
+    if (!parsed.records.every((record) => record?.format_version === '2' && validDecisionRecord(record))) return { ok: false, records: [], status: 'Local Decision Receipt Archive contains an invalid record.' };
     const records = [...parsed.records].sort((a, b) => String(a.recorded_at).localeCompare(String(b.recorded_at)));
-    return { ok: true, records, status: `${records.length} prior Decision Receipt${records.length === 1 ? '' : 's'} preserved in this browser.` };
+    return { ok: true, records, status: `${records.length} prior Decision Receipt${records.length === 1 ? '' : 's'} preserved in the Local Decision Receipt Archive.` };
   } catch {
-    return { ok: false, records: [], status: 'Local Decision Receipt history could not be verified.' };
+    return { ok: false, records: [], status: 'Local Decision Receipt Archive could not be verified.' };
   }
 }
 
@@ -69,20 +69,20 @@ export function loadDecisionRecordHistory(storage, decisionId = '') {
 }
 
 export function archiveDecisionRecord(storage, record) {
-  if (!storage) return { ok: false, archived: false, status: 'Decision history is unavailable in this browser.' };
-  if (!record || record.format_version !== '2' || !validDecisionRecord(record)) return { ok: false, archived: false, status: 'Only a valid Decision Receipt v2 can be added to local decision history.' };
+  if (!storage) return { ok: false, archived: false, status: 'Local Decision Receipt Archive is unavailable in this browser.' };
+  if (!record || record.format_version !== '2' || !validDecisionRecord(record)) return { ok: false, archived: false, status: 'Only a valid Decision Receipt v2 can be added to the Local Decision Receipt Archive.' };
   const current = readDecisionRecordHistory(storage);
   if (!current.ok) return { ok: false, archived: false, status: current.status };
   if (current.records.some((item) => item.receipt_sha256 === record.receipt_sha256)) return { ok: true, archived: false, status: 'This prior Decision Receipt is already preserved in this browser.' };
-  if (current.records.length >= MAX_DECISION_RECORD_HISTORY_ITEMS) return { ok: false, archived: false, status: 'Local Decision Receipt history is full. No new decision was recorded.' };
+  if (current.records.length >= MAX_DECISION_RECORD_HISTORY_ITEMS) return { ok: false, archived: false, status: 'Local Decision Receipt Archive is full. No new decision was recorded.' };
   const records = [...current.records, structuredClone(record)].sort((a, b) => String(a.recorded_at).localeCompare(String(b.recorded_at)));
   const serialized = JSON.stringify({ format_version: '1', records });
-  if (byteLength(serialized) > MAX_DECISION_RECORD_HISTORY_BYTES || !inspectStructure({ format_version: '1', records }).ok) return { ok: false, archived: false, status: 'Local Decision Receipt history reached its safe storage bound. No new decision was recorded.' };
+  if (byteLength(serialized) > MAX_DECISION_RECORD_HISTORY_BYTES || !inspectStructure({ format_version: '1', records }).ok) return { ok: false, archived: false, status: 'Local Decision Receipt Archive reached its safe storage bound. No new decision was recorded.' };
   try {
     storage.setItem(DECISION_RECORD_HISTORY_STORAGE_KEY, serialized);
-    return { ok: true, archived: true, status: 'Prior Decision Receipt preserved in this browser.' };
+    return { ok: true, archived: true, status: 'Prior Decision Receipt preserved in the Local Decision Receipt Archive.' };
   } catch {
-    return { ok: false, archived: false, status: 'The prior Decision Receipt could not be preserved in browser storage. No new decision was recorded.' };
+    return { ok: false, archived: false, status: 'The prior Decision Receipt could not be preserved in the Local Decision Receipt Archive. No new decision was recorded.' };
   }
 }
 export function getBrowserStorage(scope = globalThis) {
@@ -202,6 +202,16 @@ export async function parseDecisionFile(file, validateDecision, validateDraftDec
       try {
         const candidateRecord = parseJsonSafely(raw);
         const structure = inspectStructure(candidateRecord);
+        const looksLikeReceiptV2 = candidateRecord?.format_version === '2'
+          && ('receipt_sha256' in candidateRecord || 'decision_content_sha256' in candidateRecord || 'snapshot' in candidateRecord);
+        if (looksLikeReceiptV2 && (!structure.ok || !validDecisionRecord(candidateRecord))) {
+          return {
+            ok: false,
+            decision: null,
+            kind: null,
+            errors: ['Decision Receipt integrity verification failed. The receipt was not opened.'],
+          };
+        }
         if (structure.ok && validDecisionRecord(candidateRecord)) {
           const validated = validateDecision(candidateRecord.snapshot);
           if (validated?.valid) {
@@ -214,6 +224,12 @@ export async function parseDecisionFile(file, validateDecision, validateDraftDec
               errors: [],
             };
           }
+          return {
+            ok: false,
+            decision: null,
+            kind: null,
+            errors: ['The verified Decision Receipt contains a decision that is not valid for this FDE version.'],
+          };
         }
       } catch { /* continue with portable decision parsing */ }
     }

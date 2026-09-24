@@ -31,6 +31,7 @@ export function buildDecisionBriefText({
   changes = [],
   nextProof = [],
   evidenceReadiness = 'ready',
+  scoreProvenance = [],
   nextAction = '',
 } = {}) {
   const proof = nextProofPresentation({ readinessState: evidenceReadiness, nextProof });
@@ -52,6 +53,10 @@ export function buildDecisionBriefText({
     '',
     'Next Proof:',
     ...linesFor(proof.items, proof.emptyMessage),
+    '',
+    'Score provenance:',
+    ...linesFor(scoreProvenance, 'No per-score provenance is documented in this working brief.'),
+    '- Normalized values are not probabilities or native measurements; use only the precision the evidence supports.',
     '',
     `Next action: ${clean(nextAction) || 'No human next action recorded yet.'}`,
     '',

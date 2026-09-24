@@ -4,8 +4,10 @@ function normalize(value) {
 
 const selfDirectedActionPattern = /\b(?:kill|harm|hurt|injure|cut)\s+(?:myself|ourselves)\b/i;
 const firstPersonSuicidalStatePattern = /\b(?:i(?:['’]?m| am| feel| felt| have been)|we(?:['’]?re| are| feel| felt| have been))\s+(?:very\s+)?(?:suicidal|thinking (?:about|of) suicide|considering suicide|thinking (?:about|of) self[\s-]?harm|considering self[\s-]?harm)\b/i;
-const firstPersonDeathWishPattern = /\b(?:i|we)\s+(?:want|wish|plan|intend|might|may|could|should|need|hope)\s+(?:to\s+)?(?:die|kill\s+myself|harm\s+myself|hurt\s+myself|cut\s+myself|end\s+(?:my|our)\s+(?:life|lives)|take\s+(?:my|our)\s+(?:life|lives)|end\s+it\s+all)\b/i;
-const firstPersonSelfHarmVerbPattern = /\b(?:should|do|might|may|could|would)\s+(?:i|we)\s+(?:self[\s-]?harm|cut\s+myself|hurt\s+myself|harm\s+myself|kill\s+myself|end\s+(?:my|our)\s+(?:life|lives)|take\s+(?:my|our)\s+(?:life|lives)|end\s+it\s+all)\b/i;
+const firstPersonDeathWishPattern = /\b(?:i|we)\s+(?:want|wish|plan|intend|might|may|could|should|need|hope)\s+(?:to\s+)?(?:die|kill\s+myself|harm\s+myself|hurt\s+myself|cut\s+myself|end\s+(?:my|our)\s+(?:life|lives)|take\s+(?:my|our)\s+(?:life|lives))\b/i;
+const firstPersonSelfHarmVerbPattern = /\b(?:should|do|might|may|could|would)\s+(?:i|we)\s+(?:self[\s-]?harm|cut\s+myself|hurt\s+myself|harm\s+myself|kill\s+myself|end\s+(?:my|our)\s+(?:life|lives)|take\s+(?:my|our)\s+(?:life|lives))\b/i;
+const firstPersonEndItAllPattern = /\b(?:(?:i|we)\s+(?:(?:really|just|simply|finally)\s+)?(?:want|wish|plan|intend|might|may|could|should|need|hope)\s+(?:to\s+)?|(?:should|do|might|may|could|would)\s+(?:i|we)\s+(?:(?:really|just|simply|finally)\s+)?|(?:i|we)\s+(?:think|feel)\s+(?:i|we)\s+(?:should|might|could)\s+(?:(?:really|just|simply|finally)\s+)?)end\s+it\s+all\b/i;
+const organizationalEndItAllContinuationPattern = /\bend\s+it\s+all\b[^.!?\n]{0,48}\b(?:with|for|on|at|in)\s+(?:(?:this|the|our|a|an)\s+)?(?:supplier|vendor|contract|project|program|initiative|agreement|relationship|process|operation|mission|product|service|deal|partnership|effort|workstream|system|platform|deployment|qualification|engagement)\b/i;
 const firstPersonNoLifePattern = /\b(?:i|we)\s+(?:don['’]?t|do not)\s+want\s+to\s+(?:live|be\s+alive)\b|\bi\s+(?:can['’]?t|cannot)\s+(?:go\s+on|keep\s+living)\b/i;
 const standaloneCrisisPhrasePattern = /^(?:please\s+)?(?:end\s+it\s+all|nothing\s+to\s+live\s+for)[.!?]*$/i;
 const treatmentActionPattern = /\b(?:stop|start|skip|miss|discontinue|quit|change|adjust|increase|decrease|reduce|raise|lower|halve|double|ration|taper|pause|delay)\b/i;
@@ -38,7 +40,9 @@ export function boundaryForInput(value) {
   const text = normalize(value);
   if (!text) return null;
 
-  if (selfDirectedActionPattern.test(text) || firstPersonSuicidalStatePattern.test(text) || firstPersonDeathWishPattern.test(text) || firstPersonSelfHarmVerbPattern.test(text) || firstPersonNoLifePattern.test(text) || standaloneCrisisPhrasePattern.test(text)) {
+  const ambiguousEndItAll = firstPersonEndItAllPattern.test(text) && !organizationalEndItAllContinuationPattern.test(text);
+
+  if (selfDirectedActionPattern.test(text) || firstPersonSuicidalStatePattern.test(text) || firstPersonDeathWishPattern.test(text) || firstPersonSelfHarmVerbPattern.test(text) || firstPersonNoLifePattern.test(text) || standaloneCrisisPhrasePattern.test(text) || ambiguousEndItAll) {
     return {
       kind: 'out_of_scope_self_harm',
       title: 'This decision is outside FDE’s comparison scope.',
