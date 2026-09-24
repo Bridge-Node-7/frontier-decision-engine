@@ -1,4 +1,10 @@
 const NEGATION_PATTERN = /\b(?:not|never|no longer|isn['’]t|is not|aren['’]t|are not|wasn['’]t|was not|weren['’]t|were not|not required|not mandatory)\b/iu;
+const PROHIBITIVE_HARD_REQUIREMENT_PATTERN = /\bmust\s+(?:not|never)\b/iu;
+
+function hasDisqualifyingNegation(text, basisType) {
+  if (!NEGATION_PATTERN.test(text)) return false;
+  return !(basisType === 'hard_requirement' && PROHIBITIVE_HARD_REQUIREMENT_PATTERN.test(text));
+}
 
 const RULES = [
   {
@@ -29,7 +35,7 @@ const RULES = [
 function candidateFromMatch(source, match, basisType) {
   const raw = match[0];
   const text = raw.trim();
-  if (!text || NEGATION_PATTERN.test(text)) return null;
+  if (!text || hasDisqualifyingNegation(text, basisType)) return null;
   const leading = raw.indexOf(text);
   const start = (match.index ?? 0) + Math.max(0, leading);
   const end = start + text.length;
