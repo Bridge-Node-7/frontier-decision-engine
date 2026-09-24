@@ -34,7 +34,7 @@ import {
 } from './lib/semantics.js';
 import { SEER_DIMENSIONS, SEER_DIMENSION_PROMPTS, SEER_PROFILE_ID, isSeerProfile } from './lib/profiles/seer.js';
 import { deriveDecisionSynthesis } from './lib/synthesis.js';
-import { buildDecisionBriefText } from './lib/decision-brief.js';
+import { buildDecisionBriefText, nextProofPresentation } from './lib/decision-brief.js';
 import { decisionDelta } from './lib/reassessment.js';
 import { boundaryForInput } from './lib/input-boundaries.js';
 import { AUTHORITY_LABELS, AUTHORITY_ROLES, authorityPermissions, authorityValidation, createAuthority } from './lib/authority.js';
@@ -298,10 +298,8 @@ function resultsStep() {
     ? synthesis.changes
     : vulnerabilities.filter((item) => item.vulnerable).map((item) => item.label);
   const nextProofItems = evidenceReadiness.proof_requests.map((item) => `${item.label}: ${item.evidence_need}`);
-  const nextActionText = nextProofItems.length
-    ? 'Resolve the required proof before adding confidence to the decision basis.'
-    : 'Continue to Choose next step. The comparison informs; a person decides.';
-  const resultFirstSummary = `<section class="decision-value-summary panel stack" data-surface="result-first"><span class="eyebrow">Decision value</span><div class="decision-value-grid"><div><span class="help">What held up</span><strong>${escapeHtml(comparisonOutcome)}</strong></div><div><span class="help">Why</span><strong>${escapeHtml(comparisonWhy)}</strong></div></div><div><h3>What could change it</h3>${decisionValueChanges.length ? `<ul>${decisionValueChanges.map((item) => `<li>${escapeHtml(item)}</li>`).join('')}</ul>` : '<p class="muted">No tested vulnerability or explicit change condition is currently surfaced for the comparison target.</p>'}</div><div><h3>Next Proof</h3>${nextProofItems.length ? `<ul>${nextProofItems.map((item) => `<li>${escapeHtml(item)}</li>`).join('')}</ul>` : '<p class="muted">No required proof currently blocks the formal evidence gate.</p>'}</div><div><h3>Next action</h3><p>${escapeHtml(nextActionText)}</p></div><div class="callout"><strong>You decide.</strong><p class="muted">The comparison informs. A person decides.</p></div></section>`;
+  const proofPresentation = nextProofPresentation({ readinessState: evidenceReadiness.state, nextProof: nextProofItems });
+  const resultFirstSummary = `<section class="decision-value-summary panel stack" data-surface="result-first"><span class="eyebrow">Decision value</span><div class="decision-value-grid"><div><span class="help">What held up</span><strong>${escapeHtml(comparisonOutcome)}</strong></div><div><span class="help">Why</span><strong>${escapeHtml(comparisonWhy)}</strong></div></div><div><h3>What could change it</h3>${decisionValueChanges.length ? `<ul>${decisionValueChanges.map((item) => `<li>${escapeHtml(item)}</li>`).join('')}</ul>` : '<p class="muted">No tested vulnerability or explicit change condition is currently surfaced for the comparison target.</p>'}</div><div><h3>Next Proof</h3>${proofPresentation.items.length ? `<ul>${proofPresentation.items.map((item) => `<li>${escapeHtml(item)}</li>`).join('')}</ul>` : `<p class="muted">${escapeHtml(proofPresentation.emptyMessage)}</p>`}</div><div><h3>Next action</h3><p>${escapeHtml(proofPresentation.nextAction)}</p></div><div class="callout"><strong>You decide.</strong><p class="muted">The comparison informs. A person decides.</p></div></section>`;
   const candidateNotice = candidateResult.status === CANDIDATE_STATE.TIED_LEADERS
     ? `<div class="callout warning"><strong>Tied leading choices</strong><p class="muted">${candidateResult.candidates.map((item) => escapeHtml(item.label)).join('; ')} are indistinguishable under the declared ranking rules. FDE does not resolve the tie by array order.</p></div>`
     : candidateResult.status === CANDIDATE_STATE.NO_ACCEPTABLE_STRATEGY
@@ -360,6 +358,7 @@ function workingDecisionBriefText() {
     controllingIssue: synthesis.controlling_issue || '',
     changes: synthesis.changes.length ? synthesis.changes : testedChanges,
     nextProof: readiness.proof_requests.map((item) => `${item.label}: ${item.evidence_need}`),
+    evidenceReadiness: readiness.state,
     nextAction: decision.human_decision.next_action || '',
   });
 }
