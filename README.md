@@ -36,6 +36,8 @@ FDE is the human-governed decision layer within Bridge Node 7's Frontier Mission
 
 The comparison informs. A person decides.
 
+The result surface leads with what held up, why, what could change it, the next required proof, and the next action before exposing detailed calculations. A lightweight Decision Brief can be copied or downloaded before recording; the cryptographic Decision Receipt remains the authoritative recorded-decision artifact.
+
 ## Assurance on demand
 
 Technical users can inspect the underlying inputs, assumptions, evidence state, uncertainty, thresholds, scenario effects, calculations, provenance, and decision record without forcing that depth into the first-run experience. When sustainability is relevant, an optional **SEER reminder** prompts consideration of People, Planet, Profits, and Product as independent criteria. It supplements the decision rather than changing the comparison, and it preserves the same evidence, posture, monitoring, reassessment, and human-authority model.
