@@ -12,7 +12,7 @@ New accountable Decision Receipts use SHA-256 over canonical JSON.
 
 ## Recordability
 
-Before Receipt v2 creation, FDE evaluates scope policy over the operative decision/action surfaces of the substantive Decision Case. The policy check occurs inside receipt construction so every receipt-construction caller applies the same recordability rule regardless of UI route. The same substantive state is then canonicalized and hashed.
+Before Receipt v2 creation, FDE evaluates scope policy over the operative decision/action surfaces of the substantive Decision Case, including the decision question, choice definitions and plans, the recorded human rationale, and the next action. The policy check occurs inside receipt construction so every receipt-construction caller applies the same recordability rule regardless of UI route. The same substantive state is then canonicalized and hashed.
 
 Imported receipts are first checked for receipt integrity and decision compatibility, then checked for recordability before their decision state can become active browser work.
 
