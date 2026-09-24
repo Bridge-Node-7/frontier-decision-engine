@@ -50,7 +50,7 @@ The repository includes a synthetic critical-material source-qualification case 
 
 The application is static and browser-local. It has no backend, account system, analytics, telemetry, cookies, remote AI provider, or default upload endpoint. Session recovery and browser autosave are convenience features for ordinary FDE drafts, not encrypted confidential storage. Governed Mission Graph context uses a separate memory-only path.
 
-FDE provides decision support. It does not approve, authorize, certify, qualify, consent, authenticate unsigned evidence, or make an investment or other consequential decision. Human final decision authority is preserved. Scope policy is re-evaluated before accountable recording and before imported decisions become active work.
+FDE provides decision support. It does not approve, authorize, certify, qualify, consent, authenticate unsigned evidence, or make an investment or other consequential decision. Human final decision authority is preserved. Scope policy is re-evaluated before accountable recording and before imported decisions become active work. First-person personal-life decisions are redirected by a neutral scope boundary unless they are clearly framed as technical, organizational, mission, or strategic work; that redirect is not a clinical judgment.
 
 ## Verify
 
