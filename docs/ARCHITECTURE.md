@@ -44,7 +44,7 @@ The default runtime does not use a remote AI provider, retrieve external facts, 
 
 ## Browser storage
 
-The first-run experience uses bounded tab-scoped session storage for accidental-refresh recovery. Decision Lab uses bounded browser autosave for structured work. Browser storage is a convenience, not encrypted confidential storage.
+The first-run experience uses bounded tab-scoped session storage for accidental-refresh recovery. Decision Lab uses bounded browser autosave for structured work plus a separate bounded store for prior valid Decision Receipt v2 records created during reassessment. Current-draft reset does not erase that history. Browser-local storage is not encrypted confidential storage.
 
 ## Privacy and security
 
@@ -67,7 +67,7 @@ Recording a human decision is not the same as organizational approval, legal aut
 
 ## Lifecycle and historical truth
 
-The application-facing lifecycle is Draft -> Ready for owner review -> Human decision recorded -> Superseded/Closed. Recorded historical decisions are not rewritten after outcomes become known; new evidence produces reassessment and, when needed, a new receipt.
+The application-facing lifecycle is Draft -> Ready for owner review -> Human decision recorded -> Reassessment -> new human decision when warranted -> Superseded/Closed. Recorded historical decisions are not rewritten after outcomes become known. When a recorded decision changes, FDE deterministically identifies changed field families, preserves the prior valid Receipt v2 in bounded browser-local history, and requires the accountable human to explicitly record any replacement Receipt.
 
 ## Deployment handling boundary
 

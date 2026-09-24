@@ -20,7 +20,7 @@ import {
 import { downloadText, safeFilename } from './lib/case.js';
 import { readOptionalNumber, readTrimmedText } from './lib/input.js';
 import { APPLICATION_VERSION } from './version.js';
-import { canDownloadDraftBackup, clearSavedDecision, createDraftBackup, getBrowserStorage, loadSavedDecision, parseDecisionFile, saveDecision } from './lib/persistence.js';
+import { archiveDecisionRecord, canDownloadDraftBackup, clearSavedDecision, createDraftBackup, getBrowserStorage, loadDecisionRecordHistory, loadSavedDecision, parseDecisionFile, saveDecision } from './lib/persistence.js';
 import {
   activateDecisionSemantics,
   decisionPosture,
@@ -35,6 +35,7 @@ import {
 import { SEER_DIMENSIONS, SEER_DIMENSION_PROMPTS, SEER_PROFILE_ID, isSeerProfile } from './lib/profiles/seer.js';
 import { deriveDecisionSynthesis } from './lib/synthesis.js';
 import { buildDecisionBriefText } from './lib/decision-brief.js';
+import { decisionDelta } from './lib/reassessment.js';
 import { boundaryForInput } from './lib/input-boundaries.js';
 import { AUTHORITY_LABELS, AUTHORITY_ROLES, authorityPermissions, authorityValidation, createAuthority } from './lib/authority.js';
 import { decisionEvidenceReadiness, evidenceDisposition, EVIDENCE_READINESS } from './lib/evidence-readiness.js';
@@ -44,6 +45,7 @@ const steps = ['Decision', 'What matters', 'Choices', 'What may change', 'What t
 
 const browserStorage = getBrowserStorage(globalThis);
 const restored = loadSavedDecision(browserStorage, validateDraftDecisionCase);
+const restoredHistory = loadDecisionRecordHistory(browserStorage, restored.decision?.decision_id || '');
 const state = {
   step: 0,
   decision: createBlankDecisionCase(),
@@ -53,6 +55,8 @@ const state = {
   pendingAuthority: restored.authority,
   authority: createAuthority(restored.authority || { owner: restored.decision?.decision_owner || '' }),
   record: null,
+  history: restoredHistory.records,
+  historyStatus: restoredHistory.status,
   entryResolved: !restored.decision,
   maxReached: 0,
   expandAll: false,
@@ -68,6 +72,9 @@ function startDecision(decision, source, status, record = null, authority = null
   state.pendingAuthority = null;
   state.authority = createAuthority(authority || record?.authority || { owner: decision.decision_owner || '' });
   state.record = validDecisionRecord(record) && record.decision_id === decision.decision_id ? record : null;
+  const history = loadDecisionRecordHistory(browserStorage, decision.decision_id);
+  state.history = history.records;
+  state.historyStatus = history.status;
   state.entryResolved = true;
   state.saveStatus = status;
   state.step = 0;
@@ -383,6 +390,17 @@ function decisionBriefStep() {
   const permissions = authorityPermissions(state.authority);
   const evidenceReadiness = decisionEvidenceReadiness(decision);
   const proofRequestItems = evidenceReadiness.proof_requests.map((item) => `<li><strong>${escapeHtml(item.label)}:</strong> ${escapeHtml(item.evidence_need)}</li>`).join('');
+  const changedSinceRecord = hasValidRecord && !recordMatchesDecision(decision, state.record);
+  const reassessmentChanges = changedSinceRecord ? decisionDelta(state.record.snapshot, decision) : [];
+  const reconsiderWhen = String(semantics.reassessment || decision.adaptive_pathway?.reassessment || '').trim() || 'No reassessment condition has been recorded yet.';
+  const reassessmentPanel = changedSinceRecord
+    ? `<section class="callout warning reassessment-panel" data-surface="reassessment"><span class="eyebrow">Reassessment</span><h3>What changed?</h3>${reassessmentChanges.length ? `<ul>${reassessmentChanges.map((item) => `<li>${escapeHtml(item.label)}</li>`).join('')}</ul>` : '<p>The working decision differs from the recorded Receipt. Inspect the working decision before recording again.</p>'}<p><strong>Reconsider when…</strong> ${escapeHtml(reconsiderWhen)}</p><p class="help">These are deterministic differences between recorded and current state. FDE does not infer why the change occurred.</p></section>`
+    : hasValidRecord
+      ? `<section class="callout reassessment-panel" data-surface="reassessment"><span class="eyebrow">Reassessment</span><h3>Reconsider when…</h3><p>${escapeHtml(reconsiderWhen)}</p><p class="help">The recorded Receipt remains unchanged until an accountable human records a new decision.</p></section>`
+      : '';
+  const historyPanel = state.history.length
+    ? `<details class="soft-panel receipt-history" data-surface="receipt-history"><summary><strong>Prior Decision Receipts (${state.history.length})</strong><span class="help">Immutable prior records preserved in this browser</span></summary><div class="stack decision-section-body">${state.history.map((record, index) => `<div class="history-row"><div><strong>${escapeHtml(record.recorded_at)}</strong><span class="help">${escapeHtml(record.receipt_sha256.slice(0, 16))}…</span></div><button type="button" data-history-download="${index}">Download prior Receipt</button></div>`).join('')}</div></details>`
+    : '';
   const evidenceGate = evidenceReadiness.state === EVIDENCE_READINESS.PROOF_REQUIRED
     ? `<section class="callout warning" data-surface="evidence-gate"><strong>Decision not ready for additional confidence.</strong><p>Required evidence remains unresolved. Gather the evidence first, or an accountable decision-maker may explicitly proceed under residual uncertainty.</p>${proofRequestItems ? `<ul>${proofRequestItems}</ul>` : '<p class="muted">Name the evidence needed for each required unresolved criterion before recording.</p>'}<label class="field"><span><input id="proceed-residual-uncertainty" type="checkbox"> Proceed under explicit residual uncertainty</span></label>${textarea('Why proceed despite the unresolved evidence?', 'residual-uncertainty-rationale', '', 'Required only when proceeding under residual uncertainty.')}</section>`
     : '<section class="callout" data-surface="evidence-gate"><strong>Evidence gate: ready.</strong><p>No required criterion is currently blocked by unresolved evidence in the formal decision semantics.</p></section>';
@@ -409,6 +427,8 @@ function decisionBriefStep() {
       <label class="field" for="human-strategy">Choice<span class="requirement">* ${REQUIREMENT_CLASS.RECORD}</span><select id="human-strategy" required aria-describedby="human-strategy-help"><option value="" ${selected ? '' : 'selected'}>Choose only when a person decides</option>${decision.strategies.map((strategy, index) => `<option value="${strategy.strategy_id}" ${strategy.strategy_id === selected?.strategy_id ? 'selected' : ''}>${escapeHtml(strategy.label || `Choice ${index + 1}`)}</option>`).join('')}</select><span id="human-strategy-help" class="help">Selecting is not recording. Record only after reviewing the human choice.</span></label>
       ${textarea('Reason', 'human-rationale', decision.human_decision.rationale, 'State the trade-off and important uncertainty.', REQUIREMENT_CLASS.RECORD)}
       ${textarea('Next action', 'human-next-action', decision.human_decision.next_action, 'Name one action, one owner, and when to check progress.', REQUIREMENT_CLASS.RECORD)}
+      ${reassessmentPanel}
+      ${historyPanel}
       ${authorityPanel}
       ${evidenceGate}
       ${attestationPanel}
@@ -839,6 +859,19 @@ function bindEvents(root) {
       proceedUnderResidualUncertainty: proceedResidual,
       rationale: residualRationale,
     });
+    if (validDecisionRecord(state.record) && state.record.format_version === '2' && !recordMatchesDecision(state.decision, state.record)) {
+      const archived = archiveDecisionRecord(browserStorage, state.record);
+      if (!archived.ok) {
+        state.validationIssues = [{ stage: 5, fieldId: 'decision-validation', message: archived.status }];
+        const message = root.querySelector('#decision-validation');
+        if (message) message.textContent = archived.status;
+        message?.focus();
+        return;
+      }
+      const history = loadDecisionRecordHistory(browserStorage, state.decision.decision_id);
+      state.history = history.records;
+      state.historyStatus = history.status;
+    }
     state.record = createDecisionRecord(state.decision, {
       authority: state.authority,
       evidenceDisposition: disposition,
@@ -849,8 +882,12 @@ function bindEvents(root) {
     renderInto(root.closest('main') || root);
     requestAnimationFrame(() => document.querySelector('#decision-recorded-heading')?.focus());
   });
-  root.querySelector('#copy-decision-brief')?.addEventListener('click', async () => {
-    syncStep();
+  root.querySelectorAll('[data-history-download]').forEach((button) => button.addEventListener('click', () => {
+    const record = state.history[Number(button.dataset.historyDownload)];
+    if (!validDecisionRecord(record) || record.format_version !== '2') return;
+    downloadText(safeFilename(record.snapshot.title || 'decision', `prior-decision-receipt-${record.recorded_at.slice(0, 10)}.json`), `${JSON.stringify(record, null, 2)}\n`, 'application/json');
+  }));
+  root.querySelector('#copy-decision-brief')?.addEventListener('click', async () => {    syncStep();
     const status = root.querySelector('#decision-brief-status');
     try {
       if (!globalThis.navigator?.clipboard?.writeText) throw new Error('clipboard unavailable');

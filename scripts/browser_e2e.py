@@ -717,11 +717,23 @@ def draft_and_entry_flow(page: Page, completed_file: str) -> None:
     lifecycle_text = page.locator(".record-lifecycle").inner_text()
     assert "changed since recording" in lifecycle_text.lower(), lifecycle_text
     assert "Recorded human decision: Choice 3" in page.locator("body").inner_text()
+    reassessment = page.locator('[data-surface="reassessment"]')
+    assert reassessment.is_visible()
+    assert "What changed?" in reassessment.inner_text()
+    assert "Human decision fields changed." in reassessment.inner_text()
+    assert "Reconsider when" in reassessment.inner_text()
     page.locator("#attestation-name").fill("Decision owner")
     page.locator("#attestation-role").fill("Decision owner")
     page.locator("#attestation-confirmed").check()
     page.locator("#record-decision").click()
     assert "recorded" in page.locator(".record-lifecycle").inner_text().lower()
+    history = page.locator('[data-surface="receipt-history"]')
+    assert history.count() == 1
+    assert "Prior Decision Receipts (1)" in history.inner_text()
+    history.locator(":scope > summary").click()
+    with page.expect_download() as prior_receipt_download:
+        history.locator('[data-history-download="0"]').click()
+    assert prior_receipt_download.value.suggested_filename.endswith(".json")
     page.reload(wait_until="networkidle")
     page.locator("#resume-browser-draft").click()
     assert "recorded" in page.locator(".record-lifecycle").inner_text().lower()
