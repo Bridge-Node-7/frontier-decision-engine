@@ -338,3 +338,11 @@ details > summary { cursor: pointer; }
   .decision-section > summary { display: none; }
   .decision-section { border: 0; padding: 0; break-inside: avoid; }
 }
+
+.decision-value-summary { gap: 1.15rem; }
+.decision-value-grid { display: grid; grid-template-columns: repeat(2, minmax(0,1fr)); gap: 1rem; }
+.decision-value-grid > div { display: grid; gap: .3rem; padding: 1rem; border: 1px solid var(--line); border-radius: 14px; background: var(--surface-2); }
+.decision-value-summary ul { margin: .25rem 0 0; padding-left: 1.25rem; }
+.brief-actions { align-items: center; }
+.brief-actions .status-line { flex: 1 1 220px; }
+@media(max-width:760px){.decision-value-grid{grid-template-columns:1fr}.brief-actions button{width:100%}}
