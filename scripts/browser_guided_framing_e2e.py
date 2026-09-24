@@ -87,7 +87,7 @@ def run() -> None:
                     page.get_by_role("button", name="Continue").click()
                     assert page.locator("[data-fde-field='decision_hinge']").is_visible()
                     assert page.get_by_text("must not exceed 10 watts", exact=True).is_visible()
-                    page.get_by_role("button", name="Adjust original input").click()
+                    page.locator("#universal-adjust").click()
 
                     # Sparse input yields one question, not an invalid state or empty structural cards.
                     page.locator("#universal-input").fill("qualification evidence incomplete")
