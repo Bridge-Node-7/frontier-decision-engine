@@ -35,6 +35,8 @@ function candidateFromMatch(source, match, basisType) {
   const end = start + text.length;
   const sourceText = source.slice(start, end);
   if (sourceText !== text) return null;
+  const leftContext = source.slice(Math.max(0, start - 32), start);
+  if (NEGATION_PATTERN.test(leftContext)) return null;
   return Object.freeze({
     text,
     basis_type: basisType,
