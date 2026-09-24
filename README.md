@@ -97,4 +97,4 @@ Changes must preserve human decision authority, privacy, accessibility, and the 
 
 Report vulnerabilities through GitHub private vulnerability reporting as described in [SECURITY.md](SECURITY.md).
 
-Apache-2.0 licensed. See [LICENSE](LICENSE).
+Apache-2.0 licensed. See [LICENSE](LICENSE) and [NOTICE](NOTICE) for licensing, attribution, authoritative-origin, and brand boundaries.
