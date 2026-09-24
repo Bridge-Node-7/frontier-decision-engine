@@ -501,6 +501,17 @@ def decision_flow(page: Page, base: str) -> str:
     expect(page.locator("#decision-validation")).to_contain_text("outside FDE’s comparison scope")
     assert page.locator("#decision-recorded-heading").count() == 0
 
+    # A benign personal-life decision is redirected by scope without being labeled self-harm.
+    open_stage(page, 0)
+    page.locator("#decision-question").fill("Should I stop living in London and move to Leeds?")
+    page.wait_for_timeout(350)
+    open_stage(page, 5)
+    page.locator("#record-decision").click()
+    expect(page.locator("#decision-validation")).to_contain_text("outside FDE’s supported scope")
+    expect(page.locator("#decision-validation")).to_contain_text("not a clinical judgment")
+    assert "does not compare or optimize self-harm" not in page.locator("#decision-validation").inner_text()
+    assert page.locator("#decision-recorded-heading").count() == 0
+
     # The ambiguous business idiom remains in scope at the final recording boundary.
     open_stage(page, 0)
     page.locator("#decision-question").fill("Should we end it all with this supplier or renegotiate?")

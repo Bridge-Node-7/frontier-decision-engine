@@ -221,10 +221,21 @@ test('self-directed crisis language fails closed before ordinary decision struct
   }
 });
 
-test('ambiguous personal end-it-all language fails closed while supplier idiom remains in scope', () => {
-  const personal = responseFor(draftFromInput('Should I just end it all?'));
-  assert.equal(personal.kind, 'boundary');
-  assert.match(personal.body, /988/);
+test('specific crisis language and neutral personal scope both fail closed without blocking supplier idiom', () => {
+  const crisis = responseFor(draftFromInput('Should I just end it all?'));
+  assert.equal(crisis.kind, 'boundary');
+  assert.match(crisis.body, /988/);
+
+  for (const input of [
+    'Should I stop living in London and move to Leeds?',
+    'Should I give up on life coaching as a career or continue?',
+  ]) {
+    const personal = responseFor(draftFromInput(input));
+    assert.equal(personal.kind, 'boundary', input);
+    assert.match(personal.body, /personal-life decisions/i, input);
+    assert.match(personal.body, /not a clinical judgment/i, input);
+    assert.doesNotMatch(personal.body, /does not compare or optimize self-harm/i, input);
+  }
 
   const supplier = responseFor(draftFromInput('Should we end it all with this supplier or renegotiate?'));
   assert.notEqual(supplier.kind === 'boundary' && supplier.title === 'This decision is outside FDE’s comparison scope.', true);
