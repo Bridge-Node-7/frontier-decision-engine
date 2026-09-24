@@ -508,6 +508,45 @@ def decision_flow(page: Page, base: str) -> str:
     return completed_file
 
 
+def unnamed_required_proof_flow(page: Page, base: str) -> None:
+    route(page, base, "/decision", '[data-surface="fde-hero"] h1', "Frontier Decision Engine")
+    activate_ready_example(page)
+    wait_for_render_settle(page)
+
+    page.locator('[data-decision-stage="0"] [data-stage-next]').click()
+    page.locator("#decision-authority-role:focus").wait_for(state="attached")
+    page.locator("#decision-authority-role").select_option("accountable_owner")
+    page.locator('[data-decision-stage="0"] [data-stage-next]').click()
+    page.locator("#decision-step-heading-1").wait_for(state="visible")
+
+    assert page.locator('[data-semantic-criterion="0"]').count() == 1
+    required = page.locator("#semantic-required-0")
+    if not required.is_checked():
+        required.check()
+    page.locator("#semantic-evidence-0").select_option("unknown")
+    page.locator("#semantic-outcome-0").select_option("not-assessable")
+    page.locator("#semantic-evidence-need-0").fill("")
+
+    for stage in (1, 2, 3):
+        page.locator(f'[data-decision-stage="{stage}"] [data-stage-next]').click()
+        page.locator(f"#decision-step-heading-{stage + 1}").wait_for(state="visible")
+
+    result = page.locator('[data-surface="result-first"]').inner_text()
+    assert "Required proof remains unresolved. Name the evidence needed for each required criterion." in result
+    assert "No required proof currently blocks the formal evidence gate." not in result
+
+    page.locator('[data-decision-stage="4"] [data-stage-next]').click()
+    page.locator("#decision-step-heading-5").wait_for(state="visible")
+    with page.expect_download() as brief_download:
+        page.locator("#download-decision-brief").click()
+    brief_path = brief_download.value.path()
+    assert brief_path is not None
+    brief_text = Path(brief_path).read_text(encoding="utf-8")
+    assert "Required proof remains unresolved. Name the evidence needed for each required criterion." in brief_text
+    assert "No required proof currently blocks the formal evidence gate." not in brief_text
+    assert_page_clean(page)
+
+
 def route_suite(page: Page, base: str) -> None:
     checks = [
         ("/", '[data-surface="fde-hero"] h1', "Frontier Decision Engine"),
@@ -908,6 +947,7 @@ def run_mode(
         print_flow(page)
         draft_and_entry_flow(page, completed_file)
         seer_sustainability_reminder_flow(page)
+        unnamed_required_proof_flow(page, base)
     else:
         route(page, base, "/decision", '[data-surface="fde-hero"] h1', "Frontier Decision Engine")
     assert not console_errors, f"console errors in {label}: {console_errors}"
