@@ -481,6 +481,14 @@ def decision_flow(page: Page, base: str) -> str:
     )
     page.locator("#attestation-name").fill("Program decision owner")
     page.locator("#attestation-role").fill("Program decision owner")
+    assert page.get_by_role("button", name="Copy Decision Brief").is_visible()
+    assert page.get_by_role("button", name="Download Decision Brief").is_visible()
+    assert page.get_by_text("What held up", exact=True).count() >= 1
+    assert page.get_by_text("Next Proof", exact=True).count() >= 1
+    with page.expect_download() as brief_download:
+        page.locator("#download-decision-brief").click()
+    assert brief_download.value.suggested_filename.endswith("decision-brief.txt")
+
     page.locator("#attestation-confirmed").check()
     page.locator("#record-decision").click()
     page.locator("#decision-recorded-heading").wait_for(state="visible")
