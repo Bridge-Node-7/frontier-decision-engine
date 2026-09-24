@@ -4,7 +4,7 @@ import { createDecisionCase } from '../site/src/lib/decision.js';
 import { createDecisionRecord, validDecisionRecord } from '../site/src/lib/recording.js';
 import {
   DECISION_RECORD_HISTORY_STORAGE_KEY, MAX_DECISION_RECORD_HISTORY_ITEMS,
-  archiveDecisionRecord, loadDecisionRecordHistory,
+  archiveDecisionRecord, clearSavedDecision, loadDecisionRecordHistory,
 } from '../site/src/lib/persistence.js';
 
 function storage({ failSet = false } = {}) {
@@ -39,6 +39,14 @@ test('valid Receipt v2 is archived and remains independently verifiable', () => 
   assert.equal(loaded.records[0].receipt_sha256, record.receipt_sha256);
 });
 
+test('clearing the current draft does not erase prior Decision Receipts', () => {
+  const local = storage(); const record = receipt();
+  assert.equal(archiveDecisionRecord(local, record).ok, true);
+  clearSavedDecision(local);
+  const loaded = loadDecisionRecordHistory(local, record.decision_id);
+  assert.equal(loaded.records.length, 1);
+  assert.equal(loaded.records[0].receipt_sha256, record.receipt_sha256);
+});
 test('receipt history deduplicates by receipt SHA-256', () => {
   const local = storage(); const record = receipt();
   archiveDecisionRecord(local, record); const second = archiveDecisionRecord(local, record);
