@@ -52,7 +52,10 @@ function escapeHtml(value) {
 function titleFrom(text) {
   const clean = normalize(text).replace(/\s+/g, ' ');
   if (!clean) return '';
-  const sentence = clean.split(/[.!?\n]/)[0].trim();
+  const sentences = clean.split(/(?<=[.!?])\s+|\n+/).map((value) => value.trim()).filter(Boolean);
+  const sentence = (sentences.find((value) => decisionPattern.test(value)) || sentences[0] || '')
+    .replace(/[.!?]+$/, '')
+    .trim();
   return sentence.length > 120 ? `${sentence.slice(0, 117)}…` : sentence;
 }
 
@@ -61,7 +64,13 @@ function unique(values, max) {
 }
 
 function cleanChoice(value) {
-  return normalize(value)
+  const clean = normalize(value);
+  const institutional = clean.match(/^should\s+the\s+(.{1,40}?)\s+((?:expand|fund|qualify|adopt|select|choose|approve|defer|delay|cancel|continue|stop|start|build|buy|sell|replace|retain|redesign|invest|deploy|launch|contract|renegotiate|renew|terminate)\b.*)$/i);
+  if (institutional) {
+    const subject = institutional[1].trim();
+    return `${subject.charAt(0).toUpperCase()}${subject.slice(1)} — ${institutional[2].trim()}`;
+  }
+  return clean
     .replace(/^(?:should\s+(?:i|we)|do\s+(?:i|we))\s+/i, '')
     .replace(/^(?:i(?:'m| am)\s+)?decid(?:e|ing)\s+(?:between|whether)\s+/i, '')
     .replace(/^whether\s+(?:to\s+)?/i, '')

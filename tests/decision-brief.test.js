@@ -16,6 +16,16 @@ test('decision brief leads with decision value and preserves human authority', (
   assert.match(text, /The comparison informs\. A person decides\./);
 });
 
+test('decision brief surfaces score provenance without implying measured precision', () => {
+  const text = buildDecisionBriefText({
+    decision: 'Proceed?',
+    scoreProvenance: ['Analyst judgment: 3', 'Declared rubric: 2', 'Not documented: 1'],
+  });
+  assert.match(text, /Score provenance:\n- Analyst judgment: 3\n- Declared rubric: 2\n- Not documented: 1/);
+  assert.match(text, /not probabilities or native measurements/);
+  assert.match(text, /precision the evidence supports/);
+});
+
 test('decision brief does not invent a proof source', () => {
   const text = buildDecisionBriefText({ nextProof: ['Qualification timing: Confirm qualification timing'] });
   assert.match(text, /Confirm qualification timing/);

@@ -25,6 +25,16 @@ test('criteria lists do not override explicit binary choices from ordinary langu
   assert.equal(responseFor(draft).kind, 'structure');
 });
 
+test('decision title prefers the actual decision over leading blocker context', () => {
+  const draft = draftFromInput('Qualification evidence is incomplete. Should we qualify Supplier Alpha or redesign around the dependency?');
+  assert.equal(draft.possibleDecision, 'Should we qualify Supplier Alpha or redesign around the dependency');
+});
+
+test('institutional should-question produces readable choice labels', () => {
+  const draft = draftFromInput('Should the ministry expand port capacity or defer investment?');
+  assert.deepEqual(draft.choices, ['Ministry — expand port capacity', 'defer investment']);
+});
+
 test('sparse input produces exactly one useful clarification question', () => {
   for (const input of ['', 'qualification evidence incomplete', 'The mission dependency is unclear.']) {
     const response = responseFor(draftFromInput(input));
@@ -209,6 +219,15 @@ test('self-directed crisis language fails closed before ordinary decision struct
     assert.match(response.body, /does not compare or optimize self-harm/i, input);
     assert.match(response.body, /988/i, input);
   }
+});
+
+test('ambiguous personal end-it-all language fails closed while supplier idiom remains in scope', () => {
+  const personal = responseFor(draftFromInput('Should I just end it all?'));
+  assert.equal(personal.kind, 'boundary');
+  assert.match(personal.body, /988/);
+
+  const supplier = responseFor(draftFromInput('Should we end it all with this supplier or renegotiate?'));
+  assert.notEqual(supplier.kind === 'boundary' && supplier.title === 'This decision is outside FDE’s comparison scope.', true);
 });
 
 test('organizational prevention decisions are not mistaken for first-person self-harm', () => {

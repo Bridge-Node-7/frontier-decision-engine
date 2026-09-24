@@ -30,6 +30,33 @@ SITE = ROOT / "site"
 INDEX_HTML = (SITE / "index.html").read_text(encoding="utf-8")
 
 
+def canonical_json(value) -> str:
+    return json.dumps(value, ensure_ascii=False, sort_keys=True, separators=(",", ":"))
+
+
+def substantive_decision(value):
+    decision = json.loads(json.dumps(value))
+    if not decision.get("urgency"):
+        decision.pop("urgency", None)
+    if not decision.get("reversibility"):
+        decision.pop("reversibility", None)
+    if isinstance(decision.get("provenance"), dict):
+        decision["provenance"].pop("generated_at", None)
+    if isinstance(decision.get("human_decision"), dict):
+        for key in ("recorded_at", "recorded_fingerprint", "recorded_sha256", "approved_by", "approved_at"):
+            decision["human_decision"].pop(key, None)
+    return decision
+
+
+def reseal_receipt(record):
+    receipt = json.loads(json.dumps(record))
+    decision_sha = hashlib.sha256(canonical_json(substantive_decision(receipt["snapshot"])).encode("utf-8")).hexdigest()
+    receipt["decision_content_sha256"] = decision_sha
+    receipt["attestation"]["decision_content_sha256"] = decision_sha
+    envelope = {key: value for key, value in receipt.items() if key != "receipt_sha256"}
+    receipt["receipt_sha256"] = hashlib.sha256(canonical_json(envelope).encode("utf-8")).hexdigest()
+    return receipt
+
 
 class QuietStaticHandler(SimpleHTTPRequestHandler):
     def log_message(self, _format: str, *_args) -> None:
@@ -404,6 +431,9 @@ def decision_flow(page: Page, base: str) -> str:
     chooser_info.value.set_files([])
     activate_ready_example(page)
     wait_for_render_settle(page)
+    assert page.locator('[data-surface="decision-authority"]').is_visible()
+    assert page.locator("#decision-owner").is_visible()
+    assert page.locator("#decision-authority-role").is_visible()
 
     # Authority is deliberately not synthesized by the ready example.
     page.locator('[data-decision-stage="0"] [data-stage-next]').click()
@@ -460,6 +490,30 @@ def decision_flow(page: Page, base: str) -> str:
             assert "No human selection" in decision_text
             assert "Conditions that could break the selection" not in decision_text
             assert "No declared threshold failures in the included futures." not in decision_text
+
+    # A decision that becomes out of scope after stage 0 cannot be recorded.
+    safe_question = page.locator("#decision-question").input_value()
+    open_stage(page, 0)
+    page.locator("#decision-question").fill("Should I just end it all?")
+    page.wait_for_timeout(350)
+    open_stage(page, 5)
+    page.locator("#record-decision").click()
+    expect(page.locator("#decision-validation")).to_contain_text("outside FDE’s comparison scope")
+    assert page.locator("#decision-recorded-heading").count() == 0
+
+    # The ambiguous business idiom remains in scope at the final recording boundary.
+    open_stage(page, 0)
+    page.locator("#decision-question").fill("Should we end it all with this supplier or renegotiate?")
+    page.wait_for_timeout(350)
+    open_stage(page, 5)
+    page.locator("#record-decision").click()
+    page.locator("#human-strategy:focus").wait_for(state="attached")
+    assert "outside FDE’s comparison scope" not in page.locator("#decision-validation").inner_text()
+
+    open_stage(page, 0)
+    page.locator("#decision-question").fill(safe_question)
+    page.wait_for_timeout(350)
+    open_stage(page, 5)
 
     page.locator("#human-rationale").fill("")
     page.locator("#human-next-action").fill("")
@@ -679,9 +733,34 @@ def draft_and_entry_flow(page: Page, completed_file: str) -> None:
     assert "Saved decision opened" in page.locator("body").inner_text()
     assert "recorded" in page.locator(".record-lifecycle").inner_text().lower()
 
+    # A cryptographically valid but out-of-scope Receipt is rejected before it can become active state.
+    verified_receipt = json.loads(Path(completed_file).read_text(encoding="utf-8"))
+    assert verified_receipt["format_version"] == "2"
+    current_question = page.locator("#decision-question").input_value()
+    out_of_scope_receipt = json.loads(json.dumps(verified_receipt))
+    out_of_scope_receipt["snapshot"]["question"] = "Should I just end it all?"
+    out_of_scope_receipt = reseal_receipt(out_of_scope_receipt)
+    page.locator("#decision-file-input").set_input_files({
+        "name": "out-of-scope-receipt.json",
+        "mimeType": "application/json",
+        "buffer": canonical_json(out_of_scope_receipt).encode("utf-8"),
+    })
+    expect(page.locator("#decision-validation")).to_contain_text("outside FDE’s comparison scope")
+    assert page.locator("#decision-question").input_value() == current_question
+
+    # A tampered Receipt is identified as an integrity failure and also leaves active state untouched.
+    tampered_receipt = json.loads(json.dumps(verified_receipt))
+    tampered_receipt["snapshot"]["question"] = "Changed without resealing."
+    page.locator("#decision-file-input").set_input_files({
+        "name": "tampered-receipt.json",
+        "mimeType": "application/json",
+        "buffer": json.dumps(tampered_receipt).encode("utf-8"),
+    })
+    expect(page.locator("#decision-validation")).to_contain_text("Decision Receipt integrity verification failed")
+    assert page.locator("#decision-question").input_value() == current_question
+
     # The same legacy completed payload without record proof is selected but not Recorded.
-    legacy_receipt = json.loads(Path(completed_file).read_text(encoding="utf-8"))
-    assert legacy_receipt["format_version"] == "2"
+    legacy_receipt = json.loads(json.dumps(verified_receipt))
     legacy_completed = legacy_receipt["snapshot"]
     legacy_completed["human_decision"].pop("recorded_at", None)
     legacy_completed["human_decision"].pop("recorded_fingerprint", None)
@@ -772,7 +851,7 @@ def draft_and_entry_flow(page: Page, completed_file: str) -> None:
     assert "recorded" in page.locator(".record-lifecycle").inner_text().lower()
     history = page.locator('[data-surface="receipt-history"]')
     assert history.count() == 1
-    assert "Prior Decision Receipts (1)" in history.inner_text()
+    assert "Local Decision Receipt Archive (1)" in history.inner_text()
     history.locator(":scope > summary").click()
     with page.expect_download() as prior_receipt_download:
         history.locator('[data-history-download="0"]').click()
