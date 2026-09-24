@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { buildDecisionBriefText } from '../site/src/lib/decision-brief.js';
+import { buildDecisionBriefText, nextProofPresentation } from '../site/src/lib/decision-brief.js';
 
 test('decision brief leads with decision value and preserves human authority', () => {
   const text = buildDecisionBriefText({
@@ -30,4 +30,19 @@ test('decision brief states when no required proof blocks the formal gate', () =
 test('decision brief is explicitly distinct from the Decision Receipt', () => {
   const text = buildDecisionBriefText({ decision: 'Proceed?' });
   assert.match(text, /Working brief — not a Decision Receipt/);
+});
+
+
+test('decision brief states unresolved proof when readiness blocks but the evidence need is not yet named', () => {
+  const text = buildDecisionBriefText({ decision: 'Proceed?', evidenceReadiness: 'proof-required' });
+  assert.match(text, /Required proof remains unresolved\. Name the evidence needed for each required criterion\./);
+  assert.doesNotMatch(text, /No required proof currently blocks the formal evidence gate/);
+});
+
+
+test('next proof presentation keeps a blocked readiness state when no proof request is named yet', () => {
+  const proof = nextProofPresentation({ readinessState: 'proof-required', nextProof: [] });
+  assert.deepEqual(proof.items, []);
+  assert.equal(proof.emptyMessage, 'Required proof remains unresolved. Name the evidence needed for each required criterion.');
+  assert.match(proof.nextAction, /Resolve the required proof/);
 });

@@ -73,3 +73,28 @@ test('v2 receipt binds authority, evidence disposition, attestation, and decisio
   tampered.authority.basis = 'Changed after recording';
   assert.equal(validDecisionRecord(tampered), false);
 });
+
+
+test('required unresolved criterion stays proof-required even before an evidence need is named', () => {
+  const decision = createDecisionCase();
+  activateDecisionSemantics(decision, 'general');
+  decision.decision_semantics.criteria = [{
+    criterion_id: 'CRT-UNNAMED',
+    dimension: 'general',
+    label: 'Qualification evidence',
+    requirement: 'Qualification must be established',
+    must_be_true: true,
+    evidence_state: 'unknown',
+    outcome: 'not-assessable',
+    source_refs: [],
+    evidence_need: '',
+    affected_party_ids: [],
+    missing_perspectives: [],
+    assumptions: [],
+    limitations: [],
+  }];
+  const readiness = decisionEvidenceReadiness(decision);
+  assert.equal(readiness.state, EVIDENCE_READINESS.PROOF_REQUIRED);
+  assert.equal(readiness.proof_requests.length, 0);
+  assert.deepEqual(readiness.blocking.map((item) => item.criterion_id), ['CRT-UNNAMED']);
+});
