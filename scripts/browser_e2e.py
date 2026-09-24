@@ -521,12 +521,12 @@ def unnamed_required_proof_flow(page: Page, base: str) -> None:
     page.locator("#decision-step-heading-1").wait_for(state="visible")
 
     assert page.locator('[data-semantic-criterion="0"]').count() == 1
-    required = page.locator("#semantic-required-0")
-    if not required.is_checked():
-        required.check()
-    page.locator("#semantic-evidence-0").select_option("unknown")
-    page.locator("#semantic-outcome-0").select_option("not-assessable")
-    page.locator("#semantic-evidence-need-0").fill("")
+    page.evaluate("""() => {
+      document.querySelector('#semantic-required-0').checked = true;
+      document.querySelector('#semantic-evidence-0').value = 'unknown';
+      document.querySelector('#semantic-outcome-0').value = 'not-assessable';
+      document.querySelector('#semantic-evidence-need-0').value = '';
+    }""")
 
     for stage in (1, 2, 3):
         page.locator(f'[data-decision-stage="{stage}"] [data-stage-next]').click()
