@@ -34,9 +34,7 @@ Accepted context stays in JavaScript page memory only and is discarded on refres
 
 FDE is the human-governed decision layer within Bridge Node 7's Frontier Mission Assurance architecture. Materials-to-Mission and other assurance profiles can contribute governed evidence and dependency context; Governed Context carries bounded preparation context into FDE; the accountable human records the consequential decision and reassessment. After confirmation, FDE asks only for the additional explicit inputs required for a deterministic comparison. The formal Decision Lab preserves the existing ranking semantics, published schemas, saved-work protections, and truthful alternate outcomes including ties, no acceptable option, and insufficient information.
 
-The comparison informs. A person decides.
-
-The result surface leads with what held up, why, what could change it, the next required proof, and the next action before exposing detailed calculations. A lightweight Decision Brief can be copied or downloaded before recording; the cryptographic Decision Receipt remains the authoritative recorded-decision artifact.
+The comparison informs. A person decides. The result surface leads with what held up, why, what could change it, the next required proof, and the next action before exposing detailed calculations. A lightweight Decision Brief can be copied or downloaded before recording; the cryptographic Decision Receipt remains the authoritative recorded-decision artifact.
 
 ## Assurance on demand
 
