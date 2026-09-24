@@ -12,13 +12,13 @@
 
 The first screen asks one question: **What are you considering?**
 
-Share a technical, organizational, mission, or strategic decision in your own words. **Natural-language intake currently supports English.** FDE then does one of three things:
+Share the situation, decision, question, or context in your own words. **Natural-language intake currently supports English.** FDE then does one of three things:
 
 - shows only decision structure that is supportable from the words provided;
 - asks exactly one useful clarification question when the decision is still too sparse; or
 - states an honest capability boundary and a useful next action when the request is outside the browser-local decision-support scope.
 
-When a consequential decision needs more structure first, **Guided framing** captures the decision, criteria, choices, and uncertainties before handing confirmed inputs into the same Decision Lab. Supportable first-run structure uses four human-facing concepts: **Decision, What matters, Choices, What may change.** Nothing inferred becomes a canonical model input until a person confirms it.
+When explicit language identifies a requirement, time gate, dependency, conditional, or blocker that may control the decision, FDE can surface it as a provisional **decision hinge** with source provenance. The person confirms, rejects, or marks the condition uncertain before it can affect bounded comparison inputs. When a consequential decision needs more structure first, **Guided framing** captures the decision, criteria, choices, and uncertainties before handing confirmed inputs into the same Decision Lab. Supportable first-run structure uses four human-facing concepts: **Decision, What matters, Choices, What may change.** Nothing inferred becomes a canonical model input until a person confirms it.
 
 The browser does not call a remote AI provider, retrieve outside facts, invent evidence, probabilities, scores, thresholds, scenario effects, or recommendations.
 

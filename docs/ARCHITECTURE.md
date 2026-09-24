@@ -12,7 +12,7 @@ After Continue, the runtime must resolve to exactly one of three states:
 2. exactly one useful clarification question; or
 3. an honest capability boundary plus a useful next action.
 
-The first-run structure uses stable semantic concepts: `decision`, `what_matters`, `options`, `what_may_change`, `status`, and `next_required_input`. Human-facing labels are **Decision, What matters, Choices, What may change**. Only fields actually supported by explicit input are rendered.
+The first-run structure uses stable semantic concepts: `decision`, `what_matters`, `options`, `what_may_change`, `status`, and `next_required_input`. A provisional decision hinge may be derived only from explicit requirement, time-gate, dependency, conditional, or blocker language. It preserves the exact source span, begins with no formal influence, and requires human confirmation before it can populate a bounded formal input. Human-facing labels are **Decision, What matters, Choices, What may change**. Only fields actually supported by explicit input are rendered.
 
 A Decision Map remains an internal architecture/export concept where it improves technical precision. It is not the pre-input first-run surface.
 
@@ -22,7 +22,7 @@ FDE follows this interaction rule:
 
 > Continue without bothering the person when the system can proceed safely; otherwise ask for the smallest human contribution that materially advances the decision.
 
-No ordinary in-scope input is treated as an error-only dead end. Sparse or ambiguous input receives one clarification question. A small pre-interpretation scope boundary fails closed on high-risk personal decisions before they can become comparison choices; that boundary is infrastructure, not FDE's product domain.
+No ordinary in-scope input is treated as an error-only dead end. Sparse or ambiguous input receives one clarification question. A hinge-derived question may preempt the ordinary schema order only when the answer can deterministically change a requirement, criterion, evidence need, choice, constraint, or modeled future; otherwise the deterministic choices → goals → futures fallback remains in force. A small pre-interpretation scope boundary fails closed on high-risk personal decisions before they can become comparison choices; that boundary is infrastructure, not FDE's product domain.
 
 ## Formal Decision Lab
 
