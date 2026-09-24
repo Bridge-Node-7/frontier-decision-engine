@@ -1,10 +1,10 @@
 {
-  "applicationVersion": "0.5.12",
+  "applicationVersion": "0.5.13",
   "schemaVersions": {
     "decision": "0.2.10",
     "semanticDecision": "0.3.0"
   },
-  "testCount": 216,
+  "testCount": 221,
   "discoveredHashRouteLiteralCount": 8,
   "browserModes": [
     "desktop-light",
