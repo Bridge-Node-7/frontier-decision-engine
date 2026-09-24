@@ -16,7 +16,6 @@ const standaloneCrisisPhrasePattern = /^(?:please\s+)?end\s+it\s+all[.!?]*$/i;
 const firstPersonSingularCuePattern = /\b(?:i|me|my|myself|i['’]?m|i['’]?ve|i['’]?d)\b/i;
 const firstPersonSingularDecisionPattern = /\b(?:should|do|can|could|would|might|may|will)\s+i\b|\bi\s+(?:want|need|plan|intend|am|feel|think|have|keep|can['’]?t|cannot|don['’]?t|do\s+not|would|could|might|may|should)\b/i;
 const organizationalObjectPattern = /\b(?:supplier|vendor|contract|project|program|initiative|mission|workstream|feature|product|service|system|platform|deployment|qualification|procurement|portfolio|policy|budget|investment|board|committee|agency|ministry|department|organization|organisation|company|business|enterprise|team|client|customer|facility|site|operations?|architecture|engineering|technology|material|component|subsystem|network|software|hardware|data|cyber(?:security)?|release|pilot|joint\s+venture|partnership|market|source|supply\s+chain)\b/i;
-const organizationalActionPattern = /\b(?:approv(?:e|ed|ing)|authoriz(?:e|ed|ing)|fund(?:ed|ing)?|qualif(?:y|ied|ying)|procur(?:e|ed|ing)|deploy(?:ed|ing)?|launch(?:ed|ing)?|select(?:ed|ing)?|choos(?:e|ing)|adopt(?:ed|ing)?|invest(?:ed|ing)?|allocat(?:e|ed|ing)|contract(?:ed|ing)?|renew(?:ed|ing)?|terminat(?:e|ed|ing)|release(?:d|ing)?|merg(?:e|ed|ing)|escalat(?:e|ed|ing)|accept(?:ed|ing)?|reject(?:ed|ing)?|defer(?:red|ring)?|redesign(?:ed|ing)?|build(?:ing|built)?|buy(?:ing)?|sell(?:ing)?|replac(?:e|ed|ing)|retain(?:ed|ing)?|kill(?:ed|ing)?|sunset(?:ting)?|retir(?:e|ed|ing)|deprecat(?:e|ed|ing)|resign(?:ed|ing)?|serv(?:e|ed|ing)|maintain(?:ed|ing)?|leav(?:e|ing))\b/i;
 const decisionSupportContextPattern = /\b(?:evidence|objective|criterion|scenario|strategy|option|choice|alternative|comparison|analysis|decision|model|score|readiness|risk|trade[-\s]?off)\b/i;
 const personalReflexivePattern = /\bmyself\b/i;
 const personalLifeContextPattern = /\b(?:alive|being\s+alive|stop\s+existing|goodbye|funeral|my\s+will|my\s+(?:wife|husband|partner|family|children|kids|therapist|doctor|gp|home|house|car)|living\s+in|move\s+to|career|annual\s+leave|life\s+coaching|not\s+be\s+around|was\s+gone|wasn['’]?t\s+here|carry(?:ing)?\s+on|go\s+through\s+with\s+it|disappear(?:ing)?|vanish(?:ing)?)\b/i;
@@ -45,7 +44,7 @@ function hasPersonalCrisisRequest(text) {
 function hasPersonalDecisionScope(text) {
   if (!firstPersonSingularCuePattern.test(text)) return false;
   const clearlyOrganizational = decisionSupportContextPattern.test(text)
-    || (organizationalObjectPattern.test(text) && organizationalActionPattern.test(text));
+    || organizationalObjectPattern.test(text);
   return personalReflexivePattern.test(text)
     || personalLifeContextPattern.test(text)
     || (firstPersonSingularDecisionPattern.test(text) && !clearlyOrganizational);
