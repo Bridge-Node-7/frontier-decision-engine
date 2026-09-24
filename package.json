@@ -1,6 +1,6 @@
 {
   "name": "frontier-decision-engine",
-  "version": "0.5.8",
+  "version": "0.5.9",
   "private": true,
   "type": "module",
   "description": "Browser-local, human-governed decision infrastructure for Frontier Mission Assurance.",
