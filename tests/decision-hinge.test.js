@@ -64,3 +64,25 @@ test('derived candidates remain suggestions rather than evidence or authority', 
   assert.equal(hinge.formal_influence, false);
   assert.equal(hinge.status, 'suggested');
 });
+
+
+test('extracts explicit must-not hard constraints without treating them as negated requirements', () => {
+  for (const input of [
+    'The system must not exceed 10 watts.',
+    'The supplier must not miss the integration window.',
+    'The design must not violate export requirements.',
+  ]) {
+    const hinge = deriveDecisionHinge(input);
+    assert.equal(hinge.basis_type, 'hard_requirement');
+    assert.match(hinge.source_text, /^must not /i);
+    assert.equal(hinge.formal_influence, false);
+  }
+});
+
+test('extracts must-never hard constraints while ordinary negation remains fail-closed', () => {
+  const hinge = deriveDecisionHinge('The system must never exceed 10 watts.');
+  assert.equal(hinge.basis_type, 'hard_requirement');
+  assert.equal(hinge.source_text, 'must never exceed 10 watts');
+  assert.equal(deriveDecisionHinge('It is not true that the system must exceed 10 watts.'), null);
+  assert.equal(deriveDecisionHinge('Qualification is not mandatory.'), null);
+});
