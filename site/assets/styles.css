@@ -346,3 +346,11 @@ details > summary { cursor: pointer; }
 .brief-actions { align-items: center; }
 .brief-actions .status-line { flex: 1 1 220px; }
 @media(max-width:760px){.decision-value-grid{grid-template-columns:1fr}.brief-actions button{width:100%}}
+
+.reassessment-panel { display: grid; gap: .75rem; }
+.reassessment-panel ul { margin: 0; padding-left: 1.25rem; }
+.receipt-history .decision-section-body { margin-top: 1rem; }
+.history-row { display: flex; gap: 1rem; align-items: center; justify-content: space-between; padding-block: .7rem; border-top: 1px solid var(--line); }
+.history-row:first-child { border-top: 0; }
+.history-row > div { display: grid; gap: .2rem; min-width: 0; }
+@media(max-width:760px){.history-row{align-items:stretch;flex-direction:column}.history-row button{width:100%}}
