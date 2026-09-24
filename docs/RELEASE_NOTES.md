@@ -10,4 +10,4 @@ Decision-hinge candidates preserve exact source provenance, begin as suggestions
 
 Long first-run input is no longer silently clipped by a browser text limit. FDE preserves the entered text on screen and shows an explicit bounded-processing message. Regression coverage includes negation and Unicode/source-span behavior.
 
-The Decision Case, scoring model, Decision Receipt v2, authority roles, Mission Graph context contract, evidence semantics, and browser-local architecture are unchanged. The public application still has no backend, account system, analytics, telemetry, remote AI provider, or default upload endpoint. Human judgment remains authoritative.
+The Decision Case, scoring model, Decision Receipt v2, authority roles, Mission Graph context contract, evidence semantics, and browser-local architecture are unchanged. The public application still has no backend, account system, analytics, telemetry, remote AI provider, or default upload endpoint. Browser-local storage is not encrypted confidential storage. Public deployment is for public or sanitized decision material only. Human judgment remains authoritative.
