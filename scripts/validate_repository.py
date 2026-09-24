@@ -29,14 +29,14 @@ required = [
     "site/src/app.js", "site/src/decision-ui.js", "site/src/guided-framing-ui.js", "site/src/universal-ui.js", "site/src/theme.js",
     "site/src/lib/case.js", "site/src/lib/decision-core.js", "site/src/lib/decision.js", "site/src/lib/intake.js",
     "site/src/lib/persistence.js", "site/src/lib/recording.js", "site/src/lib/semantics.js", "site/src/lib/synthesis.js",
-    "site/src/lib/decision-hinge.js", "site/src/lib/decision-brief.js",
+    "site/src/lib/decision-hinge.js", "site/src/lib/decision-brief.js", "site/src/lib/reassessment.js",
     "site/src/lib/authority.js", "site/src/lib/evidence-readiness.js", "site/src/lib/integrity.js",
     "schemas/decision-receipt-v2.schema.json", "schemas/pilot-proof-envelope-1.schema.json",
     "site/schemas/decision-receipt-v2.schema.json", "site/schemas/pilot-proof-envelope-1.schema.json",
     "site/src/decision-map.js",
     "scripts/browser_e2e.py", "scripts/browser_guided_framing_e2e.py", "scripts/browser_release_regressions.py",
     "scripts/validate_version_integrity.py", "scripts/package_release.py", "scripts/verify_release_tag.py",
-    "tests/universal-response.test.js", "tests/decision-hinge.test.js", "tests/decision-brief.test.js", "site/src/lib/input-boundaries.js",
+    "tests/universal-response.test.js", "tests/decision-hinge.test.js", "tests/decision-brief.test.js", "tests/reassessment.test.js", "tests/receipt-history.test.js", "site/src/lib/input-boundaries.js",
     "requirements-dev.txt", ".github/workflows/ci.yml", ".github/workflows/pages.yml", ".github/workflows/release.yml",
 ]
 for item in required:
