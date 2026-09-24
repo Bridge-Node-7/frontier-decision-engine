@@ -31,3 +31,10 @@ test('decision brief is explicitly distinct from the Decision Receipt', () => {
   const text = buildDecisionBriefText({ decision: 'Proceed?' });
   assert.match(text, /Working brief — not a Decision Receipt/);
 });
+
+
+test('decision brief states unresolved proof when readiness blocks but the evidence need is not yet named', () => {
+  const text = buildDecisionBriefText({ decision: 'Proceed?', evidenceReadiness: 'proof-required' });
+  assert.match(text, /Required proof remains unresolved\. Name the evidence needed for each required criterion\./);
+  assert.doesNotMatch(text, /No required proof currently blocks the formal evidence gate/);
+});
