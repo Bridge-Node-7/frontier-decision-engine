@@ -3,6 +3,9 @@ import { validDecisionRecord } from './recording.js';
 export const DECISION_STORAGE_KEY = 'fde.decision.autosave.v0.2.11';
 export const DECISION_RECORD_STORAGE_KEY = 'fde.decision.record.v0.3.1';
 export const DECISION_AUTHORITY_STORAGE_KEY = 'fde.decision.authority.v1';
+export const DECISION_RECORD_HISTORY_STORAGE_KEY = 'fde.decision.record-history.v1';
+export const MAX_DECISION_RECORD_HISTORY_ITEMS = 20;
+export const MAX_DECISION_RECORD_HISTORY_BYTES = 1_500_000;
 export const MAX_DECISION_FILE_BYTES = 1_000_000;
 export const MAX_DECISION_DEPTH = 40;
 export const MAX_DECISION_NODES = 20_000;
@@ -41,6 +44,47 @@ function inspectStructure(root) {
   return { ok: true };
 }
 
+function readDecisionRecordHistory(storage) {
+  if (!storage) return { ok: false, records: [], status: 'Decision history is unavailable in this browser.' };
+  try {
+    const raw = storage.getItem(DECISION_RECORD_HISTORY_STORAGE_KEY);
+    if (!raw) return { ok: true, records: [], status: 'No prior Decision Receipts are preserved in this browser.' };
+    if (byteLength(raw) > MAX_DECISION_RECORD_HISTORY_BYTES) return { ok: false, records: [], status: 'Local Decision Receipt history exceeds its verified storage bound.' };
+    const parsed = parseJsonSafely(raw);
+    if (!parsed || parsed.format_version !== '1' || !Array.isArray(parsed.records)) return { ok: false, records: [], status: 'Local Decision Receipt history could not be verified.' };
+    if (parsed.records.length > MAX_DECISION_RECORD_HISTORY_ITEMS) return { ok: false, records: [], status: 'Local Decision Receipt history exceeds its verified item bound.' };
+    if (!parsed.records.every((record) => record?.format_version === '2' && validDecisionRecord(record))) return { ok: false, records: [], status: 'Local Decision Receipt history contains an invalid record.' };
+    const records = [...parsed.records].sort((a, b) => String(a.recorded_at).localeCompare(String(b.recorded_at)));
+    return { ok: true, records, status: `${records.length} prior Decision Receipt${records.length === 1 ? '' : 's'} preserved in this browser.` };
+  } catch {
+    return { ok: false, records: [], status: 'Local Decision Receipt history could not be verified.' };
+  }
+}
+
+export function loadDecisionRecordHistory(storage, decisionId = '') {
+  const result = readDecisionRecordHistory(storage);
+  if (!result.ok || !decisionId) return result;
+  const records = result.records.filter((record) => record.decision_id === decisionId);
+  return { ...result, records, status: `${records.length} prior Decision Receipt${records.length === 1 ? '' : 's'} preserved for this decision.` };
+}
+
+export function archiveDecisionRecord(storage, record) {
+  if (!storage) return { ok: false, archived: false, status: 'Decision history is unavailable in this browser.' };
+  if (!record || record.format_version !== '2' || !validDecisionRecord(record)) return { ok: false, archived: false, status: 'Only a valid Decision Receipt v2 can be added to local decision history.' };
+  const current = readDecisionRecordHistory(storage);
+  if (!current.ok) return { ok: false, archived: false, status: current.status };
+  if (current.records.some((item) => item.receipt_sha256 === record.receipt_sha256)) return { ok: true, archived: false, status: 'This prior Decision Receipt is already preserved in this browser.' };
+  if (current.records.length >= MAX_DECISION_RECORD_HISTORY_ITEMS) return { ok: false, archived: false, status: 'Local Decision Receipt history is full. No new decision was recorded.' };
+  const records = [...current.records, structuredClone(record)].sort((a, b) => String(a.recorded_at).localeCompare(String(b.recorded_at)));
+  const serialized = JSON.stringify({ format_version: '1', records });
+  if (byteLength(serialized) > MAX_DECISION_RECORD_HISTORY_BYTES || !inspectStructure({ format_version: '1', records }).ok) return { ok: false, archived: false, status: 'Local Decision Receipt history reached its safe storage bound. No new decision was recorded.' };
+  try {
+    storage.setItem(DECISION_RECORD_HISTORY_STORAGE_KEY, serialized);
+    return { ok: true, archived: true, status: 'Prior Decision Receipt preserved in this browser.' };
+  } catch {
+    return { ok: false, archived: false, status: 'The prior Decision Receipt could not be preserved in browser storage. No new decision was recorded.' };
+  }
+}
 export function getBrowserStorage(scope = globalThis) {
   try { return scope?.localStorage || null; } catch { return null; }
 }
@@ -89,6 +133,7 @@ export function clearSavedDecision(storage) {
   try { storage.removeItem(DECISION_STORAGE_KEY); } catch { /* no-op */ }
   try { storage.removeItem(DECISION_RECORD_STORAGE_KEY); } catch { /* no-op */ }
   try { storage.removeItem(DECISION_AUTHORITY_STORAGE_KEY); } catch { /* no-op */ }
+  try { storage.removeItem(DECISION_RECORD_HISTORY_STORAGE_KEY); } catch { /* no-op */ }
 }
 
 export function createDraftBackup(decision, record = null, authority = null) {
