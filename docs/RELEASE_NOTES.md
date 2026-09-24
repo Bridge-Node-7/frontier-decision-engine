@@ -10,4 +10,4 @@ This release improves decision-value presentation without changing the determini
 
 A lightweight Decision Brief can now be copied or downloaded before a Decision Receipt is recorded. The brief is explicitly non-authoritative; the Decision Receipt remains the formal historical record of the accountable human decision.
 
-The decision schemas, Mission Graph context contract, Decision Receipt v2, evidence semantics, scoring model, browser-local architecture, and human-authority model are unchanged.
+The decision schemas, Mission Graph context contract, Decision Receipt v2, evidence semantics, scoring model, browser-local architecture, and human-authority model are unchanged. Human judgment remains authoritative.
