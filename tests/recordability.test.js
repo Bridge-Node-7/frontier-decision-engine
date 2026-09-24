@@ -53,21 +53,28 @@ test('explanatory rationale does not become a terminal scope gate', () => {
   assert.equal(decisionRecordability(decision).recordable, true);
 });
 
-test('personal crisis rationale is not recordable while organizational rationale remains allowed', () => {
+test('personal rationale is not recordable while organizational rationale remains allowed', () => {
   const decision = createDecisionCase();
   decision.human_decision.rationale = 'I want to kill myself.';
-  const blocked = decisionRecordability(decision);
-  assert.equal(blocked.recordable, false);
-  assert.equal(blocked.field, 'human_decision.rationale');
+  const crisis = decisionRecordability(decision);
+  assert.equal(crisis.recordable, false);
+  assert.equal(crisis.field, 'human_decision.rationale');
+  assert.equal(crisis.boundary.kind, 'out_of_scope_self_harm');
 
-  decision.human_decision.rationale = 'The team considered ending the supplier engagement after the qualification failure.';
+  decision.human_decision.rationale = 'I am deciding whether to move to another city.';
+  const personal = decisionRecordability(decision);
+  assert.equal(personal.recordable, false);
+  assert.equal(personal.field, 'human_decision.rationale');
+  assert.equal(personal.boundary.kind, 'out_of_scope_personal_decision');
+
+  decision.human_decision.rationale = 'I selected Option A because the evidence supports it.';
   assert.equal(decisionRecordability(decision).recordable, true);
 });
 
 test('receipt constructor fails closed when the recorded rationale is out of scope', () => {
   const decision = createDecisionCase();
   decision.human_decision.selected_strategy_id = decision.strategies[0].strategy_id;
-  decision.human_decision.rationale = 'I keep thinking about hurting myself.';
+  decision.human_decision.rationale = 'I am deciding whether to move to another city.';
   decision.human_decision.next_action = 'Begin the bounded next action.';
   assert.throws(() => createDecisionRecord(decision, options(decision)), /outside FDE recording scope/i);
 });
