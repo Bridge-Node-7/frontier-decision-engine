@@ -1,9 +1,7 @@
 name: Release
 
 on:
-  workflow_run:
-    workflows: ["Deploy Pages"]
-    types: [completed]
+  workflow_dispatch:
 
 permissions:
   actions: read
@@ -12,36 +10,43 @@ permissions:
   attestations: write
 
 concurrency:
-  group: release-${{ github.event.workflow_run.head_sha }}
+  group: stable-release
   cancel-in-progress: false
 
 jobs:
   publish:
-    if: >-
-      github.event.workflow_run.conclusion == 'success' &&
-      github.event.workflow_run.event == 'push' &&
-      github.event.workflow_run.head_branch == 'main'
     runs-on: ubuntu-latest
     timeout-minutes: 25
     steps:
-      - name: Checkout verified Pages commit
+      - name: Checkout current main
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
-          ref: ${{ github.event.workflow_run.head_sha }}
+          ref: main
           fetch-depth: 0
           persist-credentials: false
       - name: Verify trusted main release anchor
         id: commit
         env:
           GH_TOKEN: ${{ github.token }}
-          RELEASE_COMMIT: ${{ github.event.workflow_run.head_sha }}
         run: |
-          test "$(git rev-parse HEAD)" = "$RELEASE_COMMIT"
+          RELEASE_COMMIT="$(git rev-parse HEAD)"
           git fetch --no-tags origin main
           test "$(git rev-parse origin/main)" = "$RELEASE_COMMIT"
           test "$(gh api "repos/$GITHUB_REPOSITORY/commits/$RELEASE_COMMIT" --jq '.commit.verification.verified')" = "true"
           test "$(gh api "repos/$GITHUB_REPOSITORY/commits/$RELEASE_COMMIT" --jq '.commit.verification.reason')" = "valid"
           echo "release_commit=$RELEASE_COMMIT" >> "$GITHUB_OUTPUT"
+      - name: Verify deployed Pages commit
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_COMMIT: ${{ steps.commit.outputs.release_commit }}
+        run: |
+          PAGES_RUN_ID="$(
+            gh api "repos/$GITHUB_REPOSITORY/actions/workflows/pages.yml/runs?branch=main&status=success&per_page=100" \
+              --jq ".workflow_runs[] | select(.head_sha == \"$RELEASE_COMMIT\" and .event == \"push\" and .conclusion == \"success\") | .id" \
+              | head -n 1
+          )"
+          test -n "$PAGES_RUN_ID"
+          echo "PASS - deployed Pages run $PAGES_RUN_ID covers $RELEASE_COMMIT"
       - name: Verify release identity
         id: identity
         run: |
@@ -113,8 +118,15 @@ jobs:
           RELEASE_COMMIT: ${{ steps.commit.outputs.release_commit }}
           TAG: ${{ steps.identity.outputs.tag }}
         run: |
-          TAG_OBJECT_SHA="$(gh api --method POST "repos/$GITHUB_REPOSITORY/git/tags"             -f tag="$TAG"             -f message="Frontier Decision Engine $TAG"             -f object="$RELEASE_COMMIT"             -f type="commit"             --jq '.sha')"
-          gh api --method POST "repos/$GITHUB_REPOSITORY/git/refs"             -f ref="refs/tags/$TAG"             -f sha="$TAG_OBJECT_SHA" >/dev/null
+          TAG_OBJECT_SHA="$(gh api --method POST "repos/$GITHUB_REPOSITORY/git/tags" \
+            -f tag="$TAG" \
+            -f message="Frontier Decision Engine $TAG" \
+            -f object="$RELEASE_COMMIT" \
+            -f type="commit" \
+            --jq '.sha')"
+          gh api --method POST "repos/$GITHUB_REPOSITORY/git/refs" \
+            -f ref="refs/tags/$TAG" \
+            -f sha="$TAG_OBJECT_SHA" >/dev/null
       - name: Verify annotated tag and release commit
         if: steps.state.outputs.publish_needed == 'true'
         env:
@@ -142,7 +154,13 @@ jobs:
           else
             release_flags+=(--latest)
           fi
-          gh release create "$TAG"             "dist/frontier-decision-engine-${TAG}.zip"             "dist/frontier-decision-engine-${TAG}.zip.sha256"             "${release_flags[@]}"             --target "$RELEASE_COMMIT"             --title "Frontier Decision Engine $TAG"             --notes-file "${{ steps.identity.outputs.notes_file }}"
+          gh release create "$TAG" \
+            "dist/frontier-decision-engine-${TAG}.zip" \
+            "dist/frontier-decision-engine-${TAG}.zip.sha256" \
+            "${release_flags[@]}" \
+            --target "$RELEASE_COMMIT" \
+            --title "Frontier Decision Engine $TAG" \
+            --notes-file "${{ steps.identity.outputs.notes_file }}"
       - name: Download and verify hosted release assets
         if: steps.state.outputs.publish_needed == 'true'
         env:
@@ -151,7 +169,10 @@ jobs:
         run: |
           rm -rf hosted-verification
           mkdir hosted-verification
-          gh release download "$TAG"             --repo "$GITHUB_REPOSITORY"             --dir hosted-verification             --pattern "frontier-decision-engine-${TAG}.zip*"
+          gh release download "$TAG" \
+            --repo "$GITHUB_REPOSITORY" \
+            --dir hosted-verification \
+            --pattern "frontier-decision-engine-${TAG}.zip*"
           cd hosted-verification
           sha256sum --check "frontier-decision-engine-${TAG}.zip.sha256"
           verified=false
@@ -163,7 +184,15 @@ jobs:
             sleep 5
           done
           test "$verified" = "true"
-          gh release verify-asset "$TAG"             "frontier-decision-engine-${TAG}.zip"             --repo "$GITHUB_REPOSITORY"
-          gh release verify-asset "$TAG"             "frontier-decision-engine-${TAG}.zip.sha256"             --repo "$GITHUB_REPOSITORY"
-          gh attestation verify             "frontier-decision-engine-${TAG}.zip"             --repo "$GITHUB_REPOSITORY"
-          gh attestation verify             "frontier-decision-engine-${TAG}.zip.sha256"             --repo "$GITHUB_REPOSITORY"
+          gh release verify-asset "$TAG" \
+            "frontier-decision-engine-${TAG}.zip" \
+            --repo "$GITHUB_REPOSITORY"
+          gh release verify-asset "$TAG" \
+            "frontier-decision-engine-${TAG}.zip.sha256" \
+            --repo "$GITHUB_REPOSITORY"
+          gh attestation verify \
+            "frontier-decision-engine-${TAG}.zip" \
+            --repo "$GITHUB_REPOSITORY"
+          gh attestation verify \
+            "frontier-decision-engine-${TAG}.zip.sha256" \
+            --repo "$GITHUB_REPOSITORY"
