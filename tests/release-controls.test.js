@@ -31,17 +31,15 @@ test('release classifier accepts stable and prerelease tags and rejects malforme
   assert.notEqual(malformed.status, 0);
 });
 
-test('production release follows successful Pages UAT and uses a verified main commit anchor', async () => {
+test('stable publication is explicit, follows successful Pages UAT, and uses a verified main commit anchor', async () => {
   const workflow = await read('.github/workflows/release.yml');
-  assert.match(workflow, /workflow_run:/);
-  assert.match(workflow, /workflows: \["Deploy Pages"\]/);
-  assert.match(workflow, /types: \[completed\]/);
-  assert.equal(workflow.includes('workflow_dispatch'), false);
+  assert.match(workflow, /workflow_dispatch:/);
+  assert.equal(workflow.includes('workflow_run:'), false);
   assert.equal(/environment:[\s\S]*name: release/.test(workflow), false);
-  assert.match(workflow, /workflow_run\.conclusion == 'success'/);
-  assert.match(workflow, /workflow_run\.event == 'push'/);
-  assert.match(workflow, /workflow_run\.head_branch == 'main'/);
-  assert.match(workflow, /github\.event\.workflow_run\.head_sha/);
+  assert.match(workflow, /ref: main/);
+  assert.match(workflow, /actions\/workflows\/pages\.yml\/runs/);
+  assert.match(workflow, /PAGES_RUN_ID/);
+  assert.match(workflow, /\.head_sha ==/);
   assert.match(workflow, /git rev-parse origin\/main/);
   assert.match(workflow, /\.commit\.verification\.verified/);
   assert.match(workflow, /\.commit\.verification\.reason/);
