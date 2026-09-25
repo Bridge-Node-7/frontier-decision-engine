@@ -22,15 +22,3 @@ The Pilot Proof Envelope is separate from the Decision Case and Decision Receipt
 ## Handling boundary
 
 The public deployment is suitable only for public or sanitized decision material. A user cannot elevate the public deployment into a private, controlled, classified, or otherwise restricted environment through a UI selection.
-
-## Closeout rule
-
-After the pilot-readiness release is verified, freeze feature expansion. Let real accountable decision-makers determine which future capabilities earn additional engineering.
-
-### Maintenance lane
-
-The feature freeze applies to net-new capability expansion. It does not block bounded maintenance that preserves the published decision contracts, including security, safety, correctness, scope-boundary, accessibility, reliability, interoperability, compatibility, documentation, evidence-maintenance, or dependency work.
-
-Maintenance should not create a new user workflow, expand decision authority, or silently change the meaning of an existing Decision Case, Decision Receipt, or Pilot Proof Envelope. Net-new capabilities should be earned by pilot evidence or accompanied by an explicit recorded exception explaining why the change is necessary before pilot evidence is available.
-
-This clarification governs changes after publication of this note. It does not retroactively reclassify earlier releases.
