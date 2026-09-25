@@ -145,12 +145,14 @@ test('browser gate includes semantic accessibility, reflow, forced-colors, and P
   assert.match(runner, /%PDF/);
 });
 
-test('Pages-gated release workflow verifies identity and publishes deterministic artifacts', async () => {
+test('explicit stable release workflow verifies deployed main and publishes deterministic artifacts', async () => {
   const workflow = await read('.github/workflows/release.yml');
   const verifier = await read('scripts/verify_release_tag.py');
-  assert.match(workflow, /workflow_run:/);
-  assert.match(workflow, /workflows: \["Deploy Pages"\]/);
-  assert.match(workflow, /workflow_run\.head_sha/);
+  assert.match(workflow, /workflow_dispatch:/);
+  assert.equal(workflow.includes('workflow_run:'), false);
+  assert.match(workflow, /ref: main/);
+  assert.match(workflow, /actions\/workflows\/pages\.yml\/runs/);
+  assert.match(workflow, /PAGES_RUN_ID/);
   assert.match(workflow, /verify_release_tag\.py/);
   assert.match(workflow, /\.commit\.verification\.verified/);
   assert.match(workflow, /\.commit\.verification\.reason/);
@@ -208,11 +210,14 @@ test('Pages workflow runs the complete UX gate against the deployed HTTPS origin
   assert.match(runner, /attempts=12/);
 });
 
-test('Release workflow requires a verified commit anchor and hosted verification', async () => {
+test('Release workflow requires explicit invocation, a deployed verified main anchor, and hosted verification', async () => {
   const release = await read('.github/workflows/release.yml');
   assert.equal(/environment:[\s\S]*name: release/.test(release), false);
-  assert.match(release, /workflow_run\.conclusion == 'success'/);
-  assert.match(release, /workflow_run\.head_branch == 'main'/);
+  assert.match(release, /workflow_dispatch:/);
+  assert.equal(release.includes('workflow_run:'), false);
+  assert.match(release, /ref: main/);
+  assert.match(release, /actions\/workflows\/pages\.yml\/runs/);
+  assert.match(release, /PAGES_RUN_ID/);
   assert.match(release, /verification\.verified/);
   assert.match(release, /verification\.reason/);
   assert.match(release, /test "\$TAG_OBJECT_TYPE" = "tag"/);
