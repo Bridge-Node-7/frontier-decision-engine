@@ -69,15 +69,24 @@ test('prepared bottom line fails closed when required evidence remains unresolve
   );
 });
 
-test('prepared bottom line translates declared assurance posture without claiming human authority', () => {
-  assert.equal(
-    preparedBottomLine({
-      assurancePosture: 'STOP',
-      leadingChoice: 'Path B',
-      evidenceReadiness: 'ready',
-    }),
-    'DO NOT PROCEED — a required criterion failed.',
-  );
+test('prepared bottom line translates every declared assurance posture without claiming human authority', () => {
+  const cases = [
+    ['STOP', 'DO NOT PROCEED — a required criterion failed.'],
+    ['REWORK', 'REWORK BEFORE COMMITMENT — required remediation remains open.'],
+    ['HOLD', 'HOLD — the declared assurance posture does not support commitment yet.'],
+    ['ADVANCE WITH CONDITIONS', 'PROCEED WITH CONDITIONS — the declared assurance posture supports bounded advancement.'],
+    ['ADVANCE', 'PROCEED — the declared assurance posture supports advancement.'],
+  ];
+  for (const [assurancePosture, expected] of cases) {
+    assert.equal(
+      preparedBottomLine({
+        assurancePosture,
+        leadingChoice: 'Path B',
+        evidenceReadiness: 'ready',
+      }),
+      expected,
+    );
+  }
   assert.equal(
     preparedBottomLine({
       assurancePosture: 'Inactive',
