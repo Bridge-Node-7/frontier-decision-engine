@@ -243,6 +243,27 @@ test('Release workflow requires explicit invocation, a deployed verified main an
   assert.equal((release.match(/gh release verify-asset/g) || []).length, 2);
   assert.equal((release.match(/gh attestation verify/g) || []).length, 2);
 });
+test('Release keeps validation read-only and isolates publication authority', async () => {
+  const release = await read('.github/workflows/release.yml');
+  assert.match(release, /permissions:\n  actions: read\n  contents: read\n/);
+  const prepare = release.split('  prepare:')[1].split('  publish:')[0];
+  const publish = release.split('  publish:')[1].split('  verify-hosted:')[0];
+  const verify = release.split('  verify-hosted:')[1];
+  assert.equal(prepare.includes('contents: write'), false);
+  assert.equal(prepare.includes('id-token: write'), false);
+  assert.equal(prepare.includes('attestations: write'), false);
+  assert.match(prepare, /npm run check/);
+  assert.match(prepare, /npm run package:release/);
+  assert.match(publish, /contents: write/);
+  assert.match(publish, /id-token: write/);
+  assert.match(publish, /attestations: write/);
+  assert.equal(publish.includes('npm ci'), false);
+  assert.equal(publish.includes('pip install'), false);
+  assert.equal(verify.includes('contents: write'), false);
+  assert.equal(verify.includes('id-token: write'), false);
+  assert.equal(verify.includes('attestations: write'), false);
+});
+
 test('release workflow never injects an operator credential', async () => {
   const release = await read('.github/workflows/release.yml');
   assert.equal(release.includes('RELEASE_ADMIN_TOKEN'), false);
