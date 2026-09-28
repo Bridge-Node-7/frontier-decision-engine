@@ -34,7 +34,7 @@ import {
 } from './lib/semantics.js';
 import { SEER_DIMENSIONS, SEER_DIMENSION_PROMPTS, SEER_PROFILE_ID, isSeerProfile } from './lib/profiles/seer.js';
 import { deriveDecisionSynthesis } from './lib/synthesis.js';
-import { buildDecisionBriefText, nextProofPresentation } from './lib/decision-brief.js';
+import { buildDecisionBriefText, nextProofPresentation, preparedBottomLine } from './lib/decision-brief.js';
 import { decisionDelta } from './lib/reassessment.js';
 import { boundaryForInput } from './lib/input-boundaries.js';
 import { decisionRecordability } from './lib/recordability.js';
@@ -597,7 +597,15 @@ function decisionBriefStep() {
   const proofRequestItems = evidenceReadiness.proof_requests.map((item) => `<li><strong>${escapeHtml(item.label)}:</strong> ${escapeHtml(item.evidence_need)}</li>`).join('');
   const changedSinceRecord = hasValidRecord && !recordMatchesDecision(decision, state.record);
   const reassessmentChanges = changedSinceRecord ? decisionDelta(state.record.snapshot, decision) : [];
-  const reconsiderWhen = String(semantics.reassessment || decision.adaptive_pathway?.reassessment || '').trim() || 'No reassessment condition has been recorded yet.';
+  const explicitReconsiderWhen = String(semantics.reassessment || decision.adaptive_pathway?.reassessment || '').trim();
+  const reconsiderWhen = explicitReconsiderWhen || 'No reassessment condition has been recorded yet.';
+  const bottomLine = preparedBottomLine({
+    assurancePosture: synthesis.posture || 'Inactive',
+    leadingChoice: machineCandidateLabel,
+    evidenceReadiness: evidenceReadiness.state,
+  });
+  const firstProof = evidenceReadiness.proof_requests[0];
+  const preparedBottomLinePanel = `<section class="callout decision-bottom-line" data-surface="prepared-bottom-line"><span class="eyebrow">Prepared bottom line</span><h3>${escapeHtml(bottomLine)}</h3><p><strong>Why:</strong> ${escapeHtml(synthesis.controlling_issue || 'The formal comparison reflects the declared goals, thresholds, evidence state, and modeled futures.')}</p>${firstProof ? `<p><strong>Next proof:</strong> ${escapeHtml(firstProof.label)}: ${escapeHtml(firstProof.evidence_need)}</p>` : ''}${explicitReconsiderWhen ? `<p><strong>Reconsider when:</strong> ${escapeHtml(explicitReconsiderWhen)}</p>` : ''}<p class="help">Prepared from the declared decision model. This is decision support, not the accountable human decision.</p></section>`;
   const reassessmentPanel = changedSinceRecord
     ? `<section class="callout warning reassessment-panel" data-surface="reassessment"><span class="eyebrow">Reassessment</span><h3>What changed?</h3>${reassessmentChanges.length ? `<ul>${reassessmentChanges.map((item) => `<li>${escapeHtml(item.label)}</li>`).join('')}</ul>` : '<p>The working decision differs from the recorded Receipt. Inspect the working decision before recording again.</p>'}<p><strong>Reconsider when…</strong> ${escapeHtml(reconsiderWhen)}</p><p class="help">These are deterministic differences between recorded and current state. FDE does not infer why the change occurred.</p></section>`
     : hasValidRecord
@@ -648,6 +656,7 @@ function decisionBriefStep() {
 </section>` : '';
   return `<div class="stack">
     <div><h2 id="decision-step-heading-5" tabindex="-1">Choose a path.</h2></div>
+    ${preparedBottomLinePanel}
     <section class="decision-brief">
       <div class="brief-head"><div><span class="eyebrow">Decision question</span><h3>${escapeHtml(decision.question || 'Decision not yet framed')}</h3></div></div>
       <div class="brief-actions actions"><button id="copy-decision-brief" type="button">Copy Decision Brief</button><button id="download-decision-brief" type="button">Download Decision Brief</button><span id="decision-brief-status" class="status-line" role="status" aria-live="polite"></span></div>

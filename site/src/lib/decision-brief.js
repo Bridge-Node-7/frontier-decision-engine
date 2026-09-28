@@ -3,6 +3,28 @@ const clean = (value) => String(value ?? '').replace(/\s+/g, ' ').trim();
 export const NO_REQUIRED_PROOF_MESSAGE = 'No required proof currently blocks the formal evidence gate.';
 export const UNNAMED_REQUIRED_PROOF_MESSAGE = 'Required proof remains unresolved. Name the evidence needed for each required criterion.';
 
+
+export function preparedBottomLine({
+  assurancePosture = '',
+  leadingChoice = '',
+  evidenceReadiness = 'ready',
+} = {}) {
+  const posture = clean(assurancePosture).toUpperCase();
+  const choice = clean(leadingChoice);
+  if (evidenceReadiness === 'proof-required') {
+    return 'HOLD — required evidence remains unresolved.';
+  }
+  if (posture === 'STOP') return 'DO NOT PROCEED — a required criterion failed.';
+  if (posture === 'REWORK') return 'REWORK BEFORE COMMITMENT — required remediation remains open.';
+  if (posture === 'HOLD') return 'HOLD — the declared assurance posture does not support commitment yet.';
+  if (posture === 'ADVANCE WITH CONDITIONS') return 'PROCEED WITH CONDITIONS — the declared assurance posture supports bounded advancement.';
+  if (posture === 'ADVANCE') return 'PROCEED — the declared assurance posture supports advancement.';
+  if (choice && !/^(?:Tie:|No acceptable choice|More complete information needed|No unique leader)/i.test(choice)) {
+    return `COMPARISON ONLY — ${choice} currently holds up in the declared model.`;
+  }
+  return 'HOLD — the formal comparison does not yet support one clear next path.';
+}
+
 export function nextProofPresentation({ readinessState = 'ready', nextProof = [] } = {}) {
   const items = Array.isArray(nextProof) ? nextProof.map(clean).filter(Boolean) : [];
   const proofRequired = readinessState === 'proof-required';
@@ -35,9 +57,13 @@ export function buildDecisionBriefText({
   nextAction = '',
 } = {}) {
   const proof = nextProofPresentation({ readinessState: evidenceReadiness, nextProof });
+  const bottomLine = preparedBottomLine({ assurancePosture, leadingChoice, evidenceReadiness });
   return [
     'Frontier Decision Engine — Decision Brief',
     'Working brief — not a Decision Receipt',
+    '',
+    `Prepared bottom line: ${bottomLine}`,
+    `Why: ${clean(controllingIssue) || 'The comparison reflects the declared goals, thresholds, evidence state, and modeled futures.'}`,
     '',
     `Decision: ${clean(decision) || 'Not framed'}`,
     `Decision owner: ${clean(owner) || 'Not established'}`,
@@ -46,7 +72,6 @@ export function buildDecisionBriefText({
     `What held up: ${clean(leadingChoice) || 'No unique leader'}`,
     `Selected choice: ${clean(selectedChoice) || 'No human selection'}`,
     `Assurance posture: ${clean(assurancePosture) || 'Inactive'}`,
-    `Why: ${clean(controllingIssue) || 'The comparison reflects the declared goals, thresholds, and modeled futures.'}`,
     '',
     'What could change it:',
     ...linesFor(changes, 'No explicit change condition is currently surfaced by the formal model.'),

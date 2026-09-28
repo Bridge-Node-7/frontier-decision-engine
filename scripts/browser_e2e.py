@@ -487,6 +487,11 @@ def decision_flow(page: Page, base: str) -> str:
 
         if expected == "Choose a path.":
             decision_text = page.locator("body").inner_text()
+            prepared = page.locator('[data-surface="prepared-bottom-line"]')
+            assert prepared.is_visible()
+            prepared_text = prepared.inner_text().lower()
+            assert "prepared bottom line" in prepared_text
+            assert "decision support, not the accountable human decision" in prepared_text
             assert "No human selection" in decision_text
             assert "Conditions that could break the selection" not in decision_text
             assert "No declared threshold failures in the included futures." not in decision_text

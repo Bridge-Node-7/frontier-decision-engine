@@ -1,19 +1,16 @@
-# v0.5.14
+# v0.5.15
 
-Application version is 0.5.14.
+Application version is 0.5.15.
 
 Compatible decision schema: 0.2.10. Semantic decision schema: 0.3.0. Mission Graph Decision Context Packet: 0.3.0. Decision Receipt format: 2. Pilot Proof Envelope: 1.
 
-This corrective release replaces open-ended euphemism matching as the primary safety fallback with a bounded product-scope rule.
+This corrective UX release makes the supportable prepared bottom line the first substantive result on the final decision surface and in the downloadable Decision Brief.
 
-- High-confidence self-harm, immediate-safety, and personal-health boundaries remain specific and fail closed.
-- First-person personal-life decisions that are not clearly technical, organizational, mission, or strategic are redirected by a neutral product-scope boundary before comparison and again at Receipt construction.
-- The neutral personal-scope redirect explicitly states that it is not a clinical judgment and includes standing crisis-support signposting without classifying ordinary personal decisions as self-harm.
-- Clearly organizational first-person decisions remain in scope based on organizational or decision-support context rather than a finite action-verb list.
-- Previously demonstrated phrases such as geographic relocation and personal career choices are no longer mislabeled as self-harm; they receive the neutral personal-scope redirect instead.
-- Receipt construction and import admission continue to enforce the same scope policy over the substantive decision, including the recorded human rationale.
-- Regression and browser UAT distinguish specific crisis boundaries, neutral personal scope, and legitimate organizational language.
-
-The Decision Case schemas, Mission Graph context contract, Decision Receipt v2 format, ranking semantics, reassessment behavior, and authority roles are unchanged. Human judgment remains authoritative.
+- Required unresolved evidence produces a HOLD prepared bottom line even when another declared posture would otherwise permit advancement.
+- STOP, HOLD, REWORK, ADVANCE WITH CONDITIONS, and ADVANCE retain their existing semantic authority and are translated into plain-language prepared output.
+- An inactive assurance posture remains comparison-only rather than being promoted into an automated recommendation.
+- The visible prepared bottom line shows the controlling issue, the next required proof when one exists, and an explicit reminder that the accountable human still decides.
+- Browser UAT now requires the prepared bottom-line surface and its human-authority boundary.
+- The Decision Case schemas, Mission Graph context contract, Decision Receipt v2 format, ranking semantics, reassessment behavior, authority roles, and portable interfaces are unchanged. Accountable human judgment remains authoritative.
 
 Browser-local storage is not encrypted confidential storage. Public deployment is for public or sanitized decision material only.
