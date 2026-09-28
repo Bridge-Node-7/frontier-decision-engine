@@ -14,7 +14,7 @@ test('application version retains the compatible v0.2.10 decision schema', async
   assert.match(packageData.version, /^\d+\.\d+\.\d+$/);
   const versionPattern = packageData.version.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
   assert.match(citation, new RegExp(`^version:\\s*${versionPattern}\\s*$`, 'm'));
-  assert.match(citation, /^date-released:\s*\d{4}-\d{2}-\d{2}\s*$/m);
+  assert.doesNotMatch(citation, /^date-released:/m);
   assert.equal(schema.properties.schema_version.const, '0.2.10');
   assert.equal(example.schema_version, '0.2.10');
   assert.equal(facts.applicationVersion, packageData.version);
@@ -43,10 +43,8 @@ test('release identity supports a compatible schema and complete current notes',
   assert.match(notes, new RegExp(`application version is ${versionPattern}`, 'i'));
   assert.match(notes, /compatible decision schema[\s\S]*0\.2\.10/i);
   assert.match(releasing, /compatible schema may[\s\S]*earlier version/i);
-  const releaseDate = citation.match(/^date-released:\s*(\d{4})-(\d{2})-(\d{2})\s*$/m);
-  assert.ok(releaseDate, 'citation release date is required');
-  const fixedTime = `FIXED_TIME = (${Number(releaseDate[1])}, ${Number(releaseDate[2])}, ${Number(releaseDate[3])}, 0, 0, 0)`;
-  assert.equal(packager.includes(fixedTime), true);
+  assert.doesNotMatch(citation, /^date-released:/m);
+  assert.match(packager, /FIXED_TIME = \(\d{4}, \d{1,2}, \d{1,2}, 0, 0, 0\)/);
 });
 
 test('affordability is modeled as an at-least desirability objective', async () => {
