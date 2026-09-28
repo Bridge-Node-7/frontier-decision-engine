@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 from __future__ import annotations
 
+import hashlib
 import json
 import re
 import sys
@@ -19,7 +20,7 @@ version = package["version"]
 errors: list[str] = []
 
 required = [
-    "CITATION.cff", "CONTRIBUTING.md", "LICENSE", "README.md", "SECURITY.md",
+    "CITATION.cff", "CONTRIBUTING.md", "INTERFACES.json", "LICENSE", "README.md", "SECURITY.md",
     "docs/ARCHITECTURE.md", "docs/METHODOLOGY.md", "docs/DATA_DICTIONARY.md", "docs/PRIVACY.md",
     "docs/DECISION_RECEIPTS.md", "docs/PILOT_READINESS.md",
     "docs/RELEASE_NOTES.md", "docs/RELEASING.md", "docs/STYLE_LAYERS.md",
@@ -42,6 +43,32 @@ required = [
 for item in required:
     if not (ROOT / item).exists():
         errors.append(f"required public/release path missing: {item}")
+
+interfaces = load_json("INTERFACES.json")
+if interfaces.get("format") != "bn7.interfaces/0.1":
+    errors.append("portable interface manifest format mismatch")
+if interfaces.get("system") != "frontier-decision-engine":
+    errors.append("portable interface manifest system mismatch")
+if "application_version" in interfaces:
+    errors.append("portable interface manifest must not couple compatibility to the application version")
+provided = interfaces.get("provides")
+if not isinstance(provided, list) or len(provided) != 1:
+    errors.append("Decision Receipt v2 must be the single declared provided portable contract")
+else:
+    receipt = provided[0]
+    if receipt.get("contract_id") != "urn:bn7:decision-receipt:2":
+        errors.append("Decision Receipt portable contract identity mismatch")
+    if receipt.get("contract_version") != "2":
+        errors.append("Decision Receipt portable contract version mismatch")
+    if receipt.get("schema_path") != "schemas/decision-receipt-v2.schema.json":
+        errors.append("Decision Receipt portable schema path mismatch")
+    if receipt.get("authority") != "PRODUCER_OWNED_PORTABLE_CONTRACT":
+        errors.append("Decision Receipt portable authority mismatch")
+    receipt_schema = ROOT / "schemas/decision-receipt-v2.schema.json"
+    if receipt_schema.is_file():
+        receipt_sha256 = hashlib.sha256(receipt_schema.read_bytes()).hexdigest()
+        if receipt.get("sha256") != receipt_sha256:
+            errors.append("Decision Receipt portable schema digest mismatch")
 
 root_markdown = {str(path.relative_to(ROOT)).replace("\\", "/") for path in ROOT.glob("*.md")}
 expected_root_markdown = {"CODE_OF_CONDUCT.md", "CONTRIBUTING.md", "README.md", "SECURITY.md"}
