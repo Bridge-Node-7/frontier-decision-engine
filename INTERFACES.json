@@ -1,7 +1,15 @@
 {
   "format": "bn7.interfaces/0.1",
   "system": "frontier-decision-engine",
-  "provides": [],
+  "provides": [
+    {
+      "contract_id": "urn:bn7:decision-receipt:2",
+      "contract_version": "2",
+      "schema_path": "schemas/decision-receipt-v2.schema.json",
+      "sha256": "d80fae451587b952b8d2ae96fd8c9dfaddbe59b19015dc00d2ef23577e255f1c",
+      "authority": "PRODUCER_OWNED_PORTABLE_CONTRACT"
+    }
+  ],
   "accepts": [
     {
       "contract_id": "urn:bn7:decision-context:0.3.0",
