@@ -82,7 +82,7 @@ Generated release facts and current application identity are recorded in [`proje
 
 ## Release status
 
-`main` is the current reviewed source. GitHub Releases are stable distribution milestones and may intentionally lag reviewed maintenance on `main`. A source version ahead of the latest GitHub Release is unreleased until a release is published.
+`main` is the current reviewed source. GitHub Releases are stable distribution milestones and may intentionally lag reviewed maintenance on `main`. A source version ahead of the latest GitHub Release is unreleased until a release is published. The GitHub Release publication timestamp is the authoritative stable-release date; reviewed source does not claim a stable release date before publication.
 
 ## Documentation
 
