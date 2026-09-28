@@ -172,11 +172,11 @@ test('current public release uses verified browser tooling and current official 
   const release = await read('.github/workflows/release.yml');
   const workflows = `${ci}\n${pages}\n${release}`;
   assert.match(requirements, /^playwright==1\.57\.0$/m);
-  assert.equal((workflows.match(/actions\/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1/g) || []).length, 3);
+  assert.equal((workflows.match(/actions\/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1/g) || []).length, 4);
   assert.equal(workflows.includes('actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0'), false);
-  assert.equal((workflows.match(/actions\/setup-node@820762786026740c76f36085b0efc47a31fe5020/g) || []).length, 3);
-  assert.equal((workflows.match(/package-manager-cache: false/g) || []).length, 3);
-  assert.equal((workflows.match(/npm ci --ignore-scripts --no-audit --no-fund/g) || []).length, 3);
+  assert.equal((workflows.match(/actions\/setup-node@820762786026740c76f36085b0efc47a31fe5020/g) || []).length, 4);
+  assert.equal((workflows.match(/package-manager-cache: false/g) || []).length, 4);
+  assert.equal((workflows.match(/npm ci --ignore-scripts --no-audit --no-fund/g) || []).length, 4);
   assert.match(ci, /timeout-minutes: 20/);
   assert.match(pages, /timeout-minutes: 20/);
   assert.match(release, /timeout-minutes: 25/);
@@ -185,6 +185,21 @@ test('current public release uses verified browser tooling and current official 
   assert.match(pages, /actions\/upload-pages-artifact@fc324d3547104276b827a68afc52ff2a11cc49c9 # v5\.0\.0/);
   assert.match(pages, /actions\/deploy-pages@cd2ce8fcbc39b97be8ca5fce6e763baed58fa128 # v5\.0\.0/);
 });
+test('Pages keeps build and live verification read-only while deployment alone holds publish authority', async () => {
+  const pages = await read('.github/workflows/pages.yml');
+  assert.match(pages, /permissions:\n  contents: read\n/);
+  const deploy = pages.split('  deploy:')[1].split('  verify-production:')[0];
+  assert.match(deploy, /pages: write/);
+  assert.match(deploy, /id-token: write/);
+  const build = pages.split('  build:')[1].split('  deploy:')[0];
+  const verify = pages.split('  verify-production:')[1];
+  assert.equal(build.includes('pages: write'), false);
+  assert.equal(build.includes('id-token: write'), false);
+  assert.equal(verify.includes('pages: write'), false);
+  assert.equal(verify.includes('id-token: write'), false);
+  assert.match(verify, /needs\.deploy\.outputs\.page_url/);
+});
+
 test('cross-platform release inputs are normalized and binary-safe', async () => {
   const attributes = await read('.gitattributes');
   const nodeVersion = await read('.node-version');
