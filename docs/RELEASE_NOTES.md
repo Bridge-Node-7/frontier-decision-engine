@@ -11,6 +11,6 @@ This corrective UX release makes the supportable prepared bottom line the first 
 - An inactive assurance posture remains comparison-only rather than being promoted into an automated recommendation.
 - The visible prepared bottom line shows the controlling issue, the next required proof when one exists, and an explicit reminder that the accountable human still decides.
 - Browser UAT now requires the prepared bottom-line surface and its human-authority boundary.
-- The Decision Case schemas, Mission Graph context contract, Decision Receipt v2 format, ranking semantics, reassessment behavior, authority roles, and portable interfaces are unchanged.
+- The Decision Case schemas, Mission Graph context contract, Decision Receipt v2 format, ranking semantics, reassessment behavior, authority roles, and portable interfaces are unchanged. Accountable human judgment remains authoritative.
 
 Browser-local storage is not encrypted confidential storage. Public deployment is for public or sanitized decision material only.
