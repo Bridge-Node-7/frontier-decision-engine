@@ -47,6 +47,26 @@ for item in required:
     if not (ROOT / item).exists():
         errors.append(f"required public/release path missing: {item}")
 
+current_token_name = (ROOT / "docs/contracts/BN7_TOKEN_CONTRACT_CURRENT.txt").read_text(encoding="utf-8").strip()
+if current_token_name != "BN7_TOKEN_CONTRACT_v1.1.0.json":
+    errors.append("current visual token contract pointer mismatch")
+current_token_path = ROOT / "docs/contracts" / current_token_name
+if current_token_path.is_file():
+    current_token = json.loads(current_token_path.read_text(encoding="utf-8"))
+    if current_token.get("version") != "1.1.0":
+        errors.append("current visual token contract version mismatch")
+    source = current_token.get("source")
+    if not isinstance(source, dict) or set(source) != {"files", "mode", "origin"}:
+        errors.append("current visual token contract provenance shape mismatch")
+    elif source.get("mode") != "public-release-baseline" or source.get("origin") != "https://bridgenode7.com/":
+        errors.append("current visual token contract public origin mismatch")
+    checksum_path = ROOT / "docs/contracts/BN7_TOKEN_CONTRACT_v1.1.0_SHA256.txt"
+    if checksum_path.is_file():
+        expected = checksum_path.read_text(encoding="utf-8").strip()
+        digest = hashlib.sha256(current_token_path.read_bytes()).hexdigest()
+        if expected != f"{digest}  {current_token_name}":
+            errors.append("current visual token contract checksum mismatch")
+
 interfaces = load_json("INTERFACES.json")
 if interfaces.get("format") != "bn7.interfaces/0.1":
     errors.append("portable interface manifest format mismatch")
