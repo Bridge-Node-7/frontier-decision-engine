@@ -217,6 +217,10 @@ guided_css = (SITE / "assets/guided-framing.css").read_text(encoding="utf-8")
 universal_css = (SITE / "assets/universal-decision.css").read_text(encoding="utf-8")
 if "--line-strong:" not in shell:
     errors.append("interactive boundary token is missing")
+if "color-scheme:dark" not in shell:
+    errors.append("dark application shell must declare its color scheme")
+if re.search(r"(?:^|[;{])\s*color\s*:\s*transparent", shell) or "-webkit-text-fill-color:transparent" in shell:
+    errors.append("gradient text must retain a visible text-fill floor")
 if "--focus-ring:" not in guided_css:
     errors.append("theme-aware focus token is missing")
 for token in ["@media(max-width:620px)", "@media(forced-colors:active)", "@media(prefers-reduced-motion:reduce)"]:
