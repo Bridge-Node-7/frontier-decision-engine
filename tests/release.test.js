@@ -75,7 +75,7 @@ test('browser end-to-end harness covers the retained Decision Lab surface', asyn
   assert.match(runner, /PROGRAMFILES\(X86\)/);
   assert.match(runner, /Microsoft\/Edge\/Application\/msedge\.exe/);
   assert.match(runner, /page\.keyboard\.press\("Enter"\)/);
-  assert.match(requirements, /playwright==1\.57\.0/);
+  assert.match(requirements, /playwright==1\.63\.0/);
   assert.equal(packageData.scripts['test:e2e'], 'node scripts/run-python.mjs scripts/browser_e2e_release.py');
   assert.match(releaseRunner, /import browser_e2e as suite/);
   assert.match(releaseRunner, /suite\.route_suite = route_suite/);
@@ -171,7 +171,7 @@ test('current public release uses verified browser tooling and current official 
   const pages = await read('.github/workflows/pages.yml');
   const release = await read('.github/workflows/release.yml');
   const workflows = `${ci}\n${pages}\n${release}`;
-  assert.match(requirements, /^playwright==1\.57\.0$/m);
+  assert.match(requirements, /^playwright==1\.63\.0$/m);
   assert.equal((workflows.match(/actions\/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1/g) || []).length, 4);
   assert.equal(workflows.includes('actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0'), false);
   assert.equal((workflows.match(/actions\/setup-node@820762786026740c76f36085b0efc47a31fe5020/g) || []).length, 4);
