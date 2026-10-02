@@ -1030,7 +1030,7 @@ def run_mode(
             "__fdeSha256",
             lambda values: list(hashlib.sha256(bytes(values)).digest()),
         )
-        page.evaluate(
+        context.add_init_script(
             """
             Object.defineProperty(window.crypto, 'subtle', {
               configurable: true,
