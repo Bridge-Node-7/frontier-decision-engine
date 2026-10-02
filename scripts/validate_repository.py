@@ -205,7 +205,7 @@ for required_flow in ("decision_flow", "route_suite", "print_flow"):
 for required_check in ("sessionStorage", "Saved-work protection", "color_scheme", "What are you considering?", "Decision Map"):
     if required_check not in universal_runner:
         errors.append(f"first-run browser regression missing: {required_check}")
-if "playwright==1.57.0" not in requirements:
+if "playwright==1.63.0" not in requirements:
     errors.append("expected browser tool pin is missing")
 
 citation = (ROOT / "CITATION.cff").read_text(encoding="utf-8")
