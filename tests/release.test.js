@@ -161,7 +161,7 @@ test('explicit stable release workflow verifies deployed main and publishes dete
   assert.match(workflow, /gh release create/);
   assert.match(workflow, /release_commit=\$RELEASE_COMMIT/);
   assert.match(workflow, /--target "\$RELEASE_COMMIT"/);
-  assert.match(workflow, /actions\/attest@508db95dd578ae2727ebd6217d5ba78e4fbda05d/);
+  assert.match(workflow, /actions\/attest@1e69f48acb82d1966a394da916b4c1698aa569d6/);
   assert.match(workflow, /persist-credentials: false/);
   assert.match(verifier, /tag .* does not match package version/);
 });
@@ -183,7 +183,7 @@ test('current public release uses verified browser tooling and current official 
   assert.equal(workflows.includes('actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e'), false);
   assert.match(pages, /actions\/configure-pages@45bfe0192ca1faeb007ade9deae92b16b8254a0d # v6\.0\.0/);
   assert.match(pages, /actions\/upload-pages-artifact@fc324d3547104276b827a68afc52ff2a11cc49c9 # v5\.0\.0/);
-  assert.match(pages, /actions\/deploy-pages@cd2ce8fcbc39b97be8ca5fce6e763baed58fa128 # v5\.0\.0/);
+  assert.match(pages, /actions\/deploy-pages@368f82528645a54fb793d4d04e342629a3f51346 # v5\.0\.1/);
 });
 test('Pages keeps build and live verification read-only while deployment alone holds publish authority', async () => {
   const pages = await read('.github/workflows/pages.yml');
@@ -325,7 +325,7 @@ test('delivery automation retains dependency, review, and attestation controls',
   assert.match(pullRequest, /npm run check/);
   assert.match(release, /id-token: write/);
   assert.match(release, /attestations: write/);
-  assert.match(release, /actions\/attest@508db95dd578ae2727ebd6217d5ba78e4fbda05d/);
+  assert.match(release, /actions\/attest@1e69f48acb82d1966a394da916b4c1698aa569d6/);
 });
 
 test('README references only the stable retained product screenshot', async () => {
