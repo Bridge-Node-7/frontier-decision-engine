@@ -352,6 +352,7 @@ def activate_ready_example(page: Page) -> None:
     )
     button = page.locator("#use-ready-example")
     try:
+        button.wait_for(state="visible")
         assert button.is_visible(), "ready-example button is not visible"
         assert button.is_enabled(), "ready-example button is not enabled"
         button.click()
