@@ -1,3 +1,332 @@
+#!/usr/bin/env python3
+"""Real-browser end-to-end verification for Frontier Decision Engine."""
+from __future__ import annotations
+
+import hashlib
+import json
+import mimetypes
+import threading
+import tempfile
+import time
+from functools import partial
+from http.server import SimpleHTTPRequestHandler, ThreadingHTTPServer
+import os
+import re
+import shutil
+from pathlib import Path
+from urllib.parse import unquote, urlparse
+
+try:
+    from playwright.sync_api import Error as PlaywrightError
+    from playwright.sync_api import Page, expect, sync_playwright
+except ImportError as exc:  # pragma: no cover - environment guidance
+    raise SystemExit(
+        "Browser E2E requires Playwright. Run: node scripts/run-python.mjs -m pip install "
+        "-r requirements-dev.txt and node scripts/run-python.mjs -m playwright install chromium"
+    ) from exc
+
+ROOT = Path(__file__).resolve().parents[1]
+SITE = ROOT / "site"
+INDEX_HTML = (SITE / "index.html").read_text(encoding="utf-8")
+
+
+def canonical_json(value) -> str:
+    return json.dumps(value, ensure_ascii=False, sort_keys=True, separators=(",", ":"))
+
+
+def substantive_decision(value):
+    decision = json.loads(json.dumps(value))
+    if not decision.get("urgency"):
+        decision.pop("urgency", None)
+    if not decision.get("reversibility"):
+        decision.pop("reversibility", None)
+    if isinstance(decision.get("provenance"), dict):
+        decision["provenance"].pop("generated_at", None)
+    if isinstance(decision.get("human_decision"), dict):
+        for key in ("recorded_at", "recorded_fingerprint", "recorded_sha256", "approved_by", "approved_at"):
+            decision["human_decision"].pop(key, None)
+    return decision
+
+
+def reseal_receipt(record):
+    receipt = json.loads(json.dumps(record))
+    decision_sha = hashlib.sha256(canonical_json(substantive_decision(receipt["snapshot"])).encode("utf-8")).hexdigest()
+    receipt["decision_content_sha256"] = decision_sha
+    receipt["attestation"]["decision_content_sha256"] = decision_sha
+    envelope = {key: value for key, value in receipt.items() if key != "receipt_sha256"}
+    receipt["receipt_sha256"] = hashlib.sha256(canonical_json(envelope).encode("utf-8")).hexdigest()
+    return receipt
+
+
+class QuietStaticHandler(SimpleHTTPRequestHandler):
+    def log_message(self, _format: str, *_args) -> None:
+        return
+
+
+def start_static_server() -> tuple[ThreadingHTTPServer, str]:
+    handler = partial(QuietStaticHandler, directory=str(SITE))
+    server = ThreadingHTTPServer(("127.0.0.1", 0), handler)
+    thread = threading.Thread(target=server.serve_forever, daemon=True)
+    thread.start()
+    host, port = server.server_address
+    return server, f"http://{host}:{port}"
+
+
+def native_http_available(
+    browser, base: str, *, attempts: int = 1, timeout_ms: int = 5_000, retry_seconds: float = 2.0
+) -> bool:
+    for attempt in range(attempts):
+        context = browser.new_context()
+        page = context.new_page()
+        try:
+            page.goto(base, wait_until="networkidle", timeout=timeout_ms)
+            page.locator("#main h1").wait_for(state="visible", timeout=timeout_ms)
+            if page.locator("#main").count() == 1 and page.evaluate("!!crypto.subtle"):
+                return True
+        except PlaywrightError:
+            pass
+        finally:
+            context.close()
+        if attempt + 1 < attempts:
+            time.sleep(retry_seconds)
+    return False
+
+
+def browser_executable() -> str | None:
+    explicit = os.environ.get("CHROME_BIN")
+    if explicit:
+        return explicit
+    for name in ("chromium", "chromium-browser", "google-chrome", "google-chrome-stable"):
+        found = shutil.which(name)
+        if found:
+            return found
+    if os.name == "nt":
+        roots = [os.environ.get("PROGRAMFILES"), os.environ.get("PROGRAMFILES(X86)"), os.environ.get("LOCALAPPDATA")]
+        for root in filter(None, roots):
+            for relative in ("Google/Chrome/Application/chrome.exe", "Microsoft/Edge/Application/msedge.exe"):
+                candidate = Path(root, relative)
+                if candidate.is_file():
+                    return str(candidate)
+    return None
+
+
+def install_static_route(context) -> None:
+    def handle(route) -> None:
+        parsed = urlparse(route.request.url)
+        relative = unquote(parsed.path.lstrip("/")) or "index.html"
+        candidate = (SITE / relative).resolve()
+        try:
+            candidate.relative_to(SITE.resolve())
+        except ValueError:
+            route.fulfill(status=403, body="Forbidden")
+            return
+        if candidate.is_dir():
+            candidate = candidate / "index.html"
+        if not candidate.exists() or not candidate.is_file():
+            route.fulfill(status=404, body="Not found")
+            return
+        media_type = mimetypes.guess_type(candidate.name)[0] or "application/octet-stream"
+        route.fulfill(status=200, path=str(candidate), content_type=media_type, headers={"Access-Control-Allow-Origin": "*"})
+
+    context.route("http://fde.test/**", handle)
+
+
+def assert_page_clean(page: Page) -> None:
+    audit = page.evaluate(
+        """
+        () => {
+          const ids = [...document.querySelectorAll('[id]')].map((element) => element.id);
+          const unnamedButtons = [...document.querySelectorAll('button')].filter(
+            (button) => !button.textContent.trim() && !button.getAttribute('aria-label')
+          ).length;
+          const unnamedLinks = [...document.querySelectorAll('a')].filter(
+            (link) => !link.textContent.trim() && !link.getAttribute('aria-label') && !link.querySelector('img[alt]')
+          ).length;
+          const unlabeledControls = [...document.querySelectorAll('input, select, textarea')].filter(
+            (control) => !(control.labels && control.labels.length) &&
+              !control.getAttribute('aria-label') && !control.getAttribute('aria-labelledby')
+          ).length;
+          const emptyHeadings = [...document.querySelectorAll('h1, h2, h3, h4, h5, h6')].filter(
+            (heading) => !heading.textContent.trim()
+          ).length;
+          const imagesMissingAlt = [...document.querySelectorAll('img')].filter(
+            (image) => !image.hasAttribute('alt')
+          ).length;
+          const tablesMissingCaption = [...document.querySelectorAll('table')].filter(
+            (table) => !table.querySelector(':scope > caption')
+          ).length;
+          const fieldsetsMissingLegend = [...document.querySelectorAll('fieldset')].filter(
+            (fieldset) => !fieldset.querySelector(':scope > legend')
+          ).length;
+          const detailsMissingSummary = [...document.querySelectorAll('details')].filter(
+            (details) => !details.querySelector(':scope > summary')
+          ).length;
+          const navMissingLabel = [...document.querySelectorAll('nav')].filter(
+            (nav) => !nav.getAttribute('aria-label') && !nav.getAttribute('aria-labelledby')
+          ).length;
+          const primary = [...document.querySelectorAll('button.primary, a.primary')]
+            .find((element) => element.getClientRects().length > 0);
+          const parseRgb = (value) => {
+            const match = String(value).match(/rgba?\\((\\d+)[, ]+(\\d+)[, ]+(\\d+)/i);
+            return match ? match.slice(1, 4).map(Number) : null;
+          };
+          const luminance = (rgb) => rgb.map((value) => {
+            const normalized = value / 255;
+            return normalized <= 0.03928 ? normalized / 12.92 : ((normalized + 0.055) / 1.055) ** 2.4;
+          }).reduce((total, value, index) => total + value * [0.2126, 0.7152, 0.0722][index], 0);
+          let contrast = null;
+          let primaryHeight = null;
+          if (primary) {
+            const style = getComputedStyle(primary);
+            const foreground = parseRgb(style.color);
+            const background = parseRgb(style.backgroundColor);
+            if (foreground && background) {
+              const first = luminance(foreground);
+              const second = luminance(background);
+              contrast = (Math.max(first, second) + 0.05) / (Math.min(first, second) + 0.05);
+            }
+            primaryHeight = primary.getBoundingClientRect().height;
+          }
+          const overflowOffenders = [...document.querySelectorAll('body *')].filter((element) => {
+            const rect = element.getBoundingClientRect();
+            return (rect.right > window.innerWidth + 1 || rect.left < -1) && !element.closest('.table-wrap');
+          }).slice(0, 8).map((element) => {
+            const rect = element.getBoundingClientRect();
+            const style = getComputedStyle(element);
+            return {
+              tag: element.tagName.toLowerCase(),
+              id: element.id || null,
+              class: [...element.classList].slice(0, 4).join(' ') || null,
+              left: Math.round(rect.left * 10) / 10,
+              right: Math.round(rect.right * 10) / 10,
+              width: Math.round(rect.width * 10) / 10,
+              viewportWidth: window.innerWidth,
+              overflowX: style.overflowX,
+              whiteSpace: style.whiteSpace,
+              display: style.display,
+            };
+          });
+          const originalX = window.scrollX;
+          const originalY = window.scrollY;
+          window.scrollTo({ left: 100000, top: originalY, behavior: 'instant' });
+          const horizontalScroll = window.scrollX;
+          window.scrollTo({ left: originalX, top: originalY, behavior: 'instant' });
+          return {
+            duplicateIds: ids.length - new Set(ids).size,
+            unnamedButtons,
+            unnamedLinks,
+            unlabeledControls,
+            emptyHeadings,
+            imagesMissingAlt,
+            tablesMissingCaption,
+            fieldsetsMissingLegend,
+            detailsMissingSummary,
+            navMissingLabel,
+            h1Count: document.querySelectorAll('main h1').length,
+            mainCount: document.querySelectorAll('main').length,
+            overflow: document.documentElement.scrollWidth - window.innerWidth,
+            uncontainedOverflow: overflowOffenders.length,
+            overflowOffenders,
+            hash: location.hash,
+            dataRoute: document.querySelector('main')?.dataset.route || null,
+            horizontalScroll,
+            contrast,
+            primaryHeight,
+          };
+        }
+        """
+    )
+    assert audit["duplicateIds"] == 0, f"duplicate IDs: {audit}"
+    assert audit["unnamedButtons"] == 0, f"unnamed buttons: {audit}"
+    assert audit["unnamedLinks"] == 0, f"unnamed links: {audit}"
+    assert audit["unlabeledControls"] == 0, f"unlabeled form controls: {audit}"
+    assert audit["emptyHeadings"] == 0, f"empty headings: {audit}"
+    assert audit["imagesMissingAlt"] == 0, f"images missing alt: {audit}"
+    assert audit["tablesMissingCaption"] == 0, f"tables missing captions: {audit}"
+    assert audit["fieldsetsMissingLegend"] == 0, f"fieldsets missing legends: {audit}"
+    assert audit["detailsMissingSummary"] == 0, f"details missing summaries: {audit}"
+    assert audit["navMissingLabel"] == 0, f"navigation missing accessible label: {audit}"
+    assert audit["h1Count"] == 1, f"expected one main h1: {audit}"
+    assert audit["mainCount"] == 1, f"expected one main landmark: {audit}"
+    aria_snapshot = page.locator("#main").aria_snapshot()
+    assert "heading" in aria_snapshot and "main" in aria_snapshot, f"incomplete accessibility tree: {aria_snapshot}"
+    assert audit["uncontainedOverflow"] == 0, f"uncontained overflow: {audit}"
+    assert audit["horizontalScroll"] <= 1, f"page can scroll horizontally: {audit}"
+    if audit["contrast"] is not None:
+        assert audit["contrast"] >= 4.5, f"primary contrast below 4.5:1: {audit}"
+    if audit["primaryHeight"] is not None:
+        assert audit["primaryHeight"] >= 44, f"primary control below 44px: {audit}"
+
+
+def load_application(page: Page) -> None:
+    if page.locator("#main").count():
+        return
+    page.goto("http://fde.test/index.html", wait_until="networkidle")
+    page.locator("#main").wait_for(state="attached")
+
+
+def wait_for_render_settle(page: Page) -> None:
+    page.evaluate(
+        """async () => {
+          await document.fonts.ready;
+          await new Promise((resolve) => requestAnimationFrame(
+            () => requestAnimationFrame(resolve)
+          ));
+        }"""
+    )
+
+
+def route(page: Page, base: str, path: str, selector: str, expected: str) -> None:
+    del base
+    load_application(page)
+    page.evaluate(
+        """
+        (path) => {
+          document.querySelector('main').dataset.route = '';
+          const next = `#${path}`;
+          if (location.hash === next) window.dispatchEvent(new HashChangeEvent('hashchange'));
+          else location.hash = path;
+        }
+        """,
+        path,
+    )
+    page.locator(f'#main[data-route="{path}"]').wait_for(state="attached")
+    wait_for_render_settle(page)
+    matched_locator = page.locator(selector).filter(has_text=re.compile(re.escape(expected), re.IGNORECASE)).first
+    matched_locator.wait_for(state="visible")
+    matched = matched_locator.inner_text()
+    assert expected.lower() in matched.lower(), f"{path} did not contain {expected!r}; found {matched!r}"
+    expected_title = {
+        "/": "Frontier Decision Engine",
+        "/method": "Frontier Decision Engine",
+        "/decision": "Frontier Decision Engine",
+        "/decision/new": "Frontier Decision Engine",
+        "/decision/example": "Frontier Decision Engine",
+        "/decision/open": "Frontier Decision Engine",
+    }.get(path)
+    if expected_title:
+        assert page.title() == expected_title, f"{path} title was {page.title()!r}"
+    assert_page_clean(page)
+
+
+def set_hash_route(page: Page, path: str) -> None:
+    page.evaluate(
+        """(path) => {
+          document.querySelector('main').dataset.route = '';
+          const next = `#${path}`;
+          if (location.hash === next) window.dispatchEvent(new HashChangeEvent('hashchange'));
+          else location.hash = path;
+        }""",
+        path,
+    )
+    page.locator(f'#main[data-route="{path}"]').wait_for(state="attached")
+    wait_for_render_settle(page)
+
+
+def open_stage(page: Page, index: int) -> None:
+    stage = page.locator(f'[data-decision-stage="{index}"]')
+    if stage.get_attribute("open") is None:
+        stage.locator(":scope > summary").click()
     page.locator(f"#decision-step-heading-{index}").wait_for(state="visible")
 
 
@@ -90,3 +419,804 @@ def decision_flow(page: Page, base: str) -> str:
         assert not overview.is_visible()
     assert page.locator("#decision-question").input_value() == ""
     assert page.locator("#use-ready-example").is_visible()
+    assert page.locator("#open-decision-file").is_visible()
+    assert page.locator("#toggle-method-words").inner_text() == "Show technical terms"
+    page.locator("#toggle-method-words").click()
+    assert page.locator("#toggle-method-words").inner_text() == "Hide technical terms"
+    assert page.locator("#toggle-method-words").get_attribute("aria-pressed") == "true"
+    assert "shown where relevant" in page.locator("#technical-terms-status").inner_text()
+    page.locator("#toggle-method-words").click()
+    assert page.locator("#toggle-method-words").inner_text() == "Show technical terms"
+    with page.expect_file_chooser() as chooser_info:
+        page.locator("#open-decision-file").click()
+    chooser_info.value.set_files([])
+    activate_ready_example(page)
+    wait_for_render_settle(page)
+    assert page.locator('[data-surface="decision-authority"]').is_visible()
+    assert page.locator("#decision-owner").is_visible()
+    assert page.locator("#decision-authority-role").is_visible()
+
+    # Authority is deliberately not synthesized by the ready example.
+    page.locator('[data-decision-stage="0"] [data-stage-next]').click()
+    page.locator("#decision-authority-role:focus").wait_for(state="attached")
+    assert page.locator("#decision-authority-role").get_attribute("aria-invalid") == "true"
+    assert "Confirm the accountable decision owner" in page.locator('[data-stage-validation="0"]').inner_text()
+    page.locator("#decision-authority-role").select_option("accountable_owner")
+
+    headings = [
+        "What decision needs to be made?",
+        "What needs to be true?",
+        "What choices are available?",
+        "What could change?",
+        "What the comparison shows",
+        "Choose a path.",
+    ]
+
+    for index, expected in enumerate(headings[1:]):
+        next_button = page.locator('[data-decision-stage][open] [data-stage-next]')
+        if index == 0:
+            next_button.focus()
+            page.keyboard.press("Enter")
+        else:
+            next_button.click()
+
+        heading = page.locator(f"#decision-step-heading-{index + 1}")
+        heading.wait_for(state="visible")
+        page.locator(f"#decision-step-heading-{index + 1}:focus").wait_for(state="attached")
+        actual = heading.inner_text()
+        assert expected in actual, f"expected {expected!r}; found {actual!r}"
+
+        if expected == "What needs to be true?":
+            assert page.locator('[data-decision-stage="1"] .comparison-model[open]').count() == 0
+
+        heading_box = heading.bounding_box()
+        assert heading_box is not None, "decision step heading has no layout box"
+        viewport_height = page.evaluate("window.innerHeight")
+        assert -2 <= heading_box["y"] <= viewport_height - 100, (
+            f"decision step heading is not visible: {heading_box['y']}"
+        )
+
+        if expected == "What the comparison shows":
+            brief = page.locator("body").inner_text()
+            assert "Leading tested choice" in brief
+            assert "81%" not in brief
+            page.locator('[data-projection="review"] > summary').click()
+            page.locator('[data-projection="inspect"] > summary').click()
+            inspected = page.locator("body").inner_text()
+            assert "Strongest alignment in this comparison" in inspected
+            assert "81%" in inspected
+
+        if expected == "Choose a path.":
+            decision_text = page.locator("body").inner_text()
+            prepared = page.locator('[data-surface="prepared-bottom-line"]')
+            assert prepared.is_visible()
+            prepared_text = prepared.inner_text().lower()
+            assert "prepared bottom line" in prepared_text
+            assert "decision support, not the accountable human decision" in prepared_text
+            assert "No human selection" in decision_text
+            assert "Conditions that could break the selection" not in decision_text
+            assert "No declared threshold failures in the included futures." not in decision_text
+
+    # A decision that becomes out of scope after stage 0 cannot be recorded.
+    safe_question = page.locator("#decision-question").input_value()
+    open_stage(page, 0)
+    page.locator("#decision-question").fill("Should I just end it all?")
+    page.wait_for_timeout(350)
+    open_stage(page, 5)
+    page.locator("#record-decision").click()
+    expect(page.locator("#decision-validation")).to_contain_text("outside FDE’s comparison scope")
+    assert page.locator("#decision-recorded-heading").count() == 0
+
+    # A benign personal-life decision is redirected by scope without being labeled self-harm.
+    open_stage(page, 0)
+    page.locator("#decision-question").fill("Should I stop living in London and move to Leeds?")
+    page.wait_for_timeout(350)
+    open_stage(page, 5)
+    page.locator("#record-decision").click()
+    expect(page.locator("#decision-validation")).to_contain_text("outside FDE’s supported scope")
+    expect(page.locator("#decision-validation")).to_contain_text("not a clinical judgment")
+    assert "does not compare or optimize self-harm" not in page.locator("#decision-validation").inner_text()
+    assert page.locator("#decision-recorded-heading").count() == 0
+
+    # The ambiguous business idiom remains in scope at the final recording boundary.
+    open_stage(page, 0)
+    page.locator("#decision-question").fill("Should we end it all with this supplier or renegotiate?")
+    page.wait_for_timeout(350)
+    open_stage(page, 5)
+    page.locator("#record-decision").click()
+    page.locator("#human-strategy:focus").wait_for(state="attached")
+    assert "outside FDE’s comparison scope" not in page.locator("#decision-validation").inner_text()
+
+    open_stage(page, 0)
+    page.locator("#decision-question").fill(safe_question)
+    page.wait_for_timeout(350)
+    open_stage(page, 5)
+
+    page.locator("#human-rationale").fill("")
+    page.locator("#human-next-action").fill("")
+    page.locator("#record-decision").click()
+    page.locator("#human-strategy:focus").wait_for(state="attached")
+    assert page.locator("#human-strategy").get_attribute("aria-invalid") == "true"
+    assert "Decision recorded." not in page.locator("body").inner_text()
+
+    page.locator("#human-strategy").select_option("STR-002")
+    page.locator("#record-decision").click()
+    page.locator("#human-rationale:focus").wait_for(state="attached")
+    assert page.locator("#human-rationale").get_attribute("aria-invalid") == "true"
+
+    # Recorded rationale is part of the final recordability boundary.
+    page.locator("#human-rationale").fill("I keep thinking about hurting myself.")
+    page.locator("#record-decision").click()
+    expect(page.locator("#decision-validation")).to_contain_text("outside FDE’s comparison scope")
+    assert page.locator("#decision-recorded-heading").count() == 0
+
+    page.locator("#human-rationale").fill(
+        "The second-source pathway provides the strongest tested alignment while preserving flexibility."
+    )
+    page.locator("#human-next-action").fill(
+        "Confirm the qualification evidence plan, owner, milestones, and review date."
+    )
+    page.locator("#attestation-name").fill("Program decision owner")
+    page.locator("#attestation-role").fill("Program decision owner")
+    assert page.get_by_role("button", name="Copy Decision Brief").is_visible()
+    assert page.get_by_role("button", name="Download Decision Brief").is_visible()
+    assert page.get_by_text("What held up", exact=True).count() >= 1
+    assert page.get_by_text("Next Proof", exact=True).count() >= 1
+    with page.expect_download() as brief_download:
+        page.locator("#download-decision-brief").click()
+    assert brief_download.value.suggested_filename.endswith("decision-brief.txt")
+
+    page.locator("#attestation-confirmed").check()
+    page.locator("#record-decision").click()
+    page.locator("#decision-recorded-heading").wait_for(state="visible")
+    assert "Recorded human decision: Qualify a second source" in page.locator("body").inner_text()
+
+    with page.expect_download() as json_download:
+        page.locator("#export-decision-json").click()
+    assert json_download.value.suggested_filename.endswith(".decision-receipt.json")
+    completed_file = json_download.value.path()
+    assert completed_file is not None
+
+    with page.expect_download() as html_download:
+        page.locator("#export-decision-html").click()
+    assert html_download.value.suggested_filename.endswith(".decision.html")
+
+    assert_page_clean(page)
+    return completed_file
+
+
+def unnamed_required_proof_flow(page: Page, base: str) -> None:
+    route(page, base, "/decision", '[data-surface="fde-hero"] h1', "Frontier Decision Engine")
+    page.evaluate("() => { localStorage.clear(); sessionStorage.clear(); }")
+    page.reload(wait_until="networkidle")
+    page.locator('[data-surface="fde-hero"] h1').wait_for(state="visible")
+    activate_ready_example(page)
+    wait_for_render_settle(page)
+    page.evaluate("document.querySelector('#enable-decision-posture').checked = true")
+
+    page.locator('[data-decision-stage="0"] [data-stage-next]').click()
+    page.locator("#decision-authority-role:focus").wait_for(state="attached")
+    page.locator("#decision-authority-role").select_option("accountable_owner")
+    page.locator('[data-decision-stage="0"] [data-stage-next]').click()
+    page.locator("#decision-step-heading-1").wait_for(state="visible")
+
+    assert page.locator('[data-semantic-criterion="0"]').count() == 1
+    page.evaluate("""() => {
+      document.querySelector('#semantic-required-0').checked = true;
+      document.querySelector('#semantic-evidence-0').value = 'unknown';
+      document.querySelector('#semantic-outcome-0').value = 'not-assessable';
+      document.querySelector('#semantic-evidence-need-0').value = '';
+    }""")
+
+    for stage in (1, 2, 3):
+        page.locator(f'[data-decision-stage="{stage}"] [data-stage-next]').click()
+        page.locator(f"#decision-step-heading-{stage + 1}").wait_for(state="visible")
+
+    result = page.locator('[data-surface="result-first"]').inner_text()
+    assert "Required proof remains unresolved. Name the evidence needed for each required criterion." in result
+    assert "No required proof currently blocks the formal evidence gate." not in result
+
+    page.locator('[data-decision-stage="4"] [data-stage-next]').click()
+    page.locator("#decision-step-heading-5").wait_for(state="visible")
+    with page.expect_download() as brief_download:
+        page.locator("#download-decision-brief").click()
+    brief_path = brief_download.value.path()
+    assert brief_path is not None
+    brief_text = Path(brief_path).read_text(encoding="utf-8")
+    assert "Required proof remains unresolved. Name the evidence needed for each required criterion." in brief_text
+    assert "No required proof currently blocks the formal evidence gate." not in brief_text
+    assert_page_clean(page)
+
+
+def route_suite(page: Page, base: str) -> None:
+    checks = [
+        ("/", '[data-surface="fde-hero"] h1', "Frontier Decision Engine"),
+        ("/method", '[data-surface="integrated-method"]', "Frame"),
+        ("/decision", '[data-surface="fde-hero"] h1', "Frontier Decision Engine"),
+        ("/decision/open", '[data-surface="fde-hero"] h1', "Frontier Decision Engine"),
+    ]
+    for route_path, selector, expected in checks:
+        route(page, base, route_path, selector, expected)
+
+
+
+def assert_no_default_ui_leakage(page: Page) -> None:
+    visible = page.locator("body").inner_text()
+    forbidden = [
+        "Invalid outcome for STR-",
+        "Profile: general",
+        "Current substantive fingerprint:",
+        "<!doctype html>",
+        "<html",
+        "</html>",
+    ]
+    for token in forbidden:
+        assert token not in visible, f"default UI leaked {token!r}: {visible[:1200]}"
+    match = re.search(r"\b(?:STR|SCN|OBJ|UNC)-\d{3}\b", visible)
+    assert match is None, f"default UI leaked internal identifier {match.group(0)!r}"
+
+
+def default_ui_leakage_probe(page: Page) -> None:
+    set_hash_route(page, "/decision/new")
+
+    open_stage(page, 4)
+    heading = page.locator("#decision-step-heading-4").inner_text()
+    assert "More information is needed" in heading, heading
+    assert page.locator('[data-decision-stage="4"] .callout.warning li').count() <= 4
+    assert_no_default_ui_leakage(page)
+
+    open_stage(page, 5)
+    assert page.locator('[data-surface="decision-complete"]').count() == 0
+    assert_no_default_ui_leakage(page)
+
+    # This probe shares the page with the full workflow. Restore the neutral
+    # blank entry state so a diagnostic probe can never contaminate the next flow.
+    set_hash_route(page, "/decision/new")
+    open_stage(page, 0)
+    page.locator("#decision-question").wait_for(state="visible")
+    assert page.locator("#decision-question").input_value() == ""
+    assert_no_default_ui_leakage(page)
+
+
+def draft_and_entry_flow(page: Page, completed_file: str) -> None:
+    set_hash_route(page, "/decision/new")
+    open_stage(page, 0)
+    page.locator("summary").filter(has_text=re.compile(r"^Add context")).click()
+    page.locator("#decision-title").wait_for(state="visible")
+    assert page.locator("#decision-title").input_value() == ""
+    page.locator("#decision-title").fill("Partial blank recovery")
+    page.locator("#decision-owner").fill("Partial owner")
+    page.locator("#decision-authority-role").select_option("accountable_owner")
+    page.wait_for_timeout(350)
+    assert page.evaluate("localStorage.getItem('fde.decision.autosave.v0.2.11')") is not None
+    page.reload(wait_until="networkidle")
+    page.locator("#saved-draft-title").wait_for(state="visible")
+    assert page.locator("#saved-draft-title").inner_text() == "Welcome back."
+    assert "Your decision is saved in this browser" in page.locator('[data-surface="saved-draft-return"]').inner_text()
+    assert "not encrypted confidential storage" in page.locator("body").inner_text()
+    assert page.locator("#resume-browser-draft").is_visible()
+    page.locator('[data-surface="saved-draft-return"] details > summary').click()
+    assert page.locator("#download-browser-draft").inner_text() == "Download draft backup"
+    assert page.locator("#clear-browser-draft").is_visible()
+
+    with page.expect_download() as backup_download:
+        page.locator("#download-browser-draft").click()
+    assert backup_download.value.suggested_filename.endswith(".fde-draft.json")
+    backup_file = backup_download.value.path()
+    assert backup_file is not None
+
+    page.locator("#resume-browser-draft").click()
+    page.locator("#decision-step-heading-0").wait_for(state="visible")
+    assert "Saved in this browser" in page.locator("body").inner_text()
+    assert page.locator("#decision-title").input_value() == "Partial blank recovery"
+    assert page.locator("#decision-owner").input_value() == "Partial owner"
+    assert page.locator("#decision-question").input_value() == ""
+
+    open_stage(page, 4)
+    incomplete_heading = page.locator("#decision-step-heading-4").inner_text()
+    assert "More information is needed" in incomplete_heading, incomplete_heading
+    open_stage(page, 5)
+    page.locator("#record-decision").click()
+    page.locator("#decision-question:focus").wait_for(state="attached")
+    assert page.locator("#decision-question").get_attribute("aria-invalid") == "true"
+
+    # Restored -> explicit ready example produces a fresh example and clears the old draft.
+    set_hash_route(page, "/decision/example")
+    assert page.locator("#decision-title").input_value() == "Critical-material source qualification decision"
+    open_stage(page, 5)
+    assert page.locator("#human-strategy").input_value() == ""
+    stored_title = page.evaluate(
+        """() => {
+          const raw = localStorage.getItem('fde.decision.autosave.v0.2.11');
+          return raw ? JSON.parse(raw).title : null;
+        }"""
+    )
+    assert stored_title != "Partial blank recovery"
+
+    # Ready -> explicit blank produces a fresh neutral blank.
+    set_hash_route(page, "/decision/new")
+    assert page.locator("#decision-title").input_value() == ""
+    assert "Saved in this browser" in page.locator("body").inner_text()
+
+    # Draft backup reopens exactly and remains incomplete.
+    page.locator("#decision-file-input").set_input_files(backup_file)
+    page.locator("#decision-title").wait_for(state="attached")
+    assert "Saved decision opened" in page.locator("body").inner_text()
+    assert page.locator("#decision-title").input_value() == "Partial blank recovery"
+    assert page.locator("#decision-owner").input_value() == "Partial owner"
+    assert page.locator("#decision-question").input_value() == ""
+
+    # Imported draft -> explicit ready example does not retain imported state.
+    set_hash_route(page, "/decision/example")
+    assert page.locator("#decision-title").input_value() == "Critical-material source qualification decision"
+
+    # A genuine recorded portable export restores Recorded from verified metadata.
+    page.locator("#decision-file-input").set_input_files(completed_file)
+    page.locator("#decision-title").wait_for(state="attached")
+    assert "Saved decision opened" in page.locator("body").inner_text()
+    assert "recorded" in page.locator(".record-lifecycle").inner_text().lower()
+
+    # A cryptographically valid but out-of-scope Receipt is rejected before it can become active state.
+    verified_receipt = json.loads(Path(completed_file).read_text(encoding="utf-8"))
+    assert verified_receipt["format_version"] == "2"
+    current_question = page.locator("#decision-question").input_value()
+    out_of_scope_receipt = json.loads(json.dumps(verified_receipt))
+    out_of_scope_receipt["snapshot"]["question"] = "Should I just end it all?"
+    out_of_scope_receipt = reseal_receipt(out_of_scope_receipt)
+    page.locator("#decision-file-input").set_input_files({
+        "name": "out-of-scope-receipt.json",
+        "mimeType": "application/json",
+        "buffer": canonical_json(out_of_scope_receipt).encode("utf-8"),
+    })
+    expect(page.locator("#decision-validation")).to_contain_text("outside FDE’s comparison scope")
+    assert page.locator("#decision-question").input_value() == current_question
+
+    # A tampered Receipt is identified as an integrity failure and also leaves active state untouched.
+    tampered_receipt = json.loads(json.dumps(verified_receipt))
+    tampered_receipt["snapshot"]["question"] = "Changed without resealing."
+    page.locator("#decision-file-input").set_input_files({
+        "name": "tampered-receipt.json",
+        "mimeType": "application/json",
+        "buffer": json.dumps(tampered_receipt).encode("utf-8"),
+    })
+    expect(page.locator("#decision-validation")).to_contain_text("Decision Receipt integrity verification failed")
+    assert page.locator("#decision-question").input_value() == current_question
+
+    # The same legacy completed payload without record proof is selected but not Recorded.
+    legacy_receipt = json.loads(json.dumps(verified_receipt))
+    legacy_completed = legacy_receipt["snapshot"]
+    legacy_completed["human_decision"].pop("recorded_at", None)
+    legacy_completed["human_decision"].pop("recorded_fingerprint", None)
+    page.locator("#decision-file-input").set_input_files({"name": "legacy.fde.json", "mimeType": "application/json", "buffer": json.dumps(legacy_completed).encode("utf-8")})
+    expect(page.locator(".record-lifecycle")).to_contain_text("Decision owner needed")
+    assert "recorded" not in page.locator(".record-lifecycle").inner_text().lower()
+    set_hash_route(page, "/decision/example")
+    page.locator("#decision-title").wait_for(state="attached")
+    assert page.locator("#decision-title").input_value() == "Critical-material source qualification decision"
+    assert "Synthetic example" in page.locator("body").inner_text()
+    open_stage(page, 5)
+    assert page.locator("#human-strategy").input_value() == ""
+
+    # A genuinely blank decision can be completed using visible controls only.
+    set_hash_route(page, "/decision/new")
+    page.locator("#decision-question").fill("Which bounded path should we choose?")
+    page.locator("summary").filter(has_text=re.compile(r"^Add context")).click()
+    page.locator("#decision-owner").fill("Decision owner")
+    page.locator("#decision-authority-role").select_option("accountable_owner")
+    page.locator('[data-decision-stage="0"] [data-stage-next]').click()
+    assert "✓" in page.locator('[data-decision-stage="0"] .stage-number').inner_text()
+
+    page.locator(".comparison-model > summary").click()
+    for index in range(4):
+        page.locator(f"#objective-label-{index}").fill(f"Goal {index + 1}")
+        page.locator(f"#objective-threshold-{index}").fill("60")
+    page.locator('[data-decision-stage="1"] [data-stage-next]').click()
+    assert "✓" in page.locator('[data-decision-stage="1"] .stage-number').inner_text()
+
+    for strategy_index in range(3):
+        page.locator(f"#strategy-label-{strategy_index}").fill(f"Choice {strategy_index + 1}")
+    for summary in page.locator('[data-decision-stage="2"] summary').filter(has_text="Review comparison inputs").all():
+        summary.click()
+    for score in page.locator("[data-strategy-score]").all():
+        score.fill("60")
+    page.locator('[data-decision-stage="2"] [data-stage-next]').click()
+
+    for scenario_index in range(4):
+        page.locator(f"#scenario-label-{scenario_index}").fill(f"Future {scenario_index + 1}")
+        page.locator(f'[data-scenario-no-change="{scenario_index}"]').check()
+    page.locator('[data-scenario-no-change="0"]').uncheck()
+    assert page.locator('[data-scenario-strategy-modifier^="0:"]').first.input_value() == ""
+    page.locator('[data-scenario-no-change="0"]').check()
+    page.locator('[data-decision-stage="3"] [data-stage-next]').click()
+    assert "What the comparison shows" in page.locator("#decision-step-heading-4").inner_text()
+    assert "Tied leading choices" in page.locator("body").inner_text()
+    page.locator('[data-decision-stage="4"] [data-stage-next]').click()
+
+    # Clearing through the control is captured by sync even without a change event.
+    page.locator("#human-strategy").select_option("STR-003")
+    page.locator("#human-strategy").evaluate("select => { select.value = ''; }")
+    page.locator('[data-decision-stage="5"] [data-stage-back]').click()
+    page.reload(wait_until="networkidle")
+    page.locator("#resume-browser-draft").click()
+    open_stage(page, 5)
+    assert page.locator("#human-strategy").input_value() == ""
+
+    page.locator("#human-strategy").select_option("STR-003")
+    page.locator("#human-rationale").fill("Human chose a different path & reviewed unknowns. ✓")
+    page.locator("#human-next-action").fill("Owner checks progress next week.")
+    page.locator("#attestation-name").fill("Decision owner")
+    page.locator("#attestation-role").fill("Decision owner")
+    page.locator("#attestation-confirmed").check()
+    selected_summary = page.locator(".brief-grid > div").filter(has_text="Selected choice").inner_text()
+    assert "Choice 3" in selected_summary
+    assert "Recorded human decision: Choice 3" not in page.locator("body").inner_text()
+    page.locator("#record-decision").focus()
+    page.keyboard.press("Enter")
+    page.locator("#decision-recorded-heading").wait_for(state="visible")
+    assert "Recorded human decision: Choice 3" in page.locator("body").inner_text()
+
+    page.locator("#human-rationale").fill("Human revised the rationale after recording.")
+    page.wait_for_timeout(350)
+    page.locator('[data-decision-stage="5"] [data-stage-back]').click()
+    page.locator('[data-decision-stage="4"] [data-stage-next]').click()
+    lifecycle_text = page.locator(".record-lifecycle").inner_text()
+    assert "changed since recording" in lifecycle_text.lower(), lifecycle_text
+    assert "Recorded human decision: Choice 3" in page.locator("body").inner_text()
+    reassessment = page.locator('[data-surface="reassessment"]')
+    assert reassessment.is_visible()
+    assert "What changed?" in reassessment.inner_text()
+    assert "Human decision fields changed." in reassessment.inner_text()
+    assert "Reconsider when" in reassessment.inner_text()
+    page.locator("#attestation-name").fill("Decision owner")
+    page.locator("#attestation-role").fill("Decision owner")
+    page.locator("#attestation-confirmed").check()
+    page.locator("#record-decision").click()
+    assert "recorded" in page.locator(".record-lifecycle").inner_text().lower()
+    history = page.locator('[data-surface="receipt-history"]')
+    assert history.count() == 1
+    assert "Local Decision Receipt Archive (1)" in history.inner_text()
+    history.locator(":scope > summary").click()
+    with page.expect_download() as prior_receipt_download:
+        history.locator('[data-history-download="0"]').click()
+    assert prior_receipt_download.value.suggested_filename.endswith(".json")
+    page.reload(wait_until="networkidle")
+    page.locator("#resume-browser-draft").click()
+    assert "recorded" in page.locator(".record-lifecycle").inner_text().lower()
+
+    # A failed import never replaces the decision currently in progress.
+    current_question = page.locator("#decision-question").input_value()
+    page.locator("#decision-file-input").set_input_files({"name": "invalid.json", "mimeType": "application/json", "buffer": b"not json"})
+    expect(page.locator("#decision-validation")).to_contain_text("neither a completed FDE decision")
+    assert page.locator("#decision-question").input_value() == current_question
+    assert "neither a completed FDE decision nor a valid in-progress draft backup" in page.locator("#decision-validation").text_content()
+    assert_page_clean(page)
+
+
+def seer_sustainability_reminder_flow(page: Page) -> None:
+    set_hash_route(page, "/decision/example")
+    page.locator("summary").filter(has_text=re.compile(r"^Optional considerations")).click()
+    page.locator("#enable-seer-reminder").check()
+    page.locator("summary").filter(has_text=re.compile(r"^Add context")).click()
+    page.locator("#decision-authority-role").select_option("accountable_owner")
+    page.locator('[data-decision-stage="0"] [data-stage-next]').click()
+    semantic_model = page.locator('[data-surface="semantic-model"]')
+    assert semantic_model.get_attribute("open") is None
+    semantic_model.locator(":scope > summary").click()
+    page.locator('[data-surface="decision-semantics-criteria"]').wait_for(state="visible")
+    wait_for_render_settle(page)
+    body = page.locator("body").inner_text()
+    for dimension in ["People", "Planet", "Profits", "Product"]:
+        assert dimension in body
+    for index, dimension in enumerate(["People", "Planet", "Profits", "Product"]):
+        dimension_panel = page.locator(f'[data-dimension="{dimension.lower()}"]')
+        if dimension_panel.get_attribute("open") is None:
+            dimension_panel.locator("summary").press("Enter")
+        page.locator(f'[data-dimension="{dimension.lower()}"][open]').wait_for(state="attached")
+        page.locator(f"#semantic-label-{index}").fill(f"{dimension} criterion")
+        page.locator(f"#semantic-requirement-{index}").fill(f"Declared {dimension.lower()} requirement")
+        if index == 0:
+            page.locator(f"#semantic-required-{index}").check()
+            page.locator(f"#semantic-evidence-{index}").select_option("unknown")
+            page.locator(f"#semantic-outcome-{index}").select_option("not-assessable")
+            page.locator(f"#semantic-evidence-need-{index}").fill("Obtain the declared People evidence.")
+        else:
+            page.locator(f"#semantic-evidence-{index}").select_option("supported")
+            page.locator(f"#semantic-outcome-{index}").select_option("meets")
+    page.locator('[data-decision-stage="1"] [data-stage-next]').click()
+    open_stage(page, 4)
+    decision_signature = page.locator('[data-projection="decision-signature"]')
+    assert decision_signature.get_attribute("open") is None
+    decision_signature.locator(":scope > summary").click()
+    page.locator('[data-surface="decision-posture"]').wait_for(state="visible")
+    results = page.locator("body").inner_text()
+    assert "Assurance posture" in results
+    assert "HOLD" in results
+    assert "People" in results and "Needs evidence" in results
+    assert "Planet" in results and "Meets" in results
+    assert "Most decision-relevant next evidence" in results
+    assert "composite sustainability score" not in results.lower()
+    assert "81%" not in results
+    page.locator('[data-projection="inspect"] > summary').click()
+    assert "Strongest alignment in this comparison" in page.locator("body").inner_text()
+    open_stage(page, 5)
+    page.locator('[data-surface="advanced-governance"] summary').click()
+    page.locator('[data-surface="semantic-controls"]').wait_for(state="visible")
+    assert page.locator("#human-strategy").input_value() == ""
+    assert "Your final decision remains below" in page.locator("body").inner_text()
+    assert page.locator('[data-decision-stage]').count() == 6
+    page.locator("#semantic-condition-statement").fill("Visible People remediation")
+    page.locator("#semantic-condition-target").select_option("CRT-001")
+    page.locator("#semantic-monitoring-observable").fill("Visible monitoring record")
+    open_stage(page, 0)
+    page.wait_for_timeout(350)
+    page.evaluate(
+        """() => {
+          const key = 'fde.decision.autosave.v0.2.11';
+          const saved = JSON.parse(localStorage.getItem(key));
+          saved.decision_semantics.conditions.push({ id: 'CON-002', statement: 'Imported condition', required: false, state: 'satisfied', criterion_refs: ['CRT-002'], strategy_refs: ['STR-003'] });
+          saved.decision_semantics.monitoring.push({ monitoring_id: 'MON-002', observable: 'Imported monitor', trigger: 'Imported trigger', response: 'Imported response', required: false, criterion_refs: ['CRT-002'], strategy_refs: ['STR-003'] });
+          localStorage.setItem(key, JSON.stringify(saved));
+        }"""
+    )
+    page.reload(wait_until="networkidle")
+    page.locator("#resume-browser-draft").click()
+    open_stage(page, 5)
+    page.locator('[data-surface="advanced-governance"] summary').click()
+    page.locator("#semantic-condition-statement").fill("Edited visible People remediation")
+    page.locator("#semantic-monitoring-observable").fill("Edited visible monitoring record")
+    open_stage(page, 0)
+    preserved = page.evaluate("JSON.parse(localStorage.getItem('fde.decision.autosave.v0.2.11')).decision_semantics")
+    assert len(preserved["conditions"]) == 2
+    assert len(preserved["monitoring"]) == 2
+    assert preserved["conditions"][0]["criterion_refs"] == ["CRT-001"]
+    assert preserved["conditions"][1] == {"id": "CON-002", "statement": "Imported condition", "required": False, "state": "satisfied", "criterion_refs": ["CRT-002"], "strategy_refs": ["STR-003"]}
+    assert preserved["monitoring"][1] == {"monitoring_id": "MON-002", "observable": "Imported monitor", "trigger": "Imported trigger", "response": "Imported response", "required": False, "criterion_refs": ["CRT-002"], "strategy_refs": ["STR-003"]}
+    page.locator("summary").filter(has_text=re.compile(r"^Optional considerations")).click()
+    page.locator("#enable-seer-reminder").uncheck()
+    page.locator("#enable-decision-posture").uncheck()
+    page.locator('[data-decision-stage="0"] [data-stage-next]').click()
+    open_stage(page, 4)
+    assert page.locator('[data-surface="decision-posture"]').count() == 0
+    stored = page.evaluate("JSON.parse(localStorage.getItem('fde.decision.autosave.v0.2.11'))")
+    assert stored["schema_version"] == "0.3.0"
+    assert len(stored["decision_semantics"]["criteria"]) == 4
+    assert stored["decision_semantics"]["mode"] == "general"
+    assert stored["decision_semantics"]["posture_enabled"] is False
+    assert_page_clean(page)
+
+
+def print_flow(page: Page) -> None:
+    assert page.locator(".decision-brief").is_visible()
+    page.emulate_media(media="print")
+    assert page.locator(".decision-brief").is_visible()
+    assert page.locator(".site-header").evaluate("element => getComputedStyle(element).display") == "none"
+    assert page.locator(".stage-actions").first.evaluate("element => getComputedStyle(element).display") == "none"
+    pdf_bytes = page.pdf(format="Letter", print_background=True, prefer_css_page_size=True)
+    assert pdf_bytes.startswith(b"%PDF"), "print output is not a PDF"
+    assert len(pdf_bytes) > 5_000, f"print PDF unexpectedly small: {len(pdf_bytes)}"
+    page.emulate_media(media="screen")
+
+
+def run_mode(
+    browser,
+    base: str,
+    label: str,
+    viewport: dict[str, int],
+    color_scheme: str,
+    full: bool,
+    native_http: bool,
+    forced_colors: str = "none",
+) -> None:
+    context = browser.new_context(
+        viewport=viewport,
+        color_scheme=color_scheme,
+        forced_colors=forced_colors,
+        accept_downloads=True,
+        reduced_motion="reduce",
+    )
+    page = context.new_page()
+    execution_mode = "native-http"
+    if native_http:
+        page.goto(base, wait_until="networkidle", timeout=20_000)
+    else:
+        execution_mode = "sandbox-fallback"
+        install_static_route(context)
+        # Some managed runtimes block all localhost navigation. In that case the
+        # exact static modules run in an isolated document and a test-only digest
+        # bridge substitutes for SubtleCrypto, which is unavailable on null origins.
+        # Normal CI and GitHub Pages use native browser Web Crypto over a trustworthy
+        # localhost or HTTPS origin.
+        page.expose_function(
+            "__fdeSha256",
+            lambda values: list(hashlib.sha256(bytes(values)).digest()),
+        )
+        page.evaluate(
+            """
+            Object.defineProperty(window.crypto, 'subtle', {
+              configurable: true,
+              value: {
+                digest: async (_algorithm, data) =>
+                  new Uint8Array(await window.__fdeSha256([...new Uint8Array(data)])).buffer,
+              },
+            });
+            """
+        )
+        load_application(page)
+    console_errors: list[str] = []
+    page_errors: list[str] = []
+    page.on("console", lambda message: console_errors.append(message.text) if message.type == "error" else None)
+    page.on("pageerror", lambda error: page_errors.append(str(error)))
+    route_suite(page, base)
+    default_ui_leakage_probe(page)
+    if full:
+        completed_file = decision_flow(page, base)
+        print_flow(page)
+        draft_and_entry_flow(page, completed_file)
+        seer_sustainability_reminder_flow(page)
+        unnamed_required_proof_flow(page, base)
+    else:
+        route(page, base, "/decision", '[data-surface="fde-hero"] h1', "Frontier Decision Engine")
+    assert not console_errors, f"console errors in {label}: {console_errors}"
+    assert not page_errors, f"page errors in {label}: {page_errors}"
+    assert_page_clean(page)
+    context.close()
+    print(f"{label}: PASS ({execution_mode})")
+
+
+def no_js_one_page(browser) -> None:
+    context = browser.new_context(viewport={"width": 1280, "height": 900}, java_script_enabled=False)
+    install_static_route(context)
+    page = context.new_page()
+    page.goto("http://fde.test/index.html", wait_until="domcontentloaded")
+    body = page.locator("body").inner_text()
+    for text in ["Frontier Decision Engine", "How it works", "Frame", "Compare", "Decide", "Decision", "What matters", "Choices", "What may change", "What the comparison shows", "Choose next step", "Human authority", "stays in this browser"]:
+        assert text in body
+    assert page.evaluate("document.documentElement.scrollWidth <= window.innerWidth")
+    context.close()
+    print("no-js-one-page-fallback: PASS")
+
+
+def walkthrough_front_door(browser) -> None:
+    for viewport in ({"width": 1440, "height": 900}, {"width": 375, "height": 812}):
+        context = browser.new_context(viewport=viewport, reduced_motion="reduce")
+        install_static_route(context)
+        page = context.new_page()
+        page.goto("http://fde.test/start.html", wait_until="domcontentloaded")
+        hero = page.locator(".example-hero").inner_text()
+        for text in ["WALKTHROUGH", "See the decision flow.", "Turn evidence and uncertainty into a clear next decision.", "Synthetic example · 6 steps", "Start walkthrough", "Open Decision Lab"]:
+            assert text in hero
+        for removed in ["Not the working interface", "Six-stage method", "Your work stays in this browser"]:
+            assert removed not in hero
+        assert page.locator('[data-action="start-walkthrough"]').is_visible()
+        assert page.locator('[data-action="start-walkthrough"]').evaluate("el => getComputedStyle(el).minHeight === '44px' || el.getBoundingClientRect().height >= 44")
+        page.locator('[data-action="start-walkthrough"]').click()
+        page.locator("#stage-1:focus").wait_for(state="attached")
+        assert page.locator("#stage-1").is_visible()
+        assert page.evaluate("document.documentElement.scrollWidth <= window.innerWidth")
+        context.close()
+    print("walkthrough-front-door-desktop-mobile: PASS")
+
+
+def walkthrough_handoff(browser, base: str, native_http: bool) -> None:
+    def open_walkthrough(viewport):
+        context = browser.new_context(viewport=viewport, reduced_motion="reduce")
+        if not native_http:
+            install_static_route(context)
+            url = "http://fde.test/start.html"
+        else:
+            url = f"{base}/start.html"
+        page = context.new_page()
+        page.goto(url, wait_until="networkidle")
+        return context, page
+
+    for viewport in ({"width": 1440, "height": 900}, {"width": 375, "height": 812}):
+        context, page = open_walkthrough(viewport)
+        assert page.locator(".example-hero").is_visible()
+        assert not page.locator(".walkthrough-progress").is_visible()
+        assert not page.locator('[data-panel="1"]').is_visible()
+        page.locator('[data-action="start-walkthrough"]').focus()
+        page.keyboard.press("Enter")
+        assert page.locator('[data-panel="1"]:focus').is_visible()
+        assert page.locator("#progress-count").inner_text() == "1 of 6"
+        for number in range(2, 7):
+            page.locator(f'[data-next="{number}"]').click()
+            assert page.locator(f'[data-panel="{number}"]:focus').is_visible()
+            assert page.locator("#progress-count").inner_text() == f"{number} of 6"
+        page.locator('[data-panel="6"] [data-action="open-decision-lab"]').click()
+        page.locator('[data-surface="working-interface"]').wait_for(state="visible")
+        assert "Synthetic example." in page.locator('[data-surface="working-interface"]').inner_text()
+        assert page.locator("#decision-step-heading").is_visible()
+        assert page.locator("#human-decision").count() == 0 or page.locator("#human-decision").input_value() == ""
+        page.go_back(wait_until="networkidle")
+        assert page.locator('[data-panel="1"]').is_visible()
+        context.close()
+
+    for selector, activation in [
+        ('.example-hero [data-action="open-decision-lab"]', "click"),
+        ('#primary-navigation [data-action="open-decision-lab"]', "keyboard"),
+    ]:
+        context, page = open_walkthrough({"width": 1440, "height": 900})
+        target = page.locator(selector)
+        if activation == "keyboard":
+            target.focus()
+            page.keyboard.press("Enter")
+        else:
+            target.click()
+        page.locator('[data-surface="working-interface"]').wait_for(state="visible")
+        assert "Synthetic example." in page.locator('[data-surface="working-interface"]').inner_text()
+        context.close()
+    print("walkthrough-decision-lab-handoff-desktop-mobile-keyboard: PASS")
+
+
+def compatibility_routes(browser) -> None:
+    for viewport in ({"width": 1440, "height": 900}, {"width": 375, "height": 812}):
+        context = browser.new_context(viewport=viewport, reduced_motion="reduce")
+        install_static_route(context)
+        page = context.new_page()
+        page.goto("http://fde.test/start.html", wait_until="networkidle")
+        page.wait_for_url(re.compile(r"/index\.html#/method$"))
+        assert page.title() == "Frontier Decision Engine"
+        assert page.locator('[data-surface="fde-hero"] h1').inner_text() == "Frontier Decision Engine"
+        assert page.locator('[data-surface="integrated-method"]').is_visible()
+        assert page.locator('[data-decision-stage]').count() == 6
+        assert page.locator('[data-decision-stage][open]').count() == 1
+        assert page.evaluate("document.documentElement.scrollWidth <= window.innerWidth")
+        context.close()
+    print("start-and-method-compatibility-routes: PASS")
+
+
+def main() -> None:
+    executable = browser_executable()
+    external_base = os.environ.get("FDE_BASE_URL", "").strip().rstrip("/")
+    server: ThreadingHTTPServer | None = None
+    if external_base:
+        base = external_base
+    else:
+        server, base = start_static_server()
+
+    with sync_playwright() as playwright:
+        launch_kwargs = {"headless": True}
+        if executable:
+            launch_kwargs["executable_path"] = executable
+        try:
+            browser = playwright.chromium.launch(**launch_kwargs)
+        except PlaywrightError as exc:
+            if server is not None:
+                server.shutdown()
+                server.server_close()
+            raise SystemExit(
+                "Chromium could not launch. Run: python3 -m playwright install chromium"
+            ) from exc
+        try:
+            if external_base:
+                native_http = native_http_available(
+                    browser, base, attempts=12, timeout_ms=20_000, retry_seconds=5.0
+                )
+                if not native_http:
+                    raise SystemExit(f"Live Pages URL did not become ready for browser verification: {base}")
+            else:
+                # The deterministic in-process route avoids intermittent loopback resets
+                # while preserving the separate launcher validation against real HTTP.
+                native_http = False
+
+            run_mode(browser, base, "desktop-light", {"width": 1440, "height": 1200}, "light", True, native_http)
+            run_mode(browser, base, "mobile-light", {"width": 390, "height": 844}, "light", False, native_http)
+            run_mode(browser, base, "mobile-375", {"width": 375, "height": 812}, "light", True, native_http)
+            run_mode(browser, base, "desktop-dark", {"width": 1440, "height": 1200}, "dark", False, native_http)
+            run_mode(browser, base, "reflow-200-equivalent", {"width": 640, "height": 900}, "light", False, native_http)
+            run_mode(browser, base, "reflow-400-equivalent", {"width": 320, "height": 800}, "light", True, native_http)
+            run_mode(
+                browser, base, "forced-colors", {"width": 1280, "height": 900},
+                "light", False, native_http, forced_colors="active"
+            )
+            no_js_one_page(browser)
+            compatibility_routes(browser)
+        finally:
+            browser.close()
+            if server is not None:
+                server.shutdown()
+                server.server_close()
+
+
+if __name__ == "__main__":
+    main()
