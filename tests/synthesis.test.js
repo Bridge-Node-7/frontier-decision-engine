@@ -74,9 +74,9 @@ test('public source exposes progressive projections and truthful traceability', 
   assert.match(source, /not an arithmetic conversion/);
   const noJs = await readFile(new URL('../site/index.html', import.meta.url), 'utf8');
   assert.match(noJs, /What are you considering\?/);
-  assert.match(noJs, /Private by design/);
-  assert.match(noJs, /FDE structures and calculates; it does not approve or authorize the decision/);
-  assert.match(noJs, /confidential or controlled information/i);
+  assert.match(noJs, /browser-local decision workspace/i);
+  assert.match(noJs, /FDE structures and calculates; it does not approve or authorize a decision/);
+  assert.match(noJs, /public or sanitized material only/i);
 });
 
 test('legacy walkthrough is only a compatibility shim into integrated help', async () => {
