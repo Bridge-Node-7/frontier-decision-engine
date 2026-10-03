@@ -151,6 +151,14 @@ def run() -> None:
                 goal_boxes = page.locator('input[name="formal-goal"]')
                 for index in range(goal_boxes.count()):
                     goal_boxes.nth(index).set_checked(index < 4)
+
+                # Added formal items are validated rather than silently truncated.
+                page.locator("#universal-add-choices").fill("Emergency reserve")
+                page.get_by_role("button", name="Open Decision Lab").click()
+                assert page.locator("#universal-response-title").inner_text() == "Compare options"
+                assert "no more than 3 options" in page.locator("#universal-compare-validation").inner_text().lower()
+                page.locator("#universal-add-choices").fill("")
+
                 page.locator("#universal-add-futures").fill("Demand changes")
                 page.get_by_role("button", name="Open Decision Lab").click()
                 page.wait_for_url("**#/decision")
