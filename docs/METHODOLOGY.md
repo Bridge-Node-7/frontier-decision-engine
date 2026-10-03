@@ -2,13 +2,13 @@
 
 Frontier Decision Engine operationalizes the human decision layer of Frontier Mission Assurance: choices, criteria, evidence state, dependencies, uncertainty, thresholds, conditions, and reassessment remain inspectable. It uses a transparent scenario comparison rather than a hidden prediction model.
 
-1. State the decision or situation in ordinary language.
-2. When explicit language supports it, identify and confirm the condition most capable of changing the decision.
-3. Define what needs to go well and what counts as good enough.
-4. Name realistic choices.
-5. Name plausible futures that could change the answer.
-6. Enter explicit performance assumptions and future-specific changes.
-7. Compare threshold passes, critical failures, and vulnerabilities.
+1. State the decision, situation, question, or context in ordinary language.
+2. Review the supportable Decision Brief: decision or focus, what matters, what remains unclear, and the next useful move.
+3. Refine the same source context only when more framing would materially help.
+4. When formal comparison is warranted, select one bounded comparison set: realistic choices, criteria, and plausible futures or conditions.
+5. When explicit language supports it, explicitly keep, leave uncertain, or remove a provisional decision hinge before it can affect the formal model.
+6. Enter explicit performance assumptions, thresholds, evidence state, and future-specific changes in Decision Lab.
+7. Compare threshold passes, critical failures, vulnerabilities, ties, no-acceptable-choice states, and insufficient-information states.
 8. Review the result-first decision value: what held up, why, what could change it, and any required next proof.
 9. Re-evaluate scope policy on the operative decision/action fields immediately before accountable recording.
 10. Record the human-owned decision, rationale, and next action.

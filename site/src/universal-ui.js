@@ -4,11 +4,15 @@ import { DECISION_STORAGE_KEY, getBrowserStorage, saveDecision } from './lib/per
 import { boundaryForInput } from './lib/input-boundaries.js';
 import { deriveDecisionHinge } from './lib/decision-hinge.js';
 
-const MAX_SUGGESTIONS = Object.freeze({ choices: 3, goals: 4, futures: 4 });
-const SESSION_KEY = 'fde.universal.session.v1';
+const FORMAL_LIMITS = Object.freeze({
+  choices: DRAFT_TOPOLOGY_BOUNDS.strategies,
+  goals: DRAFT_TOPOLOGY_BOUNDS.objectives,
+  futures: DRAFT_TOPOLOGY_BOUNDS.scenarios,
+});
+const SESSION_KEY = 'fde.universal.session.v2';
 const CONTEXT_KEY = 'fde.universal.context.v1';
 const HANDOFF_KEY = 'fde.universal.handoff';
-const SESSION_VERSION = 1;
+const SESSION_VERSION = 2;
 
 const KEYWORDS = {
   goals: [
@@ -36,6 +40,8 @@ const KEYWORDS = {
 
 const decisionPattern = /should i|should we|do i|do we|whether|which should|choose|decid(?:e|ing)\s+(?:between|whether)/i;
 const informationPattern = /^(how much|what is|what's|when is|where is|who is|can you explain|explain|compare|what does|how does|tell me about)\b/i;
+const uncertainPattern = /\b(?:incomplete|unknown|uncertain|not sure|don't know|do not know|contested|conflicting|unverified|stale)\b/i;
+
 function normalize(value) {
   return String(value ?? '').replace(/\r\n?/g, '\n').trim();
 }
@@ -59,7 +65,7 @@ function titleFrom(text) {
   return sentence.length > 120 ? `${sentence.slice(0, 117)}…` : sentence;
 }
 
-function unique(values, max) {
+function unique(values, max = Number.POSITIVE_INFINITY) {
   return [...new Set(values.map((value) => normalize(value)).filter(Boolean))].slice(0, max);
 }
 
@@ -88,6 +94,11 @@ function getIntent(text) {
   return decisionPattern.test(clean) ? 'decision' : 'open';
 }
 
+function extractDecisionCandidates(text) {
+  const sentences = normalize(text).split(/(?<=[.!?])\s+|\n+/).map((value) => value.trim()).filter(Boolean);
+  return unique(sentences.filter((value) => decisionPattern.test(value)).map((value) => value.replace(/[.!?]+$/, '').trim()));
+}
+
 const criteriaClausePattern = /\b(?:care about|what matters|criteria|goals?|priorities|requirements?|matters?|important|must\s+(?:balance|protect|preserve|meet)|need(?:s)?\s+to\s+(?:balance|protect|preserve|meet))\b/i;
 
 function extractListedChoices(text) {
@@ -100,13 +111,9 @@ function extractListedChoices(text) {
       .split(/\s*,\s*(?:\b(?:or|and)\b\s*)?|\s+\b(?:or|and)\b\s+/i)
       .map((value) => cleanChoice(value).replace(/\bwhich\s+should\s+(?:i|we)\s+choose\b.*$/i, '').trim())
       .filter((value) => value.length >= 2);
-    if (parts.length >= 3) return [...new Set(parts)];
+    if (parts.length >= 3) return unique(parts);
   }
   return [];
-}
-
-function hasUnresolvedOptionList(text) {
-  return extractListedChoices(text).length > MAX_SUGGESTIONS.choices;
 }
 
 function extractChoices(text) {
@@ -115,13 +122,13 @@ function extractChoices(text) {
   for (const clause of clauses) {
     const decisionLike = decisionPattern.test(clause) || /^(?:should\b|choose|pick|select|decide)\b/i.test(clause);
     if (!decisionLike) continue;
-    for (const match of clause.matchAll(/(?:either\s+)?([^\n,.!?]{2,80})\s+(?:or|versus|vs\.?|instead of)\s+([^\n,.!?]{2,80})/gi)) {
+    for (const match of clause.matchAll(/(?:either\s+)?([^\n,.!?]{2,100})\s+(?:or|versus|vs\.?|instead of)\s+([^\n,.!?]{2,100})/gi)) {
       choices.push(cleanChoice(match[1]), cleanChoice(match[2]));
     }
   }
-  const numbered = [...text.matchAll(/(?:^|\n)\s*(?:\d+[.)]?|[-*•])\s+([^\n]{2,100})/g)]
+  const numbered = [...normalize(text).matchAll(/(?:^|\n)\s*(?:\d+[.)]?|[-*•])\s+([^\n]{2,120})/g)]
     .map((match) => cleanChoice(match[1]));
-  return unique([...choices, ...numbered], MAX_SUGGESTIONS.choices);
+  return unique([...choices, ...numbered]);
 }
 
 function phraseMatches(text, needle) {
@@ -133,7 +140,7 @@ function phraseMatches(text, needle) {
   });
 }
 
-function extractKeywordLabels(text, entries, max) {
+function extractKeywordLabels(text, entries, max = Number.POSITIVE_INFINITY) {
   const matches = [];
   for (const [needle, label] of entries) {
     for (const span of phraseMatches(text, needle)) matches.push({ ...span, needle, label });
@@ -151,7 +158,7 @@ function extractKeywordLabels(text, entries, max) {
 }
 
 function extractGoals(text) {
-  return extractKeywordLabels(text, KEYWORDS.goals, MAX_SUGGESTIONS.goals);
+  return extractKeywordLabels(text, KEYWORDS.goals);
 }
 
 function criterionLabel(value) {
@@ -173,7 +180,7 @@ function extractExplicitCriteria(text) {
 
   for (const clause of clauses) {
     if (!prefixCue.test(clause) && !suffixCue.test(clause)) continue;
-    let body = clause
+    const body = clause
       .replace(/^.*?\bcare about\b\s*/i, '')
       .replace(/^.*?\bwhat matters(?: most)?(?: is| are)?\b\s*/i, '')
       .replace(/^.*?\b(?:criteria|goals?|priorities|requirements?)\s+(?:are|include)\b\s*/i, '')
@@ -187,47 +194,45 @@ function extractExplicitCriteria(text) {
       .filter((value) => value.length >= 2);
     criteria.push(...items);
   }
-  return [...new Set(criteria)];
+  return unique(criteria);
 }
 
 function extractFutures(text) {
-  return extractKeywordLabels(text, KEYWORDS.futures, MAX_SUGGESTIONS.futures);
+  return extractKeywordLabels(text, KEYWORDS.futures);
 }
 
-function splitUserItems(text, max) {
+function splitUserItems(text) {
   const clean = normalize(text);
   if (!clean) return [];
-  return unique(
-    clean
-      .split(/\n|;|,|\s+\bor\b\s+/i)
-      .map((item) => item.replace(/^\s*(?:\d+[.)]?|[-*•])\s*/, '').trim()),
-    max,
-  );
+  return unique(clean
+    .split(/\n|;|,/)
+    .map((item) => item.replace(/^\s*(?:\d+[.)]?|[-*•])\s*/, '').trim())
+    .filter(Boolean));
 }
 
 export function draftFromInput(text) {
   const clean = normalize(text);
   const intent = getIntent(clean);
   const listedChoices = extractListedChoices(clean);
-  const detectedChoiceCount = listedChoices.length;
-  const optionListAmbiguous = detectedChoiceCount > MAX_SUGGESTIONS.choices;
-  const choices = optionListAmbiguous ? [] : unique([...extractChoices(clean), ...listedChoices], MAX_SUGGESTIONS.choices);
+  const choices = unique([...extractChoices(clean), ...listedChoices]);
   const explicitCriteria = extractExplicitCriteria(clean);
-  const detectedCriterionCount = explicitCriteria.length;
-  const criteriaListAmbiguous = detectedCriterionCount > MAX_SUGGESTIONS.goals;
-  const goals = criteriaListAmbiguous
-    ? []
-    : unique([...extractGoals(clean), ...explicitCriteria], MAX_SUGGESTIONS.goals);
+  const goals = unique([...extractGoals(clean), ...explicitCriteria]);
   const futures = extractFutures(clean);
-  const possibleDecision = intent !== 'multi' && (decisionPattern.test(clean) || (choices.length >= 2 && clean.includes('?'))) ? titleFrom(clean) : '';
+  const decisionCandidates = extractDecisionCandidates(clean);
+  const possibleDecision = intent !== 'multi' && decisionCandidates.length
+    ? decisionCandidates[0]
+    : intent !== 'multi' && choices.length >= 2 && clean.includes('?')
+      ? titleFrom(clean)
+      : '';
   return {
     startingPoint: clean,
     intent,
     possibleDecision,
-    optionListAmbiguous,
-    detectedChoiceCount,
-    criteriaListAmbiguous,
-    detectedCriterionCount,
+    decisionCandidates,
+    optionListAmbiguous: choices.length > FORMAL_LIMITS.choices.max,
+    detectedChoiceCount: choices.length,
+    criteriaListAmbiguous: goals.length > FORMAL_LIMITS.goals.max,
+    detectedCriterionCount: goals.length,
     hingeCandidate: deriveDecisionHinge(clean),
     choices,
     goals,
@@ -238,31 +243,16 @@ export function draftFromInput(text) {
 export function responseFor(state) {
   const clean = normalize(state?.startingPoint);
   const boundary = boundaryForInput(clean);
-  if (boundary) {
-    return { kind: 'boundary', title: boundary.title, body: boundary.body };
-  }
-  if (state?.optionListAmbiguous) {
-    const count = Number(state.detectedChoiceCount) || 4;
-    return { kind: 'question', question: `I found ${count} possible choices. Choose up to ${MAX_SUGGESTIONS.choices} to compare.` };
-  }
-  if (state?.criteriaListAmbiguous) {
-    const count = Number(state.detectedCriterionCount) || (MAX_SUGGESTIONS.goals + 1);
-    return { kind: 'question', question: `I found ${count} possible criteria. Choose up to ${MAX_SUGGESTIONS.goals} to keep.` };
-  }
-  if (!clean || (!state?.possibleDecision && state?.intent !== 'information' && state?.intent !== 'multi')) {
-    return { kind: 'question', question: 'Which decision or question should we focus on?' };
-  }
-  if (state.intent === 'information') {
+  if (boundary) return { kind: 'boundary', title: boundary.title, body: boundary.body };
+  if (!clean) return { kind: 'empty' };
+  if (state?.intent === 'information') {
     return {
       kind: 'boundary',
       title: 'FDE compares decisions; it does not retrieve outside facts.',
       body: 'Gather the fact first, or state the decision that fact will inform.',
     };
   }
-  if (state.intent === 'multi') {
-    return { kind: 'question', question: 'Which decision or question should we focus on first?' };
-  }
-  return { kind: 'structure' };
+  return { kind: 'brief' };
 }
 
 function storage() {
@@ -293,151 +283,159 @@ function clearSession() {
   try { storage()?.removeItem(SESSION_KEY); } catch { /* no-op */ }
 }
 
-function hingeTarget(state) {
-  const hinge = state.hingeCandidate;
-  if (!hinge || state.hingeStatus) return '';
-  if (['hard_requirement', 'deadline'].includes(hinge.basis_type)) {
-    if (state.goals.includes(hinge.text)) return '';
-    return state.goals.length < MAX_SUGGESTIONS.goals ? 'goals' : '';
-  }
-  if (state.futures.includes(hinge.text)) return '';
-  return state.futures.length < MAX_SUGGESTIONS.futures ? 'futures' : '';
-}
-
-function hingeQuestion(state) {
-  if (['hard_requirement', 'deadline'].includes(state.hingeCandidate?.basis_type)) {
-    return 'Does this condition need to be true for the decision?';
-  }
-  return 'Could this condition change which choice holds up?';
-}
-
-function missingRequirement(state) {
-  if (state.choices.length < DRAFT_TOPOLOGY_BOUNDS.strategies.min) return 'choices';
-  if (state.goals.length < DRAFT_TOPOLOGY_BOUNDS.objectives.min) return 'goals';
-  if (state.futures.length < DRAFT_TOPOLOGY_BOUNDS.scenarios.min) return 'futures';
-  return '';
-}
-
-function nextQuestion(state, kind) {
-  if (kind === 'choices') return state.choices.length === 1 ? 'What is one other choice to compare?' : 'What choices should we compare?';
-  if (kind === 'goals') return state.goals.length === 1 ? 'What else matters when comparing these choices?' : 'What matters most when comparing these choices?';
-  if (kind === 'futures') return state.futures.length === 1 ? 'What else could change the choice?' : 'What conditions or uncertainties could change the choice?';
-  return 'Which decision or question should we focus on?';
-}
-
-function supportableSection(label, semantic, value) {
+function supportableSection(label, semantic, value, fallback = '') {
   if (Array.isArray(value)) {
-    if (!value.length) return '';
-    return `<section class="universal-field" data-fde-field="${semantic}"><h3>${escapeHtml(label)}</h3><ul>${value.map((item) => `<li>${escapeHtml(item)}</li>`).join('')}</ul></section>`;
+    const values = value.map(normalize).filter(Boolean);
+    if (!values.length && !fallback) return '';
+    const body = values.length
+      ? `<ul>${values.map((item) => `<li>${escapeHtml(item)}</li>`).join('')}</ul>`
+      : `<p class="universal-empty">${escapeHtml(fallback)}</p>`;
+    return `<section class="universal-field" data-fde-field="${semantic}"><h3>${escapeHtml(label)}</h3>${body}</section>`;
   }
-  if (!normalize(value)) return '';
-  return `<section class="universal-field" data-fde-field="${semantic}"><h3>${escapeHtml(label)}</h3><p>${escapeHtml(value)}</p></section>`;
+  const text = normalize(value);
+  if (!text && !fallback) return '';
+  return `<section class="universal-field" data-fde-field="${semantic}"><h3>${escapeHtml(label)}</h3><p>${escapeHtml(text || fallback)}</p></section>`;
+}
+
+function briefDecisionMarkup(state) {
+  if (state.decisionCandidates.length > 1) {
+    return supportableSection('Decisions identified', 'decision', state.decisionCandidates);
+  }
+  return supportableSection('Decision', 'decision', state.possibleDecision, 'The decision is not explicit yet.');
+}
+
+function briefUnknowns(state) {
+  const unknowns = [];
+  if (!state.possibleDecision && state.decisionCandidates.length === 0) unknowns.push('The decision itself is not explicit yet.');
+  if (state.choices.length < FORMAL_LIMITS.choices.min) unknowns.push('The alternatives are not fully established.');
+  if (state.goals.length < FORMAL_LIMITS.goals.min) unknowns.push('What matters most is not fully established.');
+  if (uncertainPattern.test(state.startingPoint)) unknowns.push('Some supporting evidence remains uncertain.');
+  return unique(unknowns);
+}
+
+function nextUsefulMove(state) {
+  if (!state.possibleDecision && state.decisionCandidates.length === 0) {
+    return 'Refine only if you want FDE to isolate a formal decision.';
+  }
+  if (state.decisionCandidates.length > 1) {
+    return 'Refine or open Compare options when you want to focus one formal decision.';
+  }
+  if (state.choices.length < FORMAL_LIMITS.choices.min) {
+    return 'Refine only if you want to name alternatives for formal comparison.';
+  }
+  if (state.goals.length < FORMAL_LIMITS.goals.min) {
+    return 'Refine only if you want to make the comparison criteria explicit.';
+  }
+  return 'Open Compare options when you want a formal deterministic comparison.';
 }
 
 function hingeMarkup(state) {
   const hinge = state.hingeCandidate;
   if (!hinge) return '';
-  const status = state.hingeStatus === 'yes'
-    ? 'You confirmed'
-    : state.hingeStatus === 'no'
-      ? 'You did not keep this as a controlling condition'
-      : state.hingeStatus === 'not_sure'
-        ? 'You marked this as uncertain'
-        : 'FDE suggests';
   return `<section class="universal-hinge" data-fde-field="decision_hinge">
-    <div class="universal-hinge-meta"><span>${escapeHtml(status)}</span><span>From your words</span></div>
+    <div class="universal-hinge-meta"><span>Potential hinge</span><span>From your words</span></div>
     <h3>This decision may turn on</h3>
     <p>${escapeHtml(hinge.text)}</p>
   </section>`;
+}
+
+function preservedMarkup(state) {
+  const messages = [];
+  if (state.decisionCandidates.length > 1) messages.push(`${state.decisionCandidates.length} decision questions preserved.`);
+  if (state.choices.length > FORMAL_LIMITS.choices.max) messages.push(`${state.choices.length} possible choices preserved.`);
+  if (state.goals.length > FORMAL_LIMITS.goals.max) messages.push(`${state.goals.length} criteria preserved.`);
+  if (!messages.length) return '';
+  return `<aside class="universal-preserved" aria-label="Preserved context"><strong>Preserved context</strong><p>${escapeHtml(messages.join(' '))} Formal comparison uses a human-selected bounded set without discarding the source context.</p></aside>`;
 }
 
 function entryMarkup(state, hasSavedDecision) {
   return `<section class="universal-hero universal-front-door" data-surface="fde-hero" aria-labelledby="universal-title">
     <span class="eyebrow">Frontier Decision Engine</span>
     <h1 id="universal-title">What are you considering?</h1>
-    <p class="universal-subtitle">Share the situation, decision, question, or context in your own words.</p>
     <div class="universal-entry">
       <label class="sr-only" for="universal-input">What are you considering?</label>
-      <textarea id="universal-input" rows="7" aria-describedby="universal-help universal-limit" placeholder="Decision, choices, criteria, uncertainties, notes, or context…">${escapeHtml(state.startingPoint)}</textarea>
-      <p id="universal-help" class="help">Use your own words. Press Ctrl or Command + Enter to continue. Natural-language intake currently supports English.</p>
+      <textarea id="universal-input" rows="7" aria-describedby="universal-limit universal-handling" placeholder="Type or paste anything relevant…">${escapeHtml(state.startingPoint)}</textarea>
       <p id="universal-limit" class="universal-limit" role="status" hidden></p>
       <div class="universal-actions"><button id="universal-analyze" class="primary" type="button">Continue</button></div>
-      <details class="universal-advanced"><summary>Advanced paths</summary><p><a href="#/decision">Already know the decision and choices? Open Decision Lab →</a></p><p><a href="#/framing">Need more help framing the decision? Use guided framing →</a></p></details>
       ${hasSavedDecision ? '<p class="universal-return"><a href="#/decision">Continue saved work →</a></p>' : ''}
-      <p class="universal-trust">Private by design. Your working decision stays in this browser unless you choose to export it.</p>
+      <p id="universal-handling" class="universal-trust">Browser-local. Public or sanitized material only.</p>
       <p id="universal-status" class="sr-only" role="status" aria-live="polite"></p>
     </div>
   </section>`;
 }
 
-function structureMarkup(state) {
-  return `<section class="universal-hero universal-post-input" data-surface="fde-hero" aria-labelledby="universal-title">
+function briefMarkup(state, hasSavedDecision) {
+  const canCompare = Boolean(state.possibleDecision) || state.decisionCandidates.length > 0;
+  return `<section class="universal-hero universal-post-input" data-surface="fde-hero" aria-labelledby="universal-response-title">
     <span class="eyebrow">Frontier Decision Engine</span>
-    <h1 id="universal-title">What are you considering?</h1>
-    <div class="universal-structure" data-fde-status="needs-confirmation" aria-labelledby="universal-response-title">
-      <div class="universal-structure-head"><h2 id="universal-response-title">Decision structure</h2><span class="universal-badge">Needs confirmation</span></div>
+    <div class="universal-structure universal-brief" data-fde-status="brief">
+      <div class="universal-structure-head"><h1 id="universal-response-title">Decision brief</h1></div>
+      ${briefDecisionMarkup(state)}
+      ${supportableSection('What matters', 'what_matters', state.goals, 'Not established yet.')}
+      ${supportableSection("What's still unclear", 'uncertainty', briefUnknowns(state), 'Nothing obvious from the supplied context.')}
+      ${supportableSection('Next useful move', 'next_useful_move', nextUsefulMove(state))}
       ${hingeMarkup(state)}
-      ${supportableSection('Decision', 'decision', state.possibleDecision)}
-      ${supportableSection('What matters', 'what_matters', state.goals)}
-      ${supportableSection('Choices', 'options', state.choices)}
-      ${supportableSection('What may change', 'what_may_change', state.futures)}
-      <div class="universal-confirmation" data-fde-field="next_required_input">
-        <h3>Is this the decision you want to evaluate?</h3>
-        <div class="universal-confirm-row"><button id="universal-confirm" class="primary" type="button">Yes</button><button id="universal-adjust" class="quiet" type="button">Adjust</button></div>
+      ${preservedMarkup(state)}
+      <div class="universal-actions universal-brief-actions">
+        <button id="universal-refine" class="quiet" type="button">Refine</button>
+        ${canCompare ? '<button id="universal-compare" class="quiet" type="button">Compare options</button>' : ''}
+        ${hasSavedDecision ? '<a class="button quiet" href="#/decision">Continue saved work</a>' : ''}
+        <button id="universal-start-over" class="quiet" type="button">Start another</button>
       </div>
-      <p class="universal-trust">Private by design. Your working decision stays in this browser unless you choose to export it.</p>
+      <details class="universal-trace"><summary>See how FDE got here</summary><p>FDE organized only what appeared in the supplied context. The original text remains the source context and is not treated as evidence by itself.</p><pre>${escapeHtml(state.startingPoint)}</pre></details>
+      <p class="universal-trust">Browser-local. Public or sanitized material only. The brief is working context, not a Decision Receipt.</p>
       <p id="universal-status" class="sr-only" role="status" aria-live="polite"></p>
     </div>
   </section>`;
 }
 
-function questionMarkup(state, question) {
-  return `<section class="universal-hero universal-post-input" data-surface="fde-hero" aria-labelledby="universal-title">
-    <span class="eyebrow">Frontier Decision Engine</span>
-    <h1 id="universal-title">What are you considering?</h1>
-    <section class="universal-question" data-fde-field="next_required_input" aria-labelledby="universal-response-title">
-      <h2 id="universal-response-title">${escapeHtml(question)}</h2>
-      <label class="sr-only" for="universal-input">${escapeHtml(question)}</label>
-      <textarea id="universal-input" rows="5" aria-describedby="universal-help universal-limit" placeholder="Add only what is needed here…">${escapeHtml(state.answerDraft || '')}</textarea>
-      <p id="universal-help" class="help">One useful answer is enough to continue.</p>
-      <p id="universal-limit" class="universal-limit" role="status" hidden></p>
-      <div class="universal-actions"><button id="universal-analyze" class="primary" type="button">Continue</button><button id="universal-adjust" class="quiet" type="button">Adjust original input</button></div>
-      <p class="universal-trust">Private by design. Your working decision stays in this browser unless you choose to export it.</p>
-      <p id="universal-status" class="sr-only" role="status" aria-live="polite"></p>
-    </section>
-  </section>`;
+function checkboxList(name, values, selected, max) {
+  if (!values.length) return '<p class="universal-empty">None detected yet. Add items below if you want to compare.</p>';
+  return `<div class="universal-check-list" data-limit="${max}">${values.map((value, index) => {
+    const checked = selected.includes(value) ? ' checked' : '';
+    return `<label><input type="checkbox" name="${name}" value="${escapeHtml(value)}"${checked}> <span>${escapeHtml(value)}</span></label>`;
+  }).join('')}</div>`;
 }
 
-function hingeQuestionMarkup(state) {
+function decisionChoiceMarkup(state) {
+  const decisions = state.decisionCandidates.length ? state.decisionCandidates : state.possibleDecision ? [state.possibleDecision] : [];
+  if (decisions.length <= 1) {
+    return `<label class="universal-compare-field"><span>Decision</span><input id="universal-decision-text" type="text" value="${escapeHtml(decisions[0] || '')}" placeholder="State the decision to compare"></label>`;
+  }
+  return `<fieldset class="universal-compare-field"><legend>Decision</legend><div class="universal-radio-list">${decisions.map((decision, index) => `<label><input type="radio" name="formal-decision" value="${escapeHtml(decision)}"${index === 0 ? ' checked' : ''}> <span>${escapeHtml(decision)}</span></label>`).join('')}</div></fieldset>`;
+}
+
+function compareMarkup(state) {
+  const selectedChoices = state.selectedChoices.length ? state.selectedChoices : state.choices.slice(0, FORMAL_LIMITS.choices.max);
+  const selectedGoals = state.selectedGoals.length ? state.selectedGoals : state.goals.slice(0, FORMAL_LIMITS.goals.max);
+  const selectedFutures = state.selectedFutures.length ? state.selectedFutures : state.futures.slice(0, FORMAL_LIMITS.futures.max);
   const hinge = state.hingeCandidate;
-  return `<section class="universal-hero universal-post-input" data-surface="fde-hero" aria-labelledby="universal-title">
+  return `<section class="universal-hero universal-post-input" data-surface="fde-hero" aria-labelledby="universal-response-title">
     <span class="eyebrow">Frontier Decision Engine</span>
-    <h1 id="universal-title">What are you considering?</h1>
-    <section class="universal-question universal-hinge-question" data-fde-field="next_required_input" aria-labelledby="universal-response-title">
-      <div class="universal-hinge-meta"><span>FDE suggests</span><span>From your words</span></div>
-      <h2 id="universal-response-title">${escapeHtml(hingeQuestion(state))}</h2>
-      <p class="universal-hinge-quote">${escapeHtml(hinge?.text || '')}</p>
-      <div class="universal-confirm-row">
-        <button data-hinge-answer="yes" class="primary" type="button">Yes</button>
-        <button data-hinge-answer="no" class="quiet" type="button">No</button>
-        <button data-hinge-answer="not_sure" class="quiet" type="button">Not sure</button>
+    <div class="universal-structure universal-compare" data-fde-status="compare-setup">
+      <div class="universal-structure-head"><div><h1 id="universal-response-title">Compare options</h1><p>Optional. Set the bounded formal comparison here, then open Decision Lab.</p></div></div>
+      <div class="universal-compare-grid">
+        ${decisionChoiceMarkup(state)}
+        <fieldset class="universal-compare-field"><legend>Options <small>Select 2–${FORMAL_LIMITS.choices.max}</small></legend>${checkboxList('formal-choice', state.choices, selectedChoices, FORMAL_LIMITS.choices.max)}<label class="universal-add"><span>Add options, one per line</span><textarea id="universal-add-choices" rows="3" placeholder="Optional"></textarea></label></fieldset>
+        <fieldset class="universal-compare-field"><legend>What matters <small>Select 2–${FORMAL_LIMITS.goals.max}</small></legend>${checkboxList('formal-goal', state.goals, selectedGoals, FORMAL_LIMITS.goals.max)}<label class="universal-add"><span>Add criteria, one per line</span><textarea id="universal-add-goals" rows="3" placeholder="Optional"></textarea></label></fieldset>
+        <fieldset class="universal-compare-field"><legend>What may change <small>Select 2–${FORMAL_LIMITS.futures.max}</small></legend>${checkboxList('formal-future', state.futures, selectedFutures, FORMAL_LIMITS.futures.max)}<label class="universal-add"><span>Add conditions or uncertainties, one per line</span><textarea id="universal-add-futures" rows="3" placeholder="Optional"></textarea></label></fieldset>
+        ${hinge ? `<fieldset class="universal-compare-field"><legend>Potential hinge</legend><p class="universal-hinge-quote">${escapeHtml(hinge.text)}</p><div class="universal-radio-list"><label><input type="radio" name="hinge-status" value="yes"> <span>Keep as important</span></label><label><input type="radio" name="hinge-status" value="not_sure" checked> <span>Leave uncertain</span></label><label><input type="radio" name="hinge-status" value="no"> <span>Remove</span></label></div></fieldset>` : ''}
       </div>
-      <div class="universal-actions"><button id="universal-adjust" class="quiet" type="button">Adjust original input</button></div>
-      <p class="universal-trust">FDE is organizing your input. You remain the decision-maker.</p>
-      <p id="universal-status" class="sr-only" role="status" aria-live="polite"></p>
-    </section>
+      <p id="universal-compare-validation" class="universal-limit" role="status" hidden></p>
+      <div class="universal-actions"><button id="universal-open-lab" class="primary" type="button">Open Decision Lab</button><button id="universal-back-brief" class="quiet" type="button">Back to brief</button></div>
+      <p class="universal-trust">Formal comparison remains deterministic and human-governed. The comparison informs; a person decides.</p>
+    </div>
   </section>`;
 }
 
-function boundaryMarkup(state, title, body, saved = false) {
-  return `<section class="universal-hero universal-post-input" data-surface="fde-hero" aria-labelledby="universal-title">
+function boundaryMarkup(title, body, saved = false) {
+  return `<section class="universal-hero universal-post-input" data-surface="fde-hero" aria-labelledby="universal-response-title">
     <span class="eyebrow">Frontier Decision Engine</span>
-    <h1 id="universal-title">What are you considering?</h1>
-    <section class="universal-boundary" data-fde-status="boundary" aria-labelledby="universal-response-title">
-      <h2 id="universal-response-title">${escapeHtml(title)}</h2>
+    <section class="universal-boundary" data-fde-status="boundary">
+      <h1 id="universal-response-title">${escapeHtml(title)}</h1>
       <p>${escapeHtml(body)}</p>
-      <div class="universal-actions">${saved ? '<a class="button" href="#/decision">Open Decision Lab →</a>' : '<button id="universal-adjust" class="primary" type="button">Adjust</button>'}</div>
-      <p class="universal-trust">Private by design. Your working decision stays in this browser unless you choose to export it.</p>
+      <div class="universal-actions">${saved ? '<a class="button primary" href="#/decision">Open Decision Lab</a>' : '<button id="universal-adjust" class="primary" type="button">Adjust</button>'}</div>
+      <p class="universal-trust">Browser-local. Public or sanitized material only.</p>
       <p id="universal-status" class="sr-only" role="status" aria-live="polite"></p>
     </section>
   </section>`;
@@ -449,23 +447,22 @@ export function renderUniversalDecisionExperience(root) {
     startingPoint: normalize(restored.startingPoint || ''),
     intent: restored.intent || '',
     possibleDecision: restored.possibleDecision || '',
+    decisionCandidates: Array.isArray(restored.decisionCandidates) ? restored.decisionCandidates : [],
     optionListAmbiguous: Boolean(restored.optionListAmbiguous),
     detectedChoiceCount: Number(restored.detectedChoiceCount) || 0,
     criteriaListAmbiguous: Boolean(restored.criteriaListAmbiguous),
     detectedCriterionCount: Number(restored.detectedCriterionCount) || 0,
     hingeCandidate: restored.hingeCandidate || null,
-    hingeStatus: restored.hingeStatus || '',
-    hingeApplied: Boolean(restored.hingeApplied),
-    choices: Array.isArray(restored.choices) ? restored.choices.slice(0, MAX_SUGGESTIONS.choices) : [],
-    goals: Array.isArray(restored.goals) ? restored.goals.slice(0, MAX_SUGGESTIONS.goals) : [],
-    futures: Array.isArray(restored.futures) ? restored.futures.slice(0, MAX_SUGGESTIONS.futures) : [],
-    view: ['entry', 'structure', 'question', 'boundary'].includes(restored.view) ? restored.view : 'entry',
-    questionKind: restored.questionKind || '',
-    question: restored.question || '',
+    choices: Array.isArray(restored.choices) ? restored.choices : [],
+    goals: Array.isArray(restored.goals) ? restored.goals : [],
+    futures: Array.isArray(restored.futures) ? restored.futures : [],
+    selectedChoices: Array.isArray(restored.selectedChoices) ? restored.selectedChoices : [],
+    selectedGoals: Array.isArray(restored.selectedGoals) ? restored.selectedGoals : [],
+    selectedFutures: Array.isArray(restored.selectedFutures) ? restored.selectedFutures : [],
+    view: ['entry', 'brief', 'compare', 'boundary'].includes(restored.view) ? restored.view : 'entry',
     boundaryTitle: restored.boundaryTitle || '',
     boundaryBody: restored.boundaryBody || '',
     savedBoundary: Boolean(restored.savedBoundary),
-    answerDraft: normalize(restored.answerDraft || ''),
   };
 
   const hasSavedDecision = () => Boolean(getBrowserStorage(globalThis)?.getItem?.(DECISION_STORAGE_KEY));
@@ -475,73 +472,140 @@ export function renderUniversalDecisionExperience(root) {
     state.boundaryTitle = title;
     state.boundaryBody = body;
     state.savedBoundary = saved;
-    state.questionKind = '';
-    state.question = '';
-    state.answerDraft = '';
-    saveSession(state);
-    paint('#universal-response-title');
-  }
-
-  function setQuestion(kind, question = '') {
-    state.view = 'question';
-    state.questionKind = kind;
-    state.question = question || nextQuestion(state, kind);
-    state.answerDraft = '';
     saveSession(state);
     paint('#universal-response-title');
   }
 
   function returnToEntry() {
     state.view = 'entry';
-    state.questionKind = '';
-    state.question = '';
     state.boundaryTitle = '';
     state.boundaryBody = '';
     state.savedBoundary = false;
-    state.answerDraft = '';
-    state.hingeCandidate = null;
-    state.hingeStatus = '';
-    state.hingeApplied = false;
     saveSession(state);
     paint('#universal-input');
   }
 
-  function handoffWhenReady() {
-    const hingeNext = hingeTarget(state);
-    if (hingeNext) {
-      setQuestion('hinge', hingeQuestion(state));
+  function startAnother() {
+    clearSession();
+    Object.assign(state, {
+      startingPoint: '', intent: '', possibleDecision: '', decisionCandidates: [],
+      optionListAmbiguous: false, detectedChoiceCount: 0, criteriaListAmbiguous: false,
+      detectedCriterionCount: 0, hingeCandidate: null, choices: [], goals: [], futures: [],
+      selectedChoices: [], selectedGoals: [], selectedFutures: [], view: 'entry',
+      boundaryTitle: '', boundaryBody: '', savedBoundary: false,
+    });
+    paint('#universal-input');
+  }
+
+  function showInputLimit(message = '') {
+    const element = root.querySelector('#universal-limit') || root.querySelector('#universal-compare-validation');
+    if (element) {
+      element.hidden = false;
+      element.textContent = message || `This is longer than FDE can safely structure at once. Keep the working context under ${GUIDED_MAX_INPUT_CHARS.toLocaleString()} characters.`;
+    }
+  }
+
+  function analyzeEntry() {
+    const raw = String(root.querySelector('#universal-input')?.value || '');
+    if (raw.length > GUIDED_MAX_INPUT_CHARS) {
+      showInputLimit(`This is longer than FDE can safely structure at once. Keep the working context under ${GUIDED_MAX_INPUT_CHARS.toLocaleString()} characters.`);
+      root.querySelector('#universal-input')?.focus({ preventScroll: true });
       return;
     }
-    const missing = missingRequirement(state);
-    if (missing) {
-      setQuestion(missing);
+    state.startingPoint = normalize(raw);
+    const draft = draftFromInput(state.startingPoint);
+    Object.assign(state, draft, { selectedChoices: [], selectedGoals: [], selectedFutures: [] });
+    const response = responseFor(state);
+    if (response.kind === 'empty') {
+      showInputLimit('Enter a decision, question, or context to continue.');
+      root.querySelector('#universal-input')?.focus({ preventScroll: true });
       return;
     }
+    if (response.kind === 'boundary') {
+      setBoundary(response.title, response.body);
+      return;
+    }
+    state.view = 'brief';
+    saveSession(state);
+    paint('#universal-response-title');
+  }
+
+  function checkedValues(name) {
+    return [...root.querySelectorAll(`input[name="${name}"]:checked`)].map((element) => normalize(element.value)).filter(Boolean);
+  }
+
+  function enforceCheckboxLimit(name, max) {
+    root.querySelectorAll(`input[name="${name}"]`).forEach((checkbox) => checkbox.addEventListener('change', () => {
+      const checked = checkedValues(name);
+      if (checked.length > max) {
+        checkbox.checked = false;
+        const label = name === 'formal-choice' ? 'options' : name === 'formal-goal' ? 'criteria' : 'conditions';
+        showInputLimit(`Select no more than ${max} ${label} for one formal comparison.`);
+      } else {
+        const message = root.querySelector('#universal-compare-validation');
+        if (message) message.hidden = true;
+      }
+    }));
+  }
+
+  function formalDecision() {
+    return normalize(root.querySelector('input[name="formal-decision"]:checked')?.value || root.querySelector('#universal-decision-text')?.value || state.possibleDecision);
+  }
+
+  function formalSelections(name, additionsId) {
+    return unique([...checkedValues(name), ...splitUserItems(root.querySelector(additionsId)?.value || '')]);
+  }
+
+  function openDecisionLab() {
     if (hasSavedDecision()) {
       setBoundary('A saved FDE decision already exists.', 'Open Decision Lab to review it before replacing anything.', true);
       return;
     }
-    const counts = { objectives: state.goals.length, strategies: state.choices.length, scenarios: state.futures.length };
-    const withinBounds = counts.objectives >= DRAFT_TOPOLOGY_BOUNDS.objectives.min
-      && counts.objectives <= DRAFT_TOPOLOGY_BOUNDS.objectives.max
-      && counts.strategies >= DRAFT_TOPOLOGY_BOUNDS.strategies.min
-      && counts.strategies <= DRAFT_TOPOLOGY_BOUNDS.strategies.max
-      && counts.scenarios >= DRAFT_TOPOLOGY_BOUNDS.scenarios.min
-      && counts.scenarios <= DRAFT_TOPOLOGY_BOUNDS.scenarios.max;
-    if (!withinBounds || !state.possibleDecision) {
-      setQuestion(missing || 'decision');
+    const decisionText = formalDecision();
+    const selectedChoices = formalSelections('formal-choice', '#universal-add-choices');
+    const selectedGoals = formalSelections('formal-goal', '#universal-add-goals');
+    const selectedFutures = formalSelections('formal-future', '#universal-add-futures');
+    const hingeStatus = root.querySelector('input[name="hinge-status"]:checked')?.value || '';
+    const hinge = state.hingeCandidate;
+
+    if (hinge && ['yes', 'not_sure'].includes(hingeStatus)) {
+      if (hingeStatus === 'yes' && ['hard_requirement', 'deadline'].includes(hinge.basis_type)) {
+        if (!selectedGoals.includes(hinge.text) && selectedGoals.length < FORMAL_LIMITS.goals.max) selectedGoals.push(hinge.text);
+      } else if (!selectedFutures.includes(hinge.text) && selectedFutures.length < FORMAL_LIMITS.futures.max) {
+        selectedFutures.push(hinge.text);
+      }
+    }
+
+    state.selectedChoices = selectedChoices;
+    state.selectedGoals = selectedGoals;
+    state.selectedFutures = selectedFutures;
+    saveSession(state);
+
+    const errors = [];
+    if (!decisionText) errors.push('State one decision to compare.');
+    if (selectedChoices.length < FORMAL_LIMITS.choices.min) errors.push(`Select at least ${FORMAL_LIMITS.choices.min} options.`);
+    if (selectedChoices.length > FORMAL_LIMITS.choices.max) errors.push(`Select no more than ${FORMAL_LIMITS.choices.max} options.`);
+    if (selectedGoals.length < FORMAL_LIMITS.goals.min) errors.push(`Select at least ${FORMAL_LIMITS.goals.min} criteria.`);
+    if (selectedGoals.length > FORMAL_LIMITS.goals.max) errors.push(`Select no more than ${FORMAL_LIMITS.goals.max} criteria.`);
+    if (selectedFutures.length < FORMAL_LIMITS.futures.min) errors.push(`Select at least ${FORMAL_LIMITS.futures.min} conditions or uncertainties.`);
+    if (selectedFutures.length > FORMAL_LIMITS.futures.max) errors.push(`Select no more than ${FORMAL_LIMITS.futures.max} conditions or uncertainties.`);
+    if (errors.length) {
+      showInputLimit(errors.join(' '));
+      root.querySelector('#universal-compare-validation')?.focus?.({ preventScroll: true });
       return;
     }
+
     const decision = createGuidedDecisionCase({
-      objectiveCount: counts.objectives,
-      strategyCount: counts.strategies,
-      scenarioCount: counts.scenarios,
+      objectiveCount: selectedGoals.length,
+      strategyCount: selectedChoices.length,
+      scenarioCount: selectedFutures.length,
     });
-    decision.question = state.possibleDecision;
-    decision.title = state.possibleDecision.slice(0, 120);
-    state.goals.forEach((label, index) => { decision.objectives[index].label = label; });
-    state.choices.forEach((label, index) => { decision.strategies[index].label = label; });
-    state.futures.forEach((label, index) => { decision.scenarios[index].label = label; });
+    decision.question = decisionText;
+    decision.title = decisionText.slice(0, 120);
+    selectedGoals.forEach((label, index) => { decision.objectives[index].label = label; });
+    selectedChoices.forEach((label, index) => { decision.strategies[index].label = label; });
+    selectedFutures.forEach((label, index) => { decision.scenarios[index].label = label; });
+
     const result = saveDecision(getBrowserStorage(globalThis), decision, null);
     if (!result.ok) {
       setBoundary('FDE could not save this browser-local draft.', 'Keep this page open, review browser storage settings, then try again.');
@@ -555,161 +619,15 @@ export function renderUniversalDecisionExperience(root) {
     location.hash = '#/decision';
   }
 
-  function showInputLimit() {
-    const message = root.querySelector('#universal-limit');
-    if (message) {
-      message.hidden = false;
-      message.textContent = `This is longer than FDE can safely structure at once. Choose or paste the section containing the decision, question, or conditions you want to evaluate, and keep it under ${GUIDED_MAX_INPUT_CHARS.toLocaleString()} characters.`;
-    }
-    root.querySelector('#universal-input')?.focus({ preventScroll: true });
-  }
-
-  function analyzeEntry() {
-    const raw = String(root.querySelector('#universal-input')?.value || '');
-    if (raw.length > GUIDED_MAX_INPUT_CHARS) {
-      state.startingPoint = normalize(raw.slice(0, GUIDED_MAX_INPUT_CHARS + 1));
-      saveSession(state);
-      showInputLimit();
-      return;
-    }
-    state.startingPoint = normalize(raw);
-    const draft = draftFromInput(state.startingPoint);
-    Object.assign(state, draft, { hingeStatus: '', hingeApplied: false });
-    const response = responseFor(state);
-    if (response.kind === 'question') {
-      setQuestion(state.optionListAmbiguous ? 'choices' : state.criteriaListAmbiguous ? 'goals' : 'decision', response.question);
-      return;
-    }
-    if (response.kind === 'boundary') {
-      setBoundary(response.title, response.body);
-      return;
-    }
-    state.view = 'structure';
-    state.questionKind = '';
-    state.question = '';
-    state.answerDraft = '';
-    saveSession(state);
-    paint('#universal-response-title');
-  }
-
-  function applyHingeAnswer(answer) {
-    const hinge = state.hingeCandidate;
-    if (!hinge || !['yes', 'no', 'not_sure'].includes(answer)) return;
-    state.hingeStatus = answer;
-    state.hingeApplied = false;
-    if (answer === 'yes' && ['hard_requirement', 'deadline'].includes(hinge.basis_type) && state.goals.length < MAX_SUGGESTIONS.goals) {
-      const before = state.goals.length;
-      state.goals = unique([...state.goals, hinge.text], MAX_SUGGESTIONS.goals);
-      state.hingeApplied = state.goals.length > before;
-    } else if (answer === 'yes' && state.futures.length < MAX_SUGGESTIONS.futures) {
-      const before = state.futures.length;
-      state.futures = unique([...state.futures, hinge.text], MAX_SUGGESTIONS.futures);
-      state.hingeApplied = state.futures.length > before;
-    } else if (answer === 'not_sure' && state.futures.length < MAX_SUGGESTIONS.futures) {
-      const before = state.futures.length;
-      state.futures = unique([...state.futures, hinge.text], MAX_SUGGESTIONS.futures);
-      state.hingeApplied = state.futures.length > before;
-    }
-    state.questionKind = '';
-    state.question = '';
-    state.answerDraft = '';
-    saveSession(state);
-    handoffWhenReady();
-  }
-
-  function applyQuestionAnswer() {
-    const raw = String(root.querySelector('#universal-input')?.value || '');
-    if (raw.length > GUIDED_MAX_INPUT_CHARS) {
-      showInputLimit();
-      return;
-    }
-    const answer = normalize(raw);
-    state.answerDraft = answer;
-    if (!answer) {
-      saveSession(state);
-      paint('#universal-response-title');
-      return;
-    }
-
-    // A complete new decision entered during a follow-up replaces the prior
-    // intake context instead of inheriting choices, goals, or uncertainties.
-    const replacementDraft = draftFromInput(answer);
-    const answerDefinesNewFocus = Boolean(replacementDraft.possibleDecision)
-      || replacementDraft.intent === 'multi'
-      || replacementDraft.intent === 'information';
-    if (answerDefinesNewFocus) {
-      Object.assign(state, replacementDraft, { hingeStatus: '', hingeApplied: false });
-      const replacementResponse = responseFor(state);
-      if (replacementResponse.kind === 'question') {
-        setQuestion(state.optionListAmbiguous ? 'choices' : state.criteriaListAmbiguous ? 'goals' : 'decision', replacementResponse.question);
-        return;
-      }
-      if (replacementResponse.kind === 'boundary') {
-        setBoundary(replacementResponse.title, replacementResponse.body);
-        return;
-      }
-      state.view = 'structure';
-      state.questionKind = '';
-      state.question = '';
-      state.answerDraft = '';
-      saveSession(state);
-      paint('#universal-response-title');
-      return;
-    }
-
-    if (state.questionKind === 'decision') {
-      const draft = draftFromInput(answer);
-      state.startingPoint = state.startingPoint ? `${state.startingPoint}\n${answer}` : answer;
-      Object.assign(state, {
-        intent: draft.intent,
-        possibleDecision: draft.possibleDecision,
-        choices: unique([...state.choices, ...draft.choices], MAX_SUGGESTIONS.choices),
-        goals: unique([...state.goals, ...draft.goals], MAX_SUGGESTIONS.goals),
-        futures: unique([...state.futures, ...draft.futures], MAX_SUGGESTIONS.futures),
-      });
-      if (!state.possibleDecision) {
-        state.question = 'Which decision should FDE evaluate?';
-        state.answerDraft = '';
-        saveSession(state);
-        paint('#universal-response-title');
-        return;
-      }
-      state.view = 'structure';
-      state.questionKind = '';
-      state.question = '';
-      state.answerDraft = '';
-      saveSession(state);
-      paint('#universal-response-title');
-      return;
-    }
-    if (state.questionKind === 'choices') state.choices = unique([...state.choices, ...splitUserItems(answer, MAX_SUGGESTIONS.choices)], MAX_SUGGESTIONS.choices);
-    if (state.questionKind === 'goals') {
-      state.goals = unique([...state.goals, ...splitUserItems(answer, MAX_SUGGESTIONS.goals)], MAX_SUGGESTIONS.goals);
-      state.criteriaListAmbiguous = false;
-      state.detectedCriterionCount = state.goals.length;
-    }
-    if (state.questionKind === 'futures') state.futures = unique([...state.futures, ...splitUserItems(answer, MAX_SUGGESTIONS.futures)], MAX_SUGGESTIONS.futures);
-    state.answerDraft = '';
-    const missing = missingRequirement(state);
-    if (missing) {
-      setQuestion(missing);
-      return;
-    }
-    handoffWhenReady();
-  }
-
   function paint(focusSelector = '') {
-    if (state.view === 'structure') root.innerHTML = structureMarkup(state);
-    else if (state.view === 'question' && state.questionKind === 'hinge') root.innerHTML = hingeQuestionMarkup(state);
-    else if (state.view === 'question') root.innerHTML = questionMarkup(state, state.question || nextQuestion(state, state.questionKind));
-    else if (state.view === 'boundary') root.innerHTML = boundaryMarkup(state, state.boundaryTitle, state.boundaryBody, state.savedBoundary);
+    if (state.view === 'brief') root.innerHTML = briefMarkup(state, hasSavedDecision());
+    else if (state.view === 'compare') root.innerHTML = compareMarkup(state);
+    else if (state.view === 'boundary') root.innerHTML = boundaryMarkup(state.boundaryTitle, state.boundaryBody, state.savedBoundary);
     else root.innerHTML = entryMarkup(state, hasSavedDecision());
 
     root.querySelector('#universal-input')?.addEventListener('input', (event) => {
       const rawValue = String(event.currentTarget.value || '');
-      const value = rawValue.slice(0, GUIDED_MAX_INPUT_CHARS + 1);
-      if (state.view === 'entry') state.startingPoint = value;
-      else state.answerDraft = value;
+      state.startingPoint = rawValue.slice(0, GUIDED_MAX_INPUT_CHARS + 1);
       const limit = root.querySelector('#universal-limit');
       if (limit && rawValue.length <= GUIDED_MAX_INPUT_CHARS) limit.hidden = true;
       saveSession(state);
@@ -717,17 +635,27 @@ export function renderUniversalDecisionExperience(root) {
     root.querySelector('#universal-input')?.addEventListener('keydown', (event) => {
       if ((event.metaKey || event.ctrlKey) && event.key === 'Enter') {
         event.preventDefault();
-        if (state.view === 'entry') analyzeEntry();
-        else if (state.view === 'question') applyQuestionAnswer();
+        analyzeEntry();
       }
     });
-    root.querySelector('#universal-analyze')?.addEventListener('click', () => {
-      if (state.view === 'entry') analyzeEntry();
-      else if (state.view === 'question') applyQuestionAnswer();
-    });
+    root.querySelector('#universal-analyze')?.addEventListener('click', analyzeEntry);
     root.querySelector('#universal-adjust')?.addEventListener('click', returnToEntry);
-    root.querySelector('#universal-confirm')?.addEventListener('click', handoffWhenReady);
-    root.querySelectorAll('[data-hinge-answer]').forEach((button) => button.addEventListener('click', () => applyHingeAnswer(button.dataset.hingeAnswer)));
+    root.querySelector('#universal-refine')?.addEventListener('click', returnToEntry);
+    root.querySelector('#universal-start-over')?.addEventListener('click', startAnother);
+    root.querySelector('#universal-compare')?.addEventListener('click', () => {
+      state.view = 'compare';
+      saveSession(state);
+      paint('#universal-response-title');
+    });
+    root.querySelector('#universal-back-brief')?.addEventListener('click', () => {
+      state.view = 'brief';
+      saveSession(state);
+      paint('#universal-response-title');
+    });
+    root.querySelector('#universal-open-lab')?.addEventListener('click', openDecisionLab);
+    enforceCheckboxLimit('formal-choice', FORMAL_LIMITS.choices.max);
+    enforceCheckboxLimit('formal-goal', FORMAL_LIMITS.goals.max);
+    enforceCheckboxLimit('formal-future', FORMAL_LIMITS.futures.max);
 
     if (focusSelector) root.querySelector(focusSelector)?.focus({ preventScroll: true });
   }

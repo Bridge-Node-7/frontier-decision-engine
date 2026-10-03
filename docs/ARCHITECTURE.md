@@ -6,13 +6,11 @@ Frontier Decision Engine is the human-governed decision layer of Bridge Node 7's
 
 The public root is a one-input decision experience for technical, organizational, mission, and strategic decisions. A person can start in ordinary language without learning decision-science vocabulary first.
 
-After Continue, the runtime must resolve to exactly one of three states:
+After **Continue**, ordinary in-scope text resolves to a working **Decision Brief**. The brief is a valid stopping point. It presents only supportable structure: the decision or focus, what matters, what remains unclear, and the next useful move. Sparse, ambiguous, or multi-decision input remains useful as a partial brief rather than forcing a question-by-question completion path.
 
-1. supportable decision structure;
-2. exactly one useful clarification question; or
-3. an honest capability boundary plus a useful next action.
+A pre-interpretation scope boundary still runs before brief generation. High-confidence personal safety language receives the established safety boundary; otherwise first-person personal-life decisions are redirected neutrally unless explicit organizational or decision-support context makes the work in scope. Information-only requests receive the established no-retrieval boundary. These are product-scope decisions, not clinical judgments.
 
-The first-run structure uses stable semantic concepts: `decision`, `what_matters`, `options`, `what_may_change`, `status`, and `next_required_input`. A provisional decision hinge may be derived only from explicit requirement, time-gate, dependency, conditional, or blocker language. It preserves the exact source span, begins with no formal influence, and requires human confirmation before it can populate a bounded formal input. Human-facing labels are **Decision, What matters, Choices, What may change**. Only fields actually supported by explicit input are rendered.
+The first-run layer preserves the original source text and candidate decisions, choices, criteria, conditions, and provisional decision hinge. Candidate capture can be broader than the formal comparison. The Decision Brief is working context, not a Decision Receipt and not evidence by itself.
 
 A Decision Map remains an internal architecture/export concept where it improves technical precision. It is not the pre-input first-run surface.
 
@@ -20,15 +18,17 @@ A Decision Map remains an internal architecture/export concept where it improves
 
 FDE follows this interaction rule:
 
-> Continue without bothering the person when the system can proceed safely; otherwise ask for the smallest human contribution that materially advances the decision.
+> Produce useful structure before asking the person to operate the formal model.
 
-No ordinary in-scope input is treated as an error-only dead end. Sparse or ambiguous input receives one clarification question. A hinge-derived question may preempt the ordinary schema order only when the answer can deterministically change a requirement, criterion, evidence need, choice, constraint, or modeled future; otherwise the deterministic choices → goals → futures fallback remains in force. A pre-interpretation scope boundary keeps FDE inside its technical, organizational, mission, and strategic product domain. High-confidence personal safety language receives the established safety boundary; otherwise first-person personal-life decisions are redirected neutrally unless explicit organizational or decision-support context makes the work in scope. The neutral redirect is a product-scope decision, not a clinical judgment.
+**Refine** returns to the same freeform source context. It does not open another structured questionnaire. Formal depth is voluntary through **Compare options**.
+
+The optional comparison setup shows the complete bounded formal setup on one surface. The person selects one decision when needed, 2–3 strategies, 2–4 objectives, and 2–4 scenarios. Additional source candidates remain preserved outside the active formal set. A provisional decision hinge may enter a formal criterion or modeled future only after explicit human handling.
 
 ## Formal Decision Lab
 
-Once enough explicit structure exists and the person confirms it, the information is handed into the existing deterministic Decision Lab. Guided comparison supports 2–4 objectives, 2–3 strategies, and 2–4 scenarios. The minimum comparison is a true 2 × 2 × 2 model.
+After the person deliberately opens a valid bounded comparison, FDE creates the existing guided Decision Case and hands it into the existing deterministic Decision Lab. Guided comparison remains 2–4 objectives, 2–3 strategies, and 2–4 scenarios. The minimum comparison remains a true 2 × 2 × 2 model.
 
-The comparison core is isolated from the first-run layer so UX changes do not silently alter ranking semantics. Missing analytical values are not fabricated.
+The comparison core is isolated from the first-run layer so UX changes do not silently alter ranking semantics. Missing analytical values are not fabricated. Saved formal work is not silently overwritten by a new first-run brief.
 
 ## Epistemic boundaries
 

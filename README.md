@@ -10,15 +10,13 @@
 
 ## Start with one input
 
-The first screen asks one question: **What are you considering?**
+The public root asks one question: **What are you considering?**
 
-Share the situation, decision, question, or context in your own words. **Natural-language intake currently supports English.** FDE then does one of three things:
+Type or paste relevant context in ordinary language and choose **Continue**. For ordinary in-scope material, FDE returns a working **Decision Brief** immediately rather than beginning a compulsory clarification sequence. The brief separates the decision or focus, what matters, what remains unclear, and the next useful move. Sparse or multi-decision context can still produce a partial brief; unsupported information remains explicit instead of being silently invented.
 
-- shows only decision structure that is supportable from the words provided;
-- asks exactly one useful clarification question when the decision is still too sparse; or
-- states an honest capability boundary and a useful next action when the request is outside the browser-local decision-support scope.
+The original source text remains preserved as working context. Candidate decisions, choices, criteria, and conditions may be broader than the formal model. When the person voluntarily opens **Compare options**, they select the bounded set for one deterministic comparison: 2–4 objectives, 2–3 strategies, and 2–4 scenarios. This bounds the computation without silently discarding the source context.
 
-When explicit language identifies a requirement, time gate, dependency, conditional, or blocker that may control the decision, FDE can surface it as a provisional **decision hinge** with source provenance. The person confirms, rejects, or marks the condition uncertain before it can affect bounded comparison inputs. When a consequential decision needs more structure first, **Guided framing** captures the decision, criteria, choices, and uncertainties before handing confirmed inputs into the same Decision Lab. Supportable first-run structure uses four human-facing concepts: **Decision, What matters, Choices, What may change.** Nothing inferred becomes a canonical model input until a person confirms it.
+When explicit language identifies a requirement, time gate, dependency, conditional, or blocker that may control the decision, FDE can surface a provisional **decision hinge** with source provenance. It does not affect formal comparison inputs until the person explicitly keeps it or leaves it uncertain during comparison setup.
 
 The browser does not call a remote AI provider, retrieve outside facts, invent evidence, probabilities, scores, thresholds, scenario effects, or recommendations.
 
@@ -32,7 +30,7 @@ Accepted context stays in JavaScript page memory only and is discarded on refres
 
 ## Decision Lab
 
-FDE is the human-governed decision layer within Bridge Node 7's Frontier Mission Assurance architecture. Materials-to-Mission and other assurance profiles can contribute governed evidence and dependency context; Governed Context carries bounded preparation context into FDE; the accountable human records the consequential decision and reassessment. After confirmation, FDE asks only for the additional explicit inputs required for a deterministic comparison. The formal Decision Lab preserves the existing ranking semantics, published schemas, saved-work protections, and truthful alternate outcomes including ties, no acceptable option, and insufficient information.
+FDE is the human-governed decision layer within Bridge Node 7's Frontier Mission Assurance architecture. Materials-to-Mission and other assurance profiles can contribute governed evidence and dependency context; Governed Context carries bounded preparation context into FDE; the accountable human records the consequential decision and reassessment. Formal comparison is optional. A single comparison-setup surface prepares the bounded explicit inputs required by the existing deterministic Decision Lab. The Decision Lab preserves the existing ranking semantics, published schemas, saved-work protections, and truthful alternate outcomes including ties, no acceptable option, and insufficient information.
 
 The comparison informs. A person decides. The result surface leads with what held up, why, what could change it, the next required proof, and the next action before exposing detailed calculations. A lightweight Decision Brief can be copied or downloaded before recording; when the working decision later changes, FDE shows a deterministic reassessment delta and preserves prior valid Receipt v2 records in a bounded **Local Decision Receipt Archive** before a new Receipt is recorded. The archive preserves independently verifiable local receipts; it is not a cryptographic continuity chain.
 

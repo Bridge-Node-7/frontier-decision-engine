@@ -140,8 +140,10 @@ if re.search(r"<script[^>]+src=[\"']https?://", index, re.I):
 for stylesheet in ["./assets/styles.css", "./assets/bridge-node-7-shell.css", "./assets/beginner-first.css", "./assets/guided-framing.css", "./assets/universal-decision.css"]:
     if stylesheet not in index:
         errors.append(f"site index does not load required stylesheet: {stylesheet}")
-if "Bridge Node 7 Home" not in index:
-    errors.append("explicit Bridge Node 7 Home path is missing")
+if 'href="https://bridgenode7.com/"' not in index:
+    errors.append("explicit Bridge Node 7 home path is missing")
+if 'href="https://bridgenode7.com/partner/"' not in index:
+    errors.append("Bridge Node 7 Partner path is missing")
 
 for path in (SITE / "src").rglob("*.js"):
     try:
@@ -171,25 +173,34 @@ if "renderUniversalDecisionExperience" not in app_text:
 
 required_front_door = [
     "What are you considering?",
-    "Share the situation, decision, question, or context in your own words.",
-    "Decision, choices, criteria, uncertainties, notes, or context…",
+    "Type or paste anything relevant…",
     ">Continue<",
-    "Advanced paths",
-    "Already know the decision and choices? Open Decision Lab →",
+    "Decision brief",
+    "What's still unclear",
+    "Next useful move",
+    "Compare options",
+    "Open Decision Lab",
+    "Preserved context",
     "deriveDecisionHinge",
     "This decision may turn on",
-    "Need more help framing the decision? Use guided framing →",
-    "Private by design. Your working decision stays in this browser unless you choose to export it.",
-    "supportableSection('Decision', 'decision'",
+    "Browser-local. Public or sanitized material only.",
     "supportableSection('What matters', 'what_matters'",
-    "supportableSection('Choices', 'options'",
-    "supportableSection('What may change', 'what_may_change'",
-    "Which decision or question should we focus on?",
-    "Needs confirmation",
+    "supportableSection(\"What's still unclear\", 'uncertainty'",
+    "supportableSection('Next useful move', 'next_useful_move'",
+    "fde.universal.session.v2",
 ]
 for token in required_front_door:
     if token not in universal_text:
         errors.append(f"first-run UX missing required contract: {token}")
+for obsolete in [
+    "Advanced paths",
+    "Which decision or question should we focus on?",
+    "Choose up to 3 to compare.",
+    "Choose up to 4 to keep.",
+    "Needs confirmation",
+]:
+    if obsolete in universal_text:
+        errors.append(f"first-run UX still contains obsolete compulsory-flow copy: {obsolete}")
 for prohibited in ["Bring the whole mess", "Find the decision", "What FDE sees so far", "Invalid input"]:
     if prohibited in universal_text or prohibited in index:
         errors.append(f"first-run UX still contains prohibited pre-input copy: {prohibited}")
@@ -241,7 +252,7 @@ if errors:
     sys.exit(1)
 
 print("REPOSITORY VALIDATION PASS")
-print("- first-run UX provides structure, one clarification, or an explicit capability boundary")
+print("- first-run UX returns an immediate Decision Brief or an explicit capability boundary")
 print("- Guided framing and deterministic Decision Lab preserve human authority and browser-local boundaries")
 print("- public decision schemas, release identity, accessibility controls, and publication checks are aligned")
 print("- static site has no external runtime dependencies")

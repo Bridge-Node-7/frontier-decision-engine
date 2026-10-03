@@ -1,272 +1,246 @@
 #!/usr/bin/env python3
-"""Focused browser verification for the frictionless FDE first-run surface."""
+"""First-run browser verification for the Decision-Brief-first FDE experience."""
 from __future__ import annotations
 
-import functools
-import http.server
 import os
-import socketserver
-import threading
-from pathlib import Path
+from urllib.parse import urlparse
 
-from playwright.sync_api import sync_playwright
+try:
+    from playwright.sync_api import sync_playwright
+except ImportError as exc:  # pragma: no cover
+    raise SystemExit(
+        "Browser E2E requires Playwright. Run: node scripts/run-python.mjs -m pip install "
+        "-r requirements-dev.txt and node scripts/run-python.mjs -m playwright install chromium"
+    ) from exc
 
-ROOT = Path(__file__).resolve().parents[1]
-SITE = ROOT / "site"
-SESSION_KEY = "fde.universal.session.v1"
-DECISION_KEY = "fde.decision.autosave.v0.2.11"
-GUIDED_SESSION_KEY = "fde.guided-framing.session.v1"
+from browser_e2e import browser_executable, install_static_route, native_http_available, start_static_server
+
+SESSION_KEY = "fde.universal.session.v2"
+OLD_SESSION_KEY = "fde.universal.session.v1"
+DECISION_STORAGE_KEY = "fde.decision.v1"
 
 
-class QuietHandler(http.server.SimpleHTTPRequestHandler):
-    def log_message(self, *_args):
-        pass
+def launch_browser(playwright):
+    executable = browser_executable()
+    kwargs = {"headless": True}
+    if executable:
+        kwargs["executable_path"] = executable
+    return playwright.chromium.launch(**kwargs)
 
 
-def browser_executable() -> str | None:
-    return os.environ.get("CHROME_BIN") or None
+def reset(page, base: str) -> None:
+    page.goto(base, wait_until="networkidle")
+    page.evaluate("localStorage.clear(); sessionStorage.clear()")
+    page.goto(base, wait_until="networkidle")
+
+
+def uses_static_route(base: str) -> bool:
+    parsed = urlparse(base)
+    return parsed.scheme == "http" and parsed.hostname == "fde.test" and parsed.port is None
+
+
+def assert_first_view(page) -> None:
+    assert page.locator("#universal-title").inner_text() == "What are you considering?"
+    field = page.locator("#universal-input")
+    assert field.get_attribute("placeholder") == "Type or paste anything relevant…"
+    assert page.get_by_role("button", name="Continue").count() == 1
+    assert page.get_by_text("Advanced paths", exact=True).count() == 0
+    assert page.get_by_text("Share the situation, decision, question, or context in your own words.", exact=True).count() == 0
+
+
+def assert_brief(page) -> None:
+    assert page.locator("#universal-response-title").inner_text() == "Decision brief"
+    assert page.locator('[data-fde-field="decision"]').count() == 1
+    assert page.locator('[data-fde-field="what_matters"]').count() == 1
+    assert page.locator('[data-fde-field="uncertainty"]').count() == 1
+    assert page.locator('[data-fde-field="next_useful_move"]').count() == 1
+    assert page.locator(".universal-question").count() == 0
 
 
 def run() -> None:
-    handler = functools.partial(QuietHandler, directory=str(SITE))
-    with socketserver.TCPServer(("127.0.0.1", 0), handler) as server:
-        thread = threading.Thread(target=server.serve_forever, daemon=True)
-        thread.start()
-        base = f"http://127.0.0.1:{server.server_address[1]}/"
-        try:
-            with sync_playwright() as p:
-                launch = {"headless": True}
-                executable = browser_executable()
-                if executable:
-                    launch["executable_path"] = executable
-                browser = p.chromium.launch(**launch)
-                try:
-                    context = browser.new_context(viewport={"width": 390, "height": 844})
-                    remote_requests: list[str] = []
-                    context.on("request", lambda request: remote_requests.append(request.url) if not request.url.startswith(base) else None)
-                    page = context.new_page()
-                    page.goto(base, wait_until="networkidle")
+    server, native_base = start_static_server()
+    try:
+        with sync_playwright() as playwright:
+            browser = launch_browser(playwright)
+            try:
+                base = native_base
+                if not native_http_available(browser, base, attempts=2):
+                    base = "http://fde.test/"
 
-                    assert page.title() == "Frontier Decision Engine"
-                    assert page.locator("h1").inner_text() == "What are you considering?"
-                    assert page.get_by_text("Share the situation, decision, question, or context in your own words.", exact=True).is_visible()
-                    assert page.get_by_role("button", name="Continue").is_visible()
-                    assert page.get_by_text("Advanced paths", exact=True).is_visible()
-                    page.get_by_text("Advanced paths", exact=True).click()
-                    assert page.get_by_role("link", name="Already know the decision and choices? Open Decision Lab →").is_visible()
-                    assert page.get_by_role("link", name="Need more help framing the decision? Use guided framing →").is_visible()
-                    assert page.get_by_text("Private by design. Your working decision stays in this browser unless you choose to export it.", exact=True).is_visible()
-                    assert page.locator("#universal-input").get_attribute("placeholder") == "Decision, choices, criteria, uncertainties, notes, or context…"
-                    assert page.locator(".universal-surface").count() == 0
-                    assert "Decision Map" not in page.locator("main").inner_text()
-                    assert "Bring the whole mess" not in page.locator("body").inner_text()
-                    assert page.locator("#theme-toggle").inner_text() == "Appearance"
-                    assert "Current:" in (page.locator("#theme-toggle").get_attribute("aria-label") or "")
-                    assert page.evaluate("document.documentElement.scrollWidth <= window.innerWidth + 1")
+                context = browser.new_context(viewport={"width": 1280, "height": 900}, color_scheme="dark")
+                if uses_static_route(base):
+                    install_static_route(context)
 
-                    # Long input stays visible and produces an explicit bounded-processing message.
-                    long_input = "x" * 12001
-                    page.locator("#universal-input").fill(long_input)
-                    page.get_by_role("button", name="Continue").click()
-                    assert page.locator("#universal-limit").is_visible()
-                    assert len(page.locator("#universal-input").input_value()) == len(long_input)
+                remote_requests: list[str] = []
+                page = context.new_page()
+                allowed_host = urlparse(base).netloc
 
-                    # A grounded controlling condition is shown before schema completion.
-                    page.locator("#universal-input").fill("Should we qualify Supplier A or Supplier B? November is our integration window.")
-                    page.get_by_role("button", name="Continue").click()
-                    assert page.locator("[data-fde-field='decision_hinge']").is_visible()
-                    assert page.get_by_text("November is our integration window", exact=True).is_visible()
-                    page.get_by_role("button", name="Yes").click()
-                    assert page.locator("#universal-response-title").inner_text() == "Does this condition need to be true for the decision?"
-                    page.get_by_role("button", name="Yes").click()
-                    assert "What else matters" in page.locator("#universal-response-title").inner_text()
-                    page.get_by_role("button", name="Adjust original input").click()
+                def observe_request(request) -> None:
+                    parsed = urlparse(request.url)
+                    if parsed.scheme in {"http", "https"} and parsed.netloc != allowed_host:
+                        remote_requests.append(request.url)
 
-                    # Explicit prohibitive hard requirements remain eligible hinge candidates.
-                    page.locator("#universal-input").fill("Should we proceed with this design? The system must not exceed 10 watts.")
-                    page.get_by_role("button", name="Continue").click()
-                    assert page.locator("[data-fde-field='decision_hinge']").is_visible()
-                    assert page.get_by_text("must not exceed 10 watts", exact=True).is_visible()
-                    page.locator("#universal-adjust").click()
+                page.on("request", observe_request)
 
-                    # Sparse input yields one question, not an invalid state or empty structural cards.
-                    page.locator("#universal-input").fill("qualification evidence incomplete")
-                    page.get_by_role("button", name="Continue").click()
-                    assert page.locator("#universal-response-title").inner_text() == "Which decision or question should we focus on?"
-                    assert page.locator("[data-fde-field='next_required_input']").count() == 1
-                    assert page.locator("[data-fde-field='decision']").count() == 0
-                    assert "Invalid input" not in page.locator("body").inner_text()
+                reset(page, base)
+                assert_first_view(page)
+                assert page.evaluate("document.documentElement.scrollWidth <= window.innerWidth + 1")
 
-                    page.get_by_role("button", name="Adjust original input").click()
-                    clear_input = "Should we qualify an alternate source or redesign around the dependency? Schedule risk and resilience matter, but qualification may be late. <script>alert(1)</script>"
-                    page.locator("#universal-input").fill(clear_input)
-                    page.get_by_role("button", name="Continue").click()
-                    assert page.locator("#universal-response-title").inner_text() == "Decision structure"
-                    assert page.get_by_text("Needs confirmation", exact=True).is_visible()
-                    assert page.locator("[data-fde-field='decision']").is_visible()
-                    assert page.locator("[data-fde-field='what_matters']").is_visible()
-                    assert page.locator("[data-fde-field='options']").is_visible()
-                    assert page.locator("[data-fde-field='what_may_change']").is_visible()
-                    assert page.get_by_text("qualify an alternate source", exact=True).is_visible()
-                    assert page.get_by_text("redesign around the dependency", exact=True).is_visible()
-                    assert page.get_by_text("Schedule risk", exact=True).is_visible()
-                    assert page.get_by_text("Resilience", exact=True).is_visible()
-                    assert page.get_by_text("Timing gets worse", exact=True).is_visible()
-                    assert page.locator("script").filter(has_text="alert(1)").count() == 0
+                # Clear, supportable input returns value immediately instead of starting a questionnaire.
+                clear_input = (
+                    "Should we qualify the alternate source or retain the incumbent? "
+                    "Schedule risk, resilience, and cost matter. Delay and shortage are possible."
+                )
+                page.locator("#universal-input").fill(clear_input)
+                page.get_by_role("button", name="Continue").click()
+                assert_brief(page)
+                assert "qualify the alternate source" in page.locator('[data-fde-field="decision"]').inner_text().lower()
+                assert page.get_by_role("button", name="Compare options").count() == 1
+                assert page.get_by_role("button", name="Refine").count() == 1
+                assert page.get_by_role("button", name="Start another").count() == 1
 
-                    # Confirmation requests only the next required input.
-                    page.get_by_role("button", name="Yes").click()
-                    assert page.locator("#universal-response-title").inner_text() == "What else could change the choice?"
-                    page.locator("#universal-input").fill("Requirements change")
+                # Refine returns to the same freeform source context with no new form.
+                page.get_by_role("button", name="Refine").click()
+                assert_first_view(page)
+                assert page.locator("#universal-input").input_value() == clear_input
+                page.locator("#universal-input").fill(clear_input + " Technical performance also matters.")
+                page.get_by_role("button", name="Continue").click()
+                assert_brief(page)
+                assert "Technical performance" in page.locator('[data-fde-field="what_matters"]').inner_text()
 
-                    # Saved-work protection: never silently replace a Decision Lab draft.
-                    page.evaluate(f"localStorage.setItem('{DECISION_KEY}', JSON.stringify({{sentinel:'keep-me'}}))")
-                    page.get_by_role("button", name="Continue").click()
-                    assert page.evaluate(f"localStorage.getItem('{DECISION_KEY}')") == '{"sentinel":"keep-me"}'
-                    assert page.locator("#universal-response-title").inner_text() == "A saved FDE decision already exists."
-                    assert page.get_by_role("link", name="Open Decision Lab →").is_visible()
+                # Sparse input still yields a partial brief. No compulsory clarification screen appears.
+                page.get_by_role("button", name="Start another").click()
+                page.locator("#universal-input").fill("Qualification evidence is incomplete and the mission dependency is unclear.")
+                page.get_by_role("button", name="Continue").click()
+                assert_brief(page)
+                assert "not explicit" in page.locator('[data-fde-field="decision"]').inner_text().lower()
+                assert "decision itself" in page.locator('[data-fde-field="uncertainty"]').inner_text().lower()
 
-                    # A completely new decision entered during a follow-up must not inherit
-                    # criteria or options from the abandoned decision.
-                    page.evaluate(f"localStorage.removeItem('{DECISION_KEY}')")
-                    page.evaluate(f"sessionStorage.removeItem('{SESSION_KEY}')")
-                    page.goto(base, wait_until="networkidle")
-                    diligence_input = "Should we qualify a second gallium nitride wafer supplier in Japan or keep our current Chinese supplier? We care about cost, schedule risk, and DFARS compliance."
-                    page.locator("#universal-input").fill(diligence_input)
-                    page.get_by_role("button", name="Continue").click()
-                    assert page.locator("#universal-response-title").inner_text() == "Decision structure"
-                    assert page.get_by_text("Cost", exact=True).is_visible()
-                    assert page.get_by_text("Schedule risk", exact=True).is_visible()
-                    assert page.get_by_text("Compliance", exact=True).is_visible()
-                    page.get_by_role("button", name="Yes").click()
-                    assert page.locator("#universal-response-title").inner_text() == "What conditions or uncertainties could change the choice?"
-                    page.locator("#universal-input").fill("Should we retire the legacy test stand?")
-                    page.get_by_role("button", name="Continue").click()
-                    assert page.locator("#universal-response-title").inner_text() == "Decision structure"
-                    assert page.get_by_text("Should we retire the legacy test stand", exact=True).is_visible()
-                    current_text = page.locator("main").inner_text()
-                    assert "Cost" not in current_text
-                    assert "Schedule risk" not in current_text
-                    assert "Compliance" not in current_text
-                    assert "Japanese supplier" not in current_text
-                    assert "Chinese supplier" not in current_text
+                # Multiple decisions are preserved rather than forcing a choose-one page.
+                page.get_by_role("button", name="Start another").click()
+                page.locator("#universal-input").fill(
+                    "Should we qualify a second source? Should we redesign around the dependency? "
+                    "Should we build strategic inventory?"
+                )
+                page.get_by_role("button", name="Continue").click()
+                assert_brief(page)
+                decision_text = page.locator('[data-fde-field="decision"]').inner_text()
+                assert "qualify a second source" in decision_text.lower()
+                assert "redesign around the dependency" in decision_text.lower()
+                assert "build strategic inventory" in decision_text.lower()
+                assert "3 decision questions preserved" in page.locator(".universal-preserved").inner_text().lower()
 
-                    # Information-request UAT is a separate first-run scenario. Clear only the
-                    # tab-scoped intake session; the persistence behavior itself is tested below.
-                    page.evaluate(f"localStorage.removeItem('{DECISION_KEY}')")
-                    page.evaluate(f"sessionStorage.removeItem('{SESSION_KEY}')")
-                    page.goto(base, wait_until="networkidle")
-                    page.locator("#universal-input").fill("What is the current spot price of gallium?")
-                    page.get_by_role("button", name="Continue").click()
-                    assert "does not retrieve outside facts" in page.locator("#universal-response-title").inner_text().lower()
-                    assert "Gather the fact first" in page.locator("main").inner_text()
+                # Large candidate sets remain preserved before bounded formal comparison.
+                page.get_by_role("button", name="Start another").click()
+                page.locator("#universal-input").fill(
+                    "Choose between Supplier Alpha, Supplier Bravo, an alternate material, a reserve, or subsystem redesign. "
+                    "Cost, schedule, resilience, qualification, and compliance matter. Delay and shortage are possible."
+                )
+                page.get_by_role("button", name="Continue").click()
+                assert_brief(page)
+                preserved = page.locator(".universal-preserved").inner_text().lower()
+                assert "5 possible choices preserved" in preserved
+                assert "5 criteria preserved" in preserved
 
-                    # Self-directed crisis language fails closed before ordinary decision structuring.
-                    page.evaluate(f"localStorage.removeItem('{DECISION_KEY}')")
-                    page.evaluate(f"sessionStorage.removeItem('{SESSION_KEY}')")
-                    page.goto(base, wait_until="networkidle")
-                    page.locator("#universal-input").fill("I want to die.")
-                    page.get_by_role("button", name="Continue").click()
-                    assert page.locator("#universal-response-title").inner_text() == "This decision is outside FDE’s comparison scope."
-                    assert "does not compare or optimize self-harm" in page.locator("main").inner_text()
-                    assert "988" in page.locator("main").inner_text()
+                # Formal depth is voluntary and visible on one surface.
+                page.get_by_role("button", name="Compare options").click()
+                assert page.locator("#universal-response-title").inner_text() == "Compare options"
+                assert page.locator('legend').filter(has_text="Options").count() >= 1
+                assert page.locator('legend').filter(has_text="What matters").count() >= 1
+                assert page.locator('legend').filter(has_text="What may change").count() >= 1
+                assert page.get_by_role("button", name="Open Decision Lab").count() == 1
+                # Reduce the preselected choices/criteria to formal limits and provide a second scenario if needed.
+                choice_boxes = page.locator('input[name="formal-choice"]')
+                for index in range(choice_boxes.count()):
+                    choice_boxes.nth(index).set_checked(index < 3)
+                goal_boxes = page.locator('input[name="formal-goal"]')
+                for index in range(goal_boxes.count()):
+                    goal_boxes.nth(index).set_checked(index < 4)
 
-                    # Organizational prevention decisions remain valid decision inputs.
-                    page.get_by_role("button", name="Adjust").click()
-                    page.locator("#universal-input").fill("Should the ministry fund suicide prevention hotlines or school counselors?")
-                    page.get_by_role("button", name="Continue").click()
-                    assert page.locator("#universal-response-title").inner_text() == "Decision structure"
+                # Added formal items are validated rather than silently truncated.
+                page.locator("#universal-add-choices").fill("Emergency reserve")
+                page.get_by_role("button", name="Open Decision Lab").click()
+                assert page.locator("#universal-response-title").inner_text() == "Compare options"
+                assert "no more than 3 options" in page.locator("#universal-compare-validation").inner_text().lower()
+                page.locator("#universal-add-choices").fill("")
 
-                    # Oversized choice sets get an explicit bounded-selection prompt.
-                    page.get_by_role("button", name="Adjust").click()
-                    page.locator("#universal-input").fill("Choose between Supplier Alpha, Supplier Bravo, an alternate material, a reserve, or subsystem redesign.")
-                    page.get_by_role("button", name="Continue").click()
-                    assert page.locator("#universal-response-title").inner_text() == "I found 5 possible choices. Choose up to 3 to compare."
+                page.locator("#universal-add-futures").fill("Demand changes")
+                page.get_by_role("button", name="Open Decision Lab").click()
+                page.wait_for_url("**#/decision")
+                page.locator("#decision-work").wait_for(state="visible")
+                # Decision Map remains a technical Decision Lab concept, not the first-run surface.
+                assert page.locator("#decision-question").input_value().strip()
+                assert page.locator(".guided-starting-context").count() == 1
 
-                    # Mission-focused criteria remain choices/criteria, not an ambiguous option list.
-                    page.evaluate(f"sessionStorage.removeItem('{SESSION_KEY}')")
-                    page.goto(base, wait_until="networkidle")
-                    page.locator("#universal-input").fill("Should we impose export controls or negotiate supply agreements with allies? National security, cost, and time matter.")
-                    page.get_by_role("button", name="Continue").click()
-                    assert page.locator("#universal-response-title").inner_text() == "Decision structure"
-                    assert page.get_by_text("National security", exact=True).is_visible()
-                    assert page.get_by_text("Cost", exact=True).is_visible()
-                    assert page.get_by_text("Time", exact=True).is_visible()
-                    assert page.get_by_text("impose export controls", exact=True).is_visible()
-                    assert page.get_by_text("negotiate supply agreements with allies", exact=True).is_visible()
+                # Saved-work protection: a new brief may exist without overwriting formal work.
+                # Saved-work protection is enforced when a second brief tries to enter Decision Lab.
+                page.goto(base, wait_until="networkidle")
+                page.locator("#universal-input").fill(
+                    "Should we qualify another supplier or retain the incumbent? Cost and reliability matter. Delay and shortage are possible."
+                )
+                page.get_by_role("button", name="Continue").click()
+                assert_brief(page)
+                page.get_by_role("button", name="Compare options").click()
+                page.locator("#universal-add-futures").fill("Requirements change")
+                page.get_by_role("button", name="Open Decision Lab").click()
+                assert "saved FDE decision already exists" in page.locator("#universal-response-title").inner_text()
+                assert page.get_by_role("link", name="Open Decision Lab").count() == 1
 
-                    # Explicit criteria outside the built-in vocabulary stay visible for human confirmation.
-                    page.get_by_role("button", name="Adjust").click()
-                    page.locator("#universal-input").fill("Should we qualify Supplier Alpha or Supplier Bravo? Data residency, capex, measurement traceability, and corrosion resistance matter.")
-                    page.get_by_role("button", name="Continue").click()
-                    assert page.locator("#universal-response-title").inner_text() == "Decision structure"
-                    for criterion in ("Data residency", "Capex", "Measurement traceability", "Corrosion resistance"):
-                        assert page.get_by_text(criterion, exact=True).is_visible()
+                # Information requests retain the existing no-fabrication boundary.
+                page.evaluate("localStorage.clear(); sessionStorage.clear()")
+                page.goto(base, wait_until="networkidle")
+                page.locator("#universal-input").fill("What is the current spot price of gallium?")
+                page.get_by_role("button", name="Continue").click()
+                assert "does not retrieve outside facts" in page.locator("#universal-response-title").inner_text().lower()
 
-                    # More criteria than the bounded draft can hold must never be silently truncated.
-                    page.get_by_role("button", name="Adjust").click()
-                    page.locator("#universal-input").fill("Should we qualify Supplier Alpha or Supplier Bravo? Data residency, capex, measurement traceability, corrosion resistance, and repairability matter.")
-                    page.get_by_role("button", name="Continue").click()
-                    assert page.locator("#universal-response-title").inner_text() == "I found 5 possible criteria. Choose up to 4 to keep."
+                # Scope and safety boundaries remain fail-closed before first-run structuring.
+                page.get_by_role("button", name="Adjust").click()
+                page.locator("#universal-input").fill("Should I cut myself or call someone?")
+                page.get_by_role("button", name="Continue").click()
+                assert "outside FDE’s comparison scope" in page.locator("#universal-response-title").inner_text()
+                assert "988" in page.locator(".universal-boundary").inner_text()
 
-                    # Informational comparison language remains informational rather than inventing a choice set.
-                    page.get_by_role("button", name="Adjust original input").click()
-                    page.locator("#universal-input").fill("Explain qualification versus redesign for a new engineer.")
-                    page.get_by_role("button", name="Continue").click()
-                    assert "does not retrieve outside facts" in page.locator("#universal-response-title").inner_text().lower()
+                # Over-length input is rejected without silent truncation.
+                page.get_by_role("button", name="Adjust").click()
+                page.locator("#universal-input").fill("x" * 12001)
+                page.get_by_role("button", name="Continue").click()
+                assert page.locator("#universal-input").count() == 1
+                assert "longer than FDE can safely structure" in page.locator("#universal-limit").inner_text()
 
-                    # Ctrl/Cmd + Enter activates Continue.
-                    page.get_by_role("button", name="Adjust").click()
-                    page.locator("#universal-input").fill("Should we qualify the alternate source or hold for evidence? Mission safety and cost exposure matter. Schedule slips and demand changes are possible.")
-                    page.locator("#universal-input").press("Control+Enter")
-                    assert page.locator("#universal-response-title").inner_text() == "Decision structure"
+                # sessionStorage recovery retains in-progress source text; old v1 transient state is ignored.
+                page.locator("#universal-input").fill("Refresh should preserve this source context.")
+                assert page.evaluate(f"Boolean(sessionStorage.getItem('{SESSION_KEY}'))")
+                page.evaluate(f"sessionStorage.setItem('{OLD_SESSION_KEY}', JSON.stringify({{'version': 1, 'view': 'question'}}))")
+                page.reload(wait_until="networkidle")
+                assert page.locator("#universal-input").input_value() == "Refresh should preserve this source context."
 
-                    # Refresh preserves in-progress first-run work.
-                    page.get_by_role("button", name="Adjust").click()
-                    page.locator("#universal-input").fill("Refresh should not erase this qualification context.")
-                    assert page.evaluate(f"Boolean(sessionStorage.getItem('{SESSION_KEY}'))")
-                    page.reload(wait_until="networkidle")
-                    assert page.locator("#universal-input").input_value() == "Refresh should not erase this qualification context."
+                # Mobile/reflow: accepted first view stays operable without page-level horizontal scrolling.
+                mobile = browser.new_context(viewport={"width": 375, "height": 812}, color_scheme="dark")
+                if uses_static_route(base):
+                    install_static_route(mobile)
+                mobile_page = mobile.new_page()
+                mobile_page.goto(base, wait_until="networkidle")
+                assert_first_view(mobile_page)
+                assert mobile_page.evaluate("document.documentElement.scrollWidth <= window.innerWidth + 1")
+                assert mobile_page.get_by_role("button", name="Continue").bounding_box()["height"] >= 44
+                mobile.close()
 
-                    # Guided framing enforces the same input boundary.
-                    page.evaluate(f"sessionStorage.removeItem('{GUIDED_SESSION_KEY}')")
-                    page.goto(f"{base}#/framing", wait_until="networkidle")
-                    page.locator("#guided-question").wait_for(state="visible")
-                    page.locator("#guided-intake").fill("Should I cut myself or call someone?")
-                    page.locator("#guided-start").click()
-                    assert "This decision is outside FDE’s comparison scope." in page.locator("#guided-status").inner_text()
-                    assert "988" in page.locator("#guided-status").inner_text()
-                    assert page.locator("#guided-question").inner_text() == "What decision context are you facing?"
+                # Appearance remains operable and honors the browser color_scheme.
+                light = browser.new_context(viewport={"width": 1280, "height": 900}, color_scheme="light")
+                if uses_static_route(base):
+                    install_static_route(light)
+                light_page = light.new_page()
+                light_page.goto(base, wait_until="networkidle")
+                assert light_page.locator("html").get_attribute("data-theme") == "light"
+                assert light_page.locator("#theme-toggle").inner_text() == "Appearance"
+                light.close()
 
-                    # Decision Lab enforces the same boundary before stage advancement.
-                    page.goto(f"{base}#/decision/new", wait_until="networkidle")
-                    page.locator("#decision-question").fill("I am suicidal and deciding what to do.")
-                    page.locator('[data-decision-stage="0"] [data-stage-next]').click()
-                    validation = page.locator('[data-stage-validation="0"]')
-                    assert "This decision is outside FDE’s comparison scope." in validation.inner_text()
-                    assert "988" in validation.inner_text()
-                    assert page.locator("#decision-question").get_attribute("aria-invalid") == "true"
-
-                    assert not remote_requests, f"FDE made unexpected remote requests: {remote_requests}"
-                    context.close()
-
-                    # Appearance follows system, then remains operable in dark mode.
-                    theme = browser.new_context(viewport={"width": 1280, "height": 900}, color_scheme="light")
-                    theme_page = theme.new_page()
-                    theme_page.goto(base, wait_until="networkidle")
-                    assert theme_page.locator("html").get_attribute("data-theme") == "light"
-                    assert theme_page.locator("html").get_attribute("data-theme-preference") == "system"
-                    assert theme_page.locator("#theme-toggle").inner_text() == "Appearance"
-                    theme_page.emulate_media(color_scheme="dark")
-                    theme_page.locator('html[data-theme="dark"]').wait_for(state="attached")
-                    assert theme_page.locator("html").get_attribute("data-theme-preference") == "system"
-                    assert theme_page.evaluate("document.documentElement.scrollWidth <= window.innerWidth + 1")
-                    theme.close()
-                finally:
-                    browser.close()
-        finally:
-            server.shutdown()
-            thread.join(timeout=5)
+                assert not remote_requests, f"FDE made unexpected remote requests: {remote_requests}"
+                context.close()
+            finally:
+                browser.close()
+    finally:
+        server.shutdown()
 
 
 if __name__ == "__main__":
