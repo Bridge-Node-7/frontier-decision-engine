@@ -17,4 +17,4 @@ This release refines the public first-run experience while preserving the determ
 - Product-scope, safety, evidence-readiness, authority, Decision Receipt v2, governed-context, reassessment, and ranking semantics remain unchanged.
 - The Bridge Node 7 shell is quieter and more consistent with the institutional website while preserving product navigation.
 
-Browser-local storage is not encrypted confidential storage. Public deployment is for public or sanitized decision material only. The comparison informs; a person decides.
+Browser-local storage is not encrypted confidential storage. Public deployment is for public or sanitized decision material only. Human judgment remains authoritative. The comparison informs; a person decides.
