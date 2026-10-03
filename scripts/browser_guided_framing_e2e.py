@@ -34,6 +34,11 @@ def reset(page, base: str) -> None:
     page.goto(base, wait_until="networkidle")
 
 
+def uses_static_route(base: str) -> bool:
+    parsed = urlparse(base)
+    return parsed.scheme == "http" and parsed.hostname == "fde.test" and parsed.port is None
+
+
 def assert_first_view(page) -> None:
     assert page.locator("#universal-title").inner_text() == "What are you considering?"
     field = page.locator("#universal-input")
@@ -63,7 +68,7 @@ def run() -> None:
                     base = "http://fde.test/"
 
                 context = browser.new_context(viewport={"width": 1280, "height": 900}, color_scheme="dark")
-                if base.startswith("http://fde.test"):
+                if uses_static_route(base):
                     install_static_route(context)
 
                 remote_requests: list[str] = []
@@ -211,7 +216,7 @@ def run() -> None:
 
                 # Mobile/reflow: accepted first view stays operable without page-level horizontal scrolling.
                 mobile = browser.new_context(viewport={"width": 375, "height": 812}, color_scheme="dark")
-                if base.startswith("http://fde.test"):
+                if uses_static_route(base):
                     install_static_route(mobile)
                 mobile_page = mobile.new_page()
                 mobile_page.goto(base, wait_until="networkidle")
@@ -222,7 +227,7 @@ def run() -> None:
 
                 # Appearance remains operable and honors the browser color_scheme.
                 light = browser.new_context(viewport={"width": 1280, "height": 900}, color_scheme="light")
-                if base.startswith("http://fde.test"):
+                if uses_static_route(base):
                     install_static_route(light)
                 light_page = light.new_page()
                 light_page.goto(base, wait_until="networkidle")
