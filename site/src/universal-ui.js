@@ -365,7 +365,7 @@ function entryMarkup(state, hasSavedDecision) {
 }
 
 function briefMarkup(state, hasSavedDecision) {
-  const canCompare = state.choices.length >= FORMAL_LIMITS.choices.min || state.decisionCandidates.length > 1;
+  const canCompare = Boolean(state.possibleDecision) || state.decisionCandidates.length > 0;
   return `<section class="universal-hero universal-post-input" data-surface="fde-hero" aria-labelledby="universal-response-title">
     <span class="eyebrow">Frontier Decision Engine</span>
     <div class="universal-structure universal-brief" data-fde-status="brief">
@@ -552,8 +552,8 @@ export function renderUniversalDecisionExperience(root) {
     return normalize(root.querySelector('input[name="formal-decision"]:checked')?.value || root.querySelector('#universal-decision-text')?.value || state.possibleDecision);
   }
 
-  function formalSelections(name, additionsId, max) {
-    return unique([...checkedValues(name), ...splitUserItems(root.querySelector(additionsId)?.value || '')], max);
+  function formalSelections(name, additionsId) {
+    return unique([...checkedValues(name), ...splitUserItems(root.querySelector(additionsId)?.value || '')]);
   }
 
   function openDecisionLab() {
@@ -562,9 +562,9 @@ export function renderUniversalDecisionExperience(root) {
       return;
     }
     const decisionText = formalDecision();
-    const selectedChoices = formalSelections('formal-choice', '#universal-add-choices', FORMAL_LIMITS.choices.max);
-    const selectedGoals = formalSelections('formal-goal', '#universal-add-goals', FORMAL_LIMITS.goals.max);
-    const selectedFutures = formalSelections('formal-future', '#universal-add-futures', FORMAL_LIMITS.futures.max);
+    const selectedChoices = formalSelections('formal-choice', '#universal-add-choices');
+    const selectedGoals = formalSelections('formal-goal', '#universal-add-goals');
+    const selectedFutures = formalSelections('formal-future', '#universal-add-futures');
     const hingeStatus = root.querySelector('input[name="hinge-status"]:checked')?.value || '';
     const hinge = state.hingeCandidate;
 
@@ -584,8 +584,11 @@ export function renderUniversalDecisionExperience(root) {
     const errors = [];
     if (!decisionText) errors.push('State one decision to compare.');
     if (selectedChoices.length < FORMAL_LIMITS.choices.min) errors.push(`Select at least ${FORMAL_LIMITS.choices.min} options.`);
+    if (selectedChoices.length > FORMAL_LIMITS.choices.max) errors.push(`Select no more than ${FORMAL_LIMITS.choices.max} options.`);
     if (selectedGoals.length < FORMAL_LIMITS.goals.min) errors.push(`Select at least ${FORMAL_LIMITS.goals.min} criteria.`);
+    if (selectedGoals.length > FORMAL_LIMITS.goals.max) errors.push(`Select no more than ${FORMAL_LIMITS.goals.max} criteria.`);
     if (selectedFutures.length < FORMAL_LIMITS.futures.min) errors.push(`Select at least ${FORMAL_LIMITS.futures.min} conditions or uncertainties.`);
+    if (selectedFutures.length > FORMAL_LIMITS.futures.max) errors.push(`Select no more than ${FORMAL_LIMITS.futures.max} conditions or uncertainties.`);
     if (errors.length) {
       showInputLimit(errors.join(' '));
       root.querySelector('#universal-compare-validation')?.focus?.({ preventScroll: true });
