@@ -140,9 +140,9 @@ def run() -> None:
                 # Formal depth is voluntary and visible on one surface.
                 page.get_by_role("button", name="Compare options").click()
                 assert page.locator("#universal-response-title").inner_text() == "Compare options"
-                assert page.get_by_text("Options", exact=True).count() >= 1
-                assert page.get_by_text("What matters", exact=True).count() >= 1
-                assert page.get_by_text("What may change", exact=True).count() >= 1
+                assert page.locator('legend').filter(has_text="Options").count() >= 1
+                assert page.locator('legend').filter(has_text="What matters").count() >= 1
+                assert page.locator('legend').filter(has_text="What may change").count() >= 1
                 assert page.get_by_role("button", name="Open Decision Lab").count() == 1
                 # Reduce the preselected choices/criteria to formal limits and provide a second scenario if needed.
                 choice_boxes = page.locator('input[name="formal-choice"]')
