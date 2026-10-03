@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Release wrapper for the retained browser E2E suite with the v0.3.3 root-route contract."""
+"""Release wrapper for the retained browser E2E suite and current root-route contract."""
 from __future__ import annotations
 
 import browser_e2e as suite
@@ -32,13 +32,13 @@ def no_js_one_page(browser) -> None:
         "How it works",
         "Decision Lab",
         "Appearance",
+        "Partner",
         "What are you considering?",
-        "Share the situation, decision, question, or context in your own words.",
-        "Advanced paths",
-        "Private by design. Your working decision stays in this browser unless you choose to export it.",
+        "JavaScript is required for the browser-local decision workspace.",
         "Human authority",
-        "FDE structures and calculates; it does not approve or authorize the decision.",
-        "confidential or controlled information",
+        "FDE structures and calculates; it does not approve or authorize a decision.",
+        "public or sanitized material only",
+        "Privacy",
     ]:
         assert text in body
     for removed in ["Bring the whole mess", "Decision Map", "Find the decision"]:
