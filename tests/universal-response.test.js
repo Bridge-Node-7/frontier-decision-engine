@@ -226,3 +226,41 @@ test('supplier language using end-it-all idiom is not misclassified as personal 
   const response = responseFor(draftFromInput(input));
   assert.equal(response.kind, 'brief');
 });
+
+test('ordinary criteria-list forms remain visible without becoming compulsory questions', () => {
+  for (const input of [
+    'Should we qualify or redesign? Cost, schedule risk, and readiness matter.',
+    'Should we qualify or redesign? Our priorities are cost, readiness, and resilience.',
+    'Should we qualify or redesign? The decision must balance cost, readiness, and interoperability.',
+  ]) {
+    const draft = draftFromInput(input);
+    assert.deepEqual(draft.choices, ['qualify', 'redesign'], input);
+    assert.equal(responseFor(draft).kind, 'brief', input);
+  }
+});
+
+test('large criteria corpus preserves every explicit criterion before formal selection', () => {
+  for (let count = 5; count <= 7; count += 1) {
+    const criteria = Array.from({ length: count }, (_, index) => `criterion-${count}-${index + 1}`);
+    const input = `Should we qualify Supplier Alpha or Supplier Bravo? ${criteria.join(', ')} matter.`;
+    const draft = draftFromInput(input);
+    assert.equal(draft.criteriaListAmbiguous, true, input);
+    assert.equal(draft.goals.length, count, input);
+    assert.equal(responseFor(draft).kind, 'brief', input);
+  }
+});
+
+test('supportable decision remains distinct from unresolved evidence language', () => {
+  const draft = draftFromInput('Evidence is incomplete and supplier capacity is uncertain. Should we qualify Supplier Alpha or retain the incumbent? Cost and continuity matter.');
+  assert.equal(draft.possibleDecision, 'Should we qualify Supplier Alpha or retain the incumbent');
+  assert.deepEqual(draft.choices, ['qualify Supplier Alpha', 'retain the incumbent']);
+  assert.equal(responseFor(draft).kind, 'brief');
+});
+
+test('open context without a fabricated decision still produces a partial brief', () => {
+  const draft = draftFromInput('The integration milestone is approaching and qualification evidence is incomplete.');
+  assert.equal(draft.intent, 'open');
+  assert.equal(draft.possibleDecision, '');
+  assert.equal(responseFor(draft).kind, 'brief');
+});
+
