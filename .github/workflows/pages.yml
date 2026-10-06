@@ -57,10 +57,19 @@ jobs:
             exit 1
           fi
           echo "Released site payload unchanged for $TAG."
+      - name: Configure Pages
+        id: pages
+        uses: actions/configure-pages@45bfe0192ca1faeb007ade9deae92b16b8254a0d # v6.0.0
+      - name: Build deployment artifact
+        run: |
+          python3 scripts/build_pages.py \
+            --source site \
+            --output _site \
+            --public-url "${{ steps.pages.outputs.base_url }}"
       - name: Upload static site
         uses: actions/upload-pages-artifact@fc324d3547104276b827a68afc52ff2a11cc49c9 # v5.0.0
         with:
-          path: site
+          path: _site
 
   deploy:
     needs: build
@@ -76,8 +85,6 @@ jobs:
     outputs:
       page_url: ${{ steps.deployment.outputs.page_url }}
     steps:
-      - name: Configure Pages
-        uses: actions/configure-pages@45bfe0192ca1faeb007ade9deae92b16b8254a0d # v6.0.0
       - name: Deploy
         id: deployment
         uses: actions/deploy-pages@368f82528645a54fb793d4d04e342629a3f51346 # v5.0.1

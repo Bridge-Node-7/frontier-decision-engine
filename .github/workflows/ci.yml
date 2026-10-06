@@ -41,6 +41,20 @@ jobs:
           npm run manifest
       - name: Run verification suite
         run: npm run check
+      - name: Verify Pages deployment portability
+        shell: bash
+        run: |
+          set -euo pipefail
+          TMP_DIR="$(mktemp -d)"
+          trap 'rm -rf "$TMP_DIR"' EXIT
+          python3 scripts/build_pages.py \
+            --source site \
+            --output "$TMP_DIR/current"
+          diff -qr site "$TMP_DIR/current"
+          python3 scripts/build_pages.py \
+            --source site \
+            --output "$TMP_DIR/portable" \
+            --public-url "https://portable.example/frontier-decision-engine/"
       - name: Run required CodeQL analysis
         uses: github/codeql-action/analyze@2892aa5e19bbd11bc0cff5427e3b750a04d9e3c2 # v4.38.2
         with:
