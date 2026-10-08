@@ -7,7 +7,6 @@ import hashlib
 import http.server
 import json
 import os
-import socketserver
 import threading
 from copy import deepcopy
 from pathlib import Path
@@ -120,7 +119,7 @@ def packet_fixture() -> dict:
 
 def run() -> None:
     handler = functools.partial(QuietHandler, directory=str(SITE))
-    with socketserver.TCPServer(("127.0.0.1", 0), handler) as server:
+    with http.server.ThreadingHTTPServer(("127.0.0.1", 0), handler) as server:
         thread = threading.Thread(target=server.serve_forever, daemon=True)
         thread.start()
         base = f"http://127.0.0.1:{server.server_address[1]}/"
