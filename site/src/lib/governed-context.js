@@ -18,6 +18,8 @@ const REQUIRED_V03 = [
 const SUMMARY_KEYS = ['assumed', 'contradicted', 'expired', 'known', 'unknown'];
 const SUPPORTED_CLASSIFICATIONS = new Set(['PRIVATE', 'PROTECTED']);
 const SHA256_RE = /^[a-f0-9]{64}$/;
+// Date-based freshness checks retain their existing exclusion of leap-second timestamps.
+const TIMESTAMP_RE = /^(\d{4})-(0[1-9]|1[0-2])-(0[1-9]|[12]\d|3[01])[Tt]([01]\d|2[0-3]):[0-5]\d:[0-5]\d(?:\.\d+)?(?:[Zz]|[+-](?:[01]\d|2[0-3]):[0-5]\d)$/;
 const PACKET_ID_RE = /^DCP-[A-Z0-9-]+$/;
 const LEGACY_DIGEST_SCOPE = 'packet excluding provenance.generated_at and content_sha256';
 const PAYLOAD_SCOPE = 'decision-relevant packet content excluding integrity, origin, freshness, and provenance';
@@ -47,7 +49,15 @@ function objectsOnly(value) {
 }
 
 function parseTimestamp(value) {
-  if (typeof value !== 'string' || !value.trim()) return null;
+  if (typeof value !== 'string') return null;
+  const parts = TIMESTAMP_RE.exec(value);
+  if (!parts || parts[0] !== value) return null;
+  const year = Number(parts[1]);
+  const month = Number(parts[2]);
+  const day = Number(parts[3]);
+  const leapYear = year % 4 === 0 && (year % 100 !== 0 || year % 400 === 0);
+  const monthDays = [31, leapYear ? 29 : 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31];
+  if (day > monthDays[month - 1]) return null;
   const date = new Date(value);
   return Number.isFinite(date.getTime()) ? date : null;
 }
@@ -148,7 +158,10 @@ function freshnessState(packet, now) {
   const sourceAsOf = parseTimestamp(freshness?.source_as_of);
   const reviewDue = freshness?.review_due_at === null ? null : parseTimestamp(freshness?.review_due_at);
   const validUntil = freshness?.valid_until === null ? null : parseTimestamp(freshness?.valid_until);
-  if (!issued || !sourceAsOf) return { state: 'INVALID', error: 'Packet freshness timestamps are invalid.' };
+  if (!issued) return { state: 'INVALID', error: 'Packet issued_at must be a supported RFC 3339 timestamp.' };
+  if (!sourceAsOf) return { state: 'INVALID', error: 'Packet source_as_of must be a supported RFC 3339 timestamp.' };
+  if (freshness.review_due_at !== null && !reviewDue) return { state: 'INVALID', error: 'Packet review_due_at must be a supported RFC 3339 timestamp or null.' };
+  if (freshness.valid_until !== null && !validUntil) return { state: 'INVALID', error: 'Packet valid_until must be a supported RFC 3339 timestamp or null.' };
   if (sourceAsOf > issued) return { state: 'INVALID', error: 'Packet source_as_of is later than issued_at.' };
   if (issued.getTime() > now.getTime() + CLOCK_SKEW_MS) return { state: 'INVALID', error: 'Packet issued_at is unacceptably future-dated.' };
   if (reviewDue && reviewDue < sourceAsOf) return { state: 'INVALID', error: 'Packet review_due_at is earlier than source_as_of.' };

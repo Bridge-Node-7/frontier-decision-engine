@@ -180,6 +180,73 @@ test('missing freshness boundaries are not active-eligible', async () => {
   assert.equal(result.trust.freshness, 'NOT_ESTABLISHED');
 });
 
+test('freshness timestamps reject malformed formats, types, and impossible dates with recomputed integrity', async () => {
+  const invalid = [
+    '', ' ', 'not-a-date', 42, false, {}, [],
+    'September 16, 2026', '2026-09-16', '2026-09-16 00:00:00Z',
+    '2026-09-16T00:00:00', '2026-09-16T00:00Z',
+    '2026-09-16T00:00:00Z\n', '2026-09-16T00:00:00.Z',
+    '2026-02-29T00:00:00Z', '1900-02-29T00:00:00Z', '2100-02-29T00:00:00Z',
+    '2026-04-31T00:00:00Z', '2026-13-01T00:00:00Z', '2026-09-00T00:00:00Z',
+    '2026-09-32T00:00:00Z', '2026-09-16T24:00:00Z', '2026-09-16T00:60:00Z',
+    '2026-09-16T00:00:61Z', '2026-09-16T00:00:00+24:00', '2026-09-16T00:00:00+01:60',
+  ];
+  for (const field of ['issued_at', 'source_as_of', 'review_due_at', 'valid_until']) {
+    for (const value of invalid) {
+      const packet = await packetFixture();
+      packet.freshness[field] = value;
+      packet.integrity.envelope_sha256 = await decisionContextEnvelopeDigest(packet);
+      const result = await validateDecisionContextPacket(packet, { now: NOW });
+      assert.equal(result.valid, false, `${field}: ${JSON.stringify(value)}`);
+      assert.equal(result.activeEligible, false);
+      assert.equal(result.trust.freshness, 'INVALID');
+      assert.ok(result.errors.some((message) => message.includes(field)));
+    }
+  }
+});
+
+test('null is permitted only for nullable freshness boundaries', async () => {
+  for (const field of ['issued_at', 'source_as_of']) {
+    const packet = await packetFixture();
+    packet.freshness[field] = null;
+    packet.integrity.envelope_sha256 = await decisionContextEnvelopeDigest(packet);
+    const result = await validateDecisionContextPacket(packet, { now: NOW });
+    assert.equal(result.valid, false);
+    assert.equal(result.activeEligible, false);
+    assert.equal(result.trust.freshness, 'INVALID');
+    assert.ok(result.errors.some((message) => message.includes(field)));
+  }
+  for (const field of ['review_due_at', 'valid_until']) {
+    const packet = await packetFixture();
+    packet.freshness[field] = null;
+    packet.integrity.envelope_sha256 = await decisionContextEnvelopeDigest(packet);
+    const result = await validateDecisionContextPacket(packet, { now: NOW });
+    assert.equal(result.valid, true);
+    assert.equal(result.activeEligible, true);
+    assert.equal(result.trust.freshness, 'CURRENT');
+  }
+});
+
+test('RFC 3339 offsets, lower-case separators, fractions, and leap-year dates remain valid', async () => {
+  const fields = ['issued_at', 'source_as_of', 'review_due_at', 'valid_until'];
+  for (const value of [
+    '2026-09-14T00:00:00Z', '2026-09-14t00:00:00z',
+    '2026-09-14T00:00:00+00:00', '2026-09-14T00:00:00-00:00',
+    '2026-09-14T05:30:00+05:30', '2026-09-13T16:00:00-08:00',
+    '2026-09-14T23:59:00+23:59', '2026-09-14T00:00:00.123456Z',
+    '2000-02-29T00:00:00Z', '2024-02-29T00:00:00Z',
+  ]) {
+    const packet = await packetFixture();
+    for (const field of fields) packet.freshness[field] = value;
+    packet.integrity.envelope_sha256 = await decisionContextEnvelopeDigest(packet);
+    const result = await validateDecisionContextPacket(packet, { now: new Date(value) });
+    assert.equal(result.valid, true, value);
+    assert.equal(result.activeEligible, true);
+    assert.equal(result.trust.freshness, 'CURRENT');
+    assert.deepEqual(result.errors, []);
+  }
+});
+
 test('self-asserted authenticated origin is rejected without an external trust verifier', async () => {
   const packet = await packetFixture();
   packet.origin.authentication_state = 'AUTHENTICATED';
