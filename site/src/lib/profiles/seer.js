@@ -1,5 +1,5 @@
 export const SEER_PROFILE_ID = 'sustainability-seer';
-export const SEER_PROFILE_LABEL = 'SEER sustainability reminder';
+export const SEER_PROFILE_LABEL = 'Sustainability considerations';
 
 export const SEER_DIMENSIONS = Object.freeze(['people', 'planet', 'profits', 'product']);
 
