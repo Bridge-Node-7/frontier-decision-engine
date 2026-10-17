@@ -20,13 +20,13 @@ const KEYWORDS = {
     ['mission assurance', 'Mission assurance'],
     ['alliance alignment', 'Alliance alignment'], ['allied alignment', 'Alliance alignment'], ['alliance', 'Alliance alignment'],
     ['legal', 'Legal / regulatory'], ['regulatory', 'Legal / regulatory'],
-    ['qualification', 'Qualification'], ['readiness', 'Readiness'], ['interoperability', 'Interoperability'],
+    ['qualification', 'Qualification'], ['qualified', 'Qualification'], ['readiness', 'Readiness'], ['interoperability', 'Interoperability'],
     ['sovereignty', 'Sovereignty'], ['resilience', 'Resilience'], ['security', 'Security'],
     ['schedule risk', 'Schedule risk'], ['schedule', 'Schedule risk'],
     ['compliance', 'Compliance'], ['reliable', 'Reliability'], ['reliability', 'Reliability'],
     ['mission performance', 'Mission performance'], ['technical performance', 'Technical performance'],
     ['supply continuity', 'Supply continuity'], ['evidence confidence', 'Evidence confidence'],
-    ['time', 'Time'], ['deadline', 'Time'], ['cost', 'Cost'], ['money', 'Cost'], ['price', 'Cost'], ['budget', 'Cost'],
+    ['time', 'Time'], ['deadline', 'Time'], ['cost', 'Cost'], ['cheaper', 'Cost'], ['money', 'Cost'], ['price', 'Cost'], ['budget', 'Cost'],
     ['safety', 'Safety'], ['quality', 'Quality'], ['flexibility', 'Flexibility'],
   ],
   futures: [
@@ -101,14 +101,31 @@ function extractDecisionCandidates(text) {
 
 const criteriaClausePattern = /\b(?:care about|what matters|criteria|goals?|priorities|requirements?|matters?|important|must\s+(?:balance|protect|preserve|meet)|need(?:s)?\s+to\s+(?:balance|protect|preserve|meet))\b/i;
 
+function splitOutsideParentheses(text, separator) {
+  const parts = [];
+  let depth = 0;
+  let start = 0;
+  for (let index = 0; index < text.length; index += 1) {
+    if (text[index] === '(') { depth += 1; continue; }
+    if (text[index] === ')') { depth = Math.max(0, depth - 1); continue; }
+    if (depth !== 0) continue;
+    const match = text.slice(index).match(separator);
+    if (!match || match.index !== 0) continue;
+    parts.push(text.slice(start, index).trim());
+    index += match[0].length - 1;
+    start = index + 1;
+  }
+  parts.push(text.slice(start).trim());
+  return parts.filter(Boolean);
+}
+
 function extractListedChoices(text) {
   for (const clause of normalize(text).split(/[.!?\n]+/).map((value) => value.trim()).filter(Boolean)) {
     if (!clause.includes(',') || criteriaClausePattern.test(clause) || !/\b(?:or|and)\b/i.test(clause)) continue;
     const body = clause
       .replace(/^(?:should\s+(?:i|we)\s+(?:choose|pick|select|use|pursue|qualify)\s+|choose\s+(?:between\s+)?|decid(?:e|ing)\s+between\s+|we\s+can\s+)/i, '')
       .trim();
-    const parts = body
-      .split(/\s*,\s*(?:\b(?:or|and)\b\s*)?|\s+\b(?:or|and)\b\s+/i)
+    const parts = splitOutsideParentheses(body, /\s*,\s*(?:\b(?:or|and)\b\s*)?|\s+\b(?:or|and)\b\s+/i)
       .map((value) => cleanChoice(value).replace(/\bwhich\s+should\s+(?:i|we)\s+choose\b.*$/i, '').trim())
       .filter((value) => value.length >= 2);
     if (parts.length >= 3) return unique(parts);
@@ -122,8 +139,13 @@ function extractChoices(text) {
   for (const clause of clauses) {
     const decisionLike = decisionPattern.test(clause) || /^(?:should\b|choose|pick|select|decide)\b/i.test(clause);
     if (!decisionLike) continue;
-    for (const match of clause.matchAll(/(?:either\s+)?([^\n,.!?]{2,100})\s+(?:or|versus|vs\.?|instead of)\s+([^\n,.!?]{2,100})/gi)) {
-      choices.push(cleanChoice(match[1]), cleanChoice(match[2]));
+    // Commas separating options belong to the listed-choice parser, not this binary parser.
+    // Parenthetical detail is not an option delimiter (e.g. "cheaper, not yet qualified").
+    if (splitOutsideParentheses(clause, /\s*,\s*/i).length > 1) continue;
+    const parts = splitOutsideParentheses(clause, /\s+(?:or|versus|vs\.?|instead of)\s+/i);
+    if (parts.length === 2) {
+      const first = parts[0].replace(/^(?:should\s+(?:i|we)\s+)?(?:choose|pick|select)\s+/i, '');
+      choices.push(cleanChoice(first), cleanChoice(parts[1]));
     }
   }
   const numbered = [...normalize(text).matchAll(/(?:^|\n)\s*(?:\d+[.)]?|[-*•])\s+([^\n]{2,120})/g)]
