@@ -22,6 +22,41 @@ test('criteria lists do not override explicit binary choices', () => {
   assert.equal(responseFor(draft).kind, 'brief');
 });
 
+test('supplier comparison preserves parenthetical cost, qualification, and schedule evidence', () => {
+  const cases = [
+    'Should we choose Supplier A (cheaper, not yet qualified) or Supplier B (qualified, 9-month lead time)?',
+    'Should we choose Supplier A (cheaper, not yet qualified) versus Supplier B (qualified, 9-month lead time)?',
+    'Should we choose Supplier A (fast or cheaper, not yet qualified) vs Supplier B (qualified, 9-month lead time)?',
+  ];
+  for (const input of cases) {
+    const draft = draftFromInput(input);
+    assert.equal(draft.detectedChoiceCount, 2, input);
+    assert.equal(draft.optionListAmbiguous, false, input);
+    assert.deepEqual(
+      draft.choices.map((choice) => choice.includes('Supplier A') ? 'A' : choice.includes('Supplier B') ? 'B' : '?'),
+      ['A', 'B'],
+      input,
+    );
+    assert.match(draft.choices[0], /cheaper/i, input);
+    assert.match(draft.choices[1], /9-month lead time/i, input);
+    assert.ok(draft.goals.includes('Cost'), input);
+    assert.ok(draft.goals.includes('Qualification'), input);
+    assert.ok(draft.goals.includes('Time'), input);
+    assert.equal(responseFor(draft).kind, 'brief', input);
+  }
+});
+
+test('commas inside parenthetical supplier evidence do not invent extra options', () => {
+  const input = 'Should we choose Supplier Alpha (cheaper, not yet qualified), Supplier Bravo (qualified, longer lead time), or Supplier Charlie (expensive, qualified)?';
+  const draft = draftFromInput(input);
+  assert.equal(draft.detectedChoiceCount, 3);
+  assert.deepEqual(draft.choices, [
+    'Supplier Alpha (cheaper, not yet qualified)',
+    'Supplier Bravo (qualified, longer lead time)',
+    'Supplier Charlie (expensive, qualified)',
+  ]);
+});
+
 test('decision title prefers the actual decision over leading blocker context', () => {
   const draft = draftFromInput('Qualification evidence is incomplete. Should we qualify Supplier Alpha or redesign around the dependency?');
   assert.equal(draft.possibleDecision, 'Should we qualify Supplier Alpha or redesign around the dependency');
