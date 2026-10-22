@@ -11,6 +11,6 @@ permissions:
 
 jobs:
   privacy:
-    uses: Bridge-Node-7/Bridge-Node-7/.github/workflows/privacy-preflight.yml@main
+    uses: Bridge-Node-7/Bridge-Node-7/.github/workflows/privacy-preflight.yml@1913677087329fc65040cd479c5b51843c8b59d8
     permissions:
       contents: read
