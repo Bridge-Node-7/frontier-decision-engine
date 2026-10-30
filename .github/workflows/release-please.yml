@@ -91,15 +91,25 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           set -euo pipefail
-          PR_NUMBER='${{ steps.release.outputs.pr }}'
-          if [ -z "${PR_NUMBER}" ] || [ "${PR_NUMBER}" = "null" ]; then
-            echo "No release-please PR number; skipping candidate sync."
+          # release-please-action v4 may emit either a bare PR number or a JSON
+          # object with .number / .headBranchName.
+          PR_RAW='${{ steps.release.outputs.pr }}'
+          if [ -z "${PR_RAW}" ] || [ "${PR_RAW}" = "null" ]; then
+            echo "No release-please PR; skipping candidate sync."
             exit 0
           fi
-          BRANCH="$(gh pr view "${PR_NUMBER}" --repo "${GITHUB_REPOSITORY}" --json headRefName -q .headRefName)"
+          if [[ "${PR_RAW}" =~ ^[0-9]+$ ]]; then
+            PR_NUMBER="${PR_RAW}"
+            BRANCH="$(gh pr view "${PR_NUMBER}" --repo "${GITHUB_REPOSITORY}" --json headRefName -q .headRefName)"
+          else
+            PR_NUMBER="$(printf '%s' "${PR_RAW}" | jq -r '.number // empty')"
+            BRANCH="$(printf '%s' "${PR_RAW}" | jq -r '.headBranchName // empty')"
+            if [ -z "${BRANCH}" ] && [ -n "${PR_NUMBER}" ]; then
+              BRANCH="$(gh pr view "${PR_NUMBER}" --repo "${GITHUB_REPOSITORY}" --json headRefName -q .headRefName)"
+            fi
+          fi
           if [ -z "${BRANCH}" ] || [ "${BRANCH}" = "null" ]; then
-            echo "Could not resolve headRefName for PR ${PR_NUMBER}; skipping."
-            exit 0
+            echo "Could not resolve release PR branch from: ${PR_RAW}"; exit 0
           fi
           GIT_NAME='Bridge-Node-7'
           GIT_MAIL_LOCAL='291729790+Bridge-Node-7'
