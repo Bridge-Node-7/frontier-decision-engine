@@ -2,6 +2,8 @@
 
 **Human-governed decision infrastructure for Frontier Mission Assurance.**
 
+Stable public release — see the latest [GitHub Release](https://github.com/Bridge-Node-7/frontier-decision-engine/releases/latest). Quickstart: `npm ci && npm run check`.
+
 [Open the live application](https://bridgenode7.com/frontier-decision-engine/)
 
 ![Frontier Decision Engine Decision Lab reference](docs/screenshots/reference/desktop-decision-frame.png)

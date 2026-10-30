@@ -41,6 +41,31 @@ jobs:
           npm run manifest
       - name: Run verification suite
         run: npm run check
+      - name: Unit coverage summary
+        run: |
+          set -euo pipefail
+          mkdir -p build
+          node --test --experimental-test-coverage tests/*.js > build/unit-coverage.txt 2>&1 || {
+            cat build/unit-coverage.txt
+            exit 1
+          }
+          cat build/unit-coverage.txt
+          {
+            echo "### Unit coverage (Node tests/*.js)"
+            echo ""
+            echo '```'
+            # Keep the coverage table from the report
+            awk '/^[- ]*[-]+[- ]*$/{p=1} p{print} /^all files/{exit}' build/unit-coverage.txt | tail -n 40
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+      - name: Upload unit coverage artifact
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: fde-unit-coverage
+          path: build/unit-coverage.txt
+          if-no-files-found: ignore
+          retention-days: 14
       - name: Verify Pages deployment portability
         shell: bash
         run: |
