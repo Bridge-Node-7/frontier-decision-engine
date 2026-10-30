@@ -23,7 +23,7 @@ notes = notes.replace(
   /^Application version is \d+\.\d+\.\d+\.\s*$/m,
   `Application version is ${version}.`,
 );
-const versionRe = version.replace(/\./g, '\\.');
+const versionRe = version.replace(/\\/g, '\\\\').replace(/\./g, '\\.');
 if (!new RegExp(`^#\\s+v${versionRe}\\s*$`, 'm').test(notes)) {
   console.error('RELEASE_NOTES.md heading sync failed');
   process.exit(1);
