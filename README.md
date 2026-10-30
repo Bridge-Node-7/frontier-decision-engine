@@ -1,18 +1,8 @@
 # Frontier Decision Engine
 
-[![Release](https://img.shields.io/github/v/release/Bridge-Node-7/frontier-decision-engine?display_name=tag)](https://github.com/Bridge-Node-7/frontier-decision-engine/releases/latest)
-[![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](LICENSE)
-[![CI](https://img.shields.io/github/actions/workflow/status/Bridge-Node-7/frontier-decision-engine/ci.yml?branch=main&label=CI)](https://github.com/Bridge-Node-7/frontier-decision-engine/actions/workflows/ci.yml)
-
 **Human-governed decision infrastructure for Frontier Mission Assurance.**
 
-| | |
-|---|---|
-| **What** | Browser-based Decision Lab for structured comparison of consequential options under human authority |
-| **Status** | Stable public release — latest [GitHub Release](https://github.com/Bridge-Node-7/frontier-decision-engine/releases/latest) |
-| **Quickstart** | [Open the live application](https://bridgenode7.com/frontier-decision-engine/) · `npm ci && npm run check` |
-| **Architecture** | [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) |
-| **Collaboration** | [Issues](https://github.com/Bridge-Node-7/frontier-decision-engine/issues) · [Innovation Partnerships](https://bridgenode7.com/partner/) |
+Stable public release — see the latest [GitHub Release](https://github.com/Bridge-Node-7/frontier-decision-engine/releases/latest). Quickstart: `npm ci && npm run check`.
 
 [Open the live application](https://bridgenode7.com/frontier-decision-engine/)
 
