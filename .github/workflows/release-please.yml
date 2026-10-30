@@ -18,55 +18,74 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
+      - name: Checkout main
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      # release-please GitHub Releases create lightweight tags, while Pages and
+      # the stable Release workflow require annotated tags. release-please keeps
+      # owning version PRs; the next step publishes the annotated tag + release.
+      - name: Publish annotated tag and GitHub Release for released version
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_COMMIT: ${{ github.sha }}
+        run: |
+          set -euo pipefail
+          VERSION="$(jq -r '."."' .release-please-manifest.json)"
+          TAG="v${VERSION}"
+          PACKAGE_VERSION="$(jq -r '.version' package.json)"
+          test "${VERSION}" = "${PACKAGE_VERSION}"
+
+          if gh api "repos/${GITHUB_REPOSITORY}/git/ref/tags/${TAG}" >/dev/null 2>&1; then
+            echo "Tag ${TAG} already exists; nothing to publish."
+            exit 0
+          fi
+
+          # Only publish from the merged release-please PR commit.
+          PR_NUMBER="$(gh api "repos/${GITHUB_REPOSITORY}/commits/${RELEASE_COMMIT}/pulls" \
+            --jq '[.[] | select(any(.labels[]; .name == "autorelease: pending"))][0].number // empty')"
+          if [ -z "${PR_NUMBER}" ]; then
+            echo "No pending release-please PR for ${RELEASE_COMMIT}; nothing to publish."
+            exit 0
+          fi
+
+          TAG_OBJECT_SHA="$(gh api --method POST "repos/${GITHUB_REPOSITORY}/git/tags" \
+            -f tag="${TAG}" \
+            -f message="Frontier Decision Engine ${TAG}" \
+            -f object="${RELEASE_COMMIT}" \
+            -f type="commit" \
+            --jq '.sha')"
+          gh api --method POST "repos/${GITHUB_REPOSITORY}/git/refs" \
+            -f ref="refs/tags/${TAG}" \
+            -f sha="${TAG_OBJECT_SHA}" >/dev/null
+          test "$(gh api "repos/${GITHUB_REPOSITORY}/git/ref/tags/${TAG}" --jq '.object.type')" = "tag"
+
+          awk -v v="${VERSION}" '
+            $0 ~ "^## \\[?" v "\\]?([ (]|$)" { found=1; next }
+            found && /^## / { exit }
+            found { print }
+          ' CHANGELOG.md > release-notes.md
+          if [ -s release-notes.md ]; then
+            notes_flags=(--notes-file release-notes.md)
+          else
+            notes_flags=(--generate-notes)
+          fi
+          gh release create "${TAG}" \
+            --verify-tag \
+            --latest \
+            --title "Frontier Decision Engine ${TAG}" \
+            "${notes_flags[@]}"
+
+          gh pr edit "${PR_NUMBER}" --repo "${GITHUB_REPOSITORY}" \
+            --remove-label "autorelease: pending" \
+            --add-label "autorelease: tagged"
+          echo "PASS annotated release ${TAG} at ${RELEASE_COMMIT} (PR #${PR_NUMBER})"
+
       - name: Run release-please
         id: release
         uses: googleapis/release-please-action@16a9c90856f42705d54a6fda1823352bdc62cf38 # v4.4.0
         with:
           config-file: release-please-config.json
           manifest-file: .release-please-manifest.json
-          # GitHub Releases from release-please create lightweight tags; Pages and
-          # the stable Release path require annotated tags. Skip RP's release so
-          # the next step can publish an annotated tag + release automatically.
           skip-github-release: true
-
-      - name: Publish annotated tag and GitHub Release
-        if: ${{ steps.release.outputs.release_created == 'true' }}
-        env:
-          GH_TOKEN: ${{ github.token }}
-          TAG: ${{ steps.release.outputs.tag_name }}
-          RELEASE_COMMIT: ${{ steps.release.outputs.sha }}
-        run: |
-          set -euo pipefail
-          test -n "${TAG}"
-          test -n "${RELEASE_COMMIT}"
-
-          if gh api "repos/${GITHUB_REPOSITORY}/git/ref/tags/${TAG}" >/dev/null 2>&1; then
-            TAG_OBJECT_TYPE="$(gh api "repos/${GITHUB_REPOSITORY}/git/ref/tags/${TAG}" --jq '.object.type')"
-            test "${TAG_OBJECT_TYPE}" = "tag"
-            TAG_OBJECT_SHA="$(gh api "repos/${GITHUB_REPOSITORY}/git/ref/tags/${TAG}" --jq '.object.sha')"
-            test "$(gh api "repos/${GITHUB_REPOSITORY}/git/tags/${TAG_OBJECT_SHA}" --jq '.object.sha')" = "${RELEASE_COMMIT}"
-          else
-            TAG_OBJECT_SHA="$(gh api --method POST "repos/${GITHUB_REPOSITORY}/git/tags" \
-              -f tag="${TAG}" \
-              -f message="Frontier Decision Engine ${TAG}" \
-              -f object="${RELEASE_COMMIT}" \
-              -f type="commit" \
-              --jq '.sha')"
-            gh api --method POST "repos/${GITHUB_REPOSITORY}/git/refs" \
-              -f ref="refs/tags/${TAG}" \
-              -f sha="${TAG_OBJECT_SHA}" >/dev/null
-          fi
-
-          if gh release view "${TAG}" --repo "${GITHUB_REPOSITORY}" >/dev/null 2>&1; then
-            echo "GitHub Release ${TAG} already exists."
-          else
-            gh release create "${TAG}" \
-              --verify-tag \
-              --target "${RELEASE_COMMIT}" \
-              --title "Frontier Decision Engine ${TAG}" \
-              --generate-notes
-          fi
-
-          TAG_OBJECT_TYPE="$(gh api "repos/${GITHUB_REPOSITORY}/git/ref/tags/${TAG}" --jq '.object.type')"
-          test "${TAG_OBJECT_TYPE}" = "tag"
-          echo "PASS annotated release ${TAG} at ${RELEASE_COMMIT}"
