@@ -24,3 +24,49 @@ jobs:
         with:
           config-file: release-please-config.json
           manifest-file: .release-please-manifest.json
+          # GitHub Releases from release-please create lightweight tags; Pages and
+          # the stable Release path require annotated tags. Skip RP's release so
+          # the next step can publish an annotated tag + release automatically.
+          skip-github-release: true
+
+      - name: Publish annotated tag and GitHub Release
+        if: ${{ steps.release.outputs.release_created == 'true' }}
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ steps.release.outputs.tag_name }}
+          RELEASE_COMMIT: ${{ steps.release.outputs.sha }}
+        run: |
+          set -euo pipefail
+          test -n "${TAG}"
+          test -n "${RELEASE_COMMIT}"
+
+          if gh api "repos/${GITHUB_REPOSITORY}/git/ref/tags/${TAG}" >/dev/null 2>&1; then
+            TAG_OBJECT_TYPE="$(gh api "repos/${GITHUB_REPOSITORY}/git/ref/tags/${TAG}" --jq '.object.type')"
+            test "${TAG_OBJECT_TYPE}" = "tag"
+            TAG_OBJECT_SHA="$(gh api "repos/${GITHUB_REPOSITORY}/git/ref/tags/${TAG}" --jq '.object.sha')"
+            test "$(gh api "repos/${GITHUB_REPOSITORY}/git/tags/${TAG_OBJECT_SHA}" --jq '.object.sha')" = "${RELEASE_COMMIT}"
+          else
+            TAG_OBJECT_SHA="$(gh api --method POST "repos/${GITHUB_REPOSITORY}/git/tags" \
+              -f tag="${TAG}" \
+              -f message="Frontier Decision Engine ${TAG}" \
+              -f object="${RELEASE_COMMIT}" \
+              -f type="commit" \
+              --jq '.sha')"
+            gh api --method POST "repos/${GITHUB_REPOSITORY}/git/refs" \
+              -f ref="refs/tags/${TAG}" \
+              -f sha="${TAG_OBJECT_SHA}" >/dev/null
+          fi
+
+          if gh release view "${TAG}" --repo "${GITHUB_REPOSITORY}" >/dev/null 2>&1; then
+            echo "GitHub Release ${TAG} already exists."
+          else
+            gh release create "${TAG}" \
+              --verify-tag \
+              --target "${RELEASE_COMMIT}" \
+              --title "Frontier Decision Engine ${TAG}" \
+              --generate-notes
+          fi
+
+          TAG_OBJECT_TYPE="$(gh api "repos/${GITHUB_REPOSITORY}/git/ref/tags/${TAG}" --jq '.object.type')"
+          test "${TAG_OBJECT_TYPE}" = "tag"
+          echo "PASS annotated release ${TAG} at ${RELEASE_COMMIT}"
