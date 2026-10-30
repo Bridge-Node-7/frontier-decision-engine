@@ -18,9 +18,69 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
+      - name: Checkout main
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 2
+          persist-credentials: false
+
+      # release-please's built-in GitHub Releases create lightweight tags, while
+      # Pages / immutable-release require annotated tags. Keep release-please for
+      # version PRs; publish the annotated tag + release here automatically when
+      # a release-please merge lands (manifest bump on this commit).
+      - name: Publish annotated tag and GitHub Release for released version
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_COMMIT: ${{ github.sha }}
+        run: |
+          set -euo pipefail
+          VERSION="$(jq -r '."."' .release-please-manifest.json)"
+          TAG="v${VERSION}"
+          PACKAGE_VERSION="$(jq -r '.version' package.json)"
+          test "${VERSION}" = "${PACKAGE_VERSION}"
+
+          if gh api "repos/${GITHUB_REPOSITORY}/git/ref/tags/${TAG}" >/dev/null 2>&1; then
+            echo "Tag ${TAG} already exists; nothing to publish."
+            exit 0
+          fi
+
+          if ! git diff --name-only "${RELEASE_COMMIT}^" "${RELEASE_COMMIT}" | grep -qx '.release-please-manifest.json'; then
+            echo "Manifest unchanged on ${RELEASE_COMMIT}; not a release-please merge."
+            exit 0
+          fi
+
+          TAG_OBJECT_SHA="$(gh api --method POST "repos/${GITHUB_REPOSITORY}/git/tags" \
+            -f tag="${TAG}" \
+            -f message="Frontier Decision Engine ${TAG}" \
+            -f object="${RELEASE_COMMIT}" \
+            -f type="commit" \
+            --jq '.sha')"
+          gh api --method POST "repos/${GITHUB_REPOSITORY}/git/refs" \
+            -f ref="refs/tags/${TAG}" \
+            -f sha="${TAG_OBJECT_SHA}" >/dev/null
+          test "$(gh api "repos/${GITHUB_REPOSITORY}/git/ref/tags/${TAG}" --jq '.object.type')" = "tag"
+
+          awk -v v="${VERSION}" '
+            $0 ~ "^## \\[?" v "\\]?([ (]|$)" { found=1; next }
+            found && /^## / { exit }
+            found { print }
+          ' CHANGELOG.md > release-notes.md
+          if [ -s release-notes.md ]; then
+            notes_flags=(--notes-file release-notes.md)
+          else
+            notes_flags=(--generate-notes)
+          fi
+          gh release create "${TAG}" \
+            --verify-tag \
+            --latest \
+            --title "Frontier Decision Engine ${TAG}" \
+            "${notes_flags[@]}"
+          echo "PASS annotated release ${TAG} at ${RELEASE_COMMIT}"
+
       - name: Run release-please
         id: release
         uses: googleapis/release-please-action@16a9c90856f42705d54a6fda1823352bdc62cf38 # v4.4.0
         with:
           config-file: release-please-config.json
           manifest-file: .release-please-manifest.json
+          skip-github-release: true
