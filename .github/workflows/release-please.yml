@@ -21,11 +21,13 @@ jobs:
       - name: Checkout main
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
+          fetch-depth: 2
           persist-credentials: false
 
-      # release-please GitHub Releases create lightweight tags, while Pages and
-      # the stable Release workflow require annotated tags. release-please keeps
-      # owning version PRs; the next step publishes the annotated tag + release.
+      # release-please's built-in GitHub Releases create lightweight tags, while
+      # Pages / immutable-release require annotated tags. Keep release-please for
+      # version PRs; publish the annotated tag + release here automatically when
+      # a release-please merge lands (manifest bump on this commit).
       - name: Publish annotated tag and GitHub Release for released version
         env:
           GH_TOKEN: ${{ github.token }}
@@ -42,11 +44,8 @@ jobs:
             exit 0
           fi
 
-          # Only publish from the merged release-please PR commit.
-          PR_NUMBER="$(gh api "repos/${GITHUB_REPOSITORY}/commits/${RELEASE_COMMIT}/pulls" \
-            --jq '[.[] | select(any(.labels[]; .name == "autorelease: pending"))][0].number // empty')"
-          if [ -z "${PR_NUMBER}" ]; then
-            echo "No pending release-please PR for ${RELEASE_COMMIT}; nothing to publish."
+          if ! git diff --name-only "${RELEASE_COMMIT}^" "${RELEASE_COMMIT}" | grep -qx '.release-please-manifest.json'; then
+            echo "Manifest unchanged on ${RELEASE_COMMIT}; not a release-please merge."
             exit 0
           fi
 
@@ -76,11 +75,7 @@ jobs:
             --latest \
             --title "Frontier Decision Engine ${TAG}" \
             "${notes_flags[@]}"
-
-          gh pr edit "${PR_NUMBER}" --repo "${GITHUB_REPOSITORY}" \
-            --remove-label "autorelease: pending" \
-            --add-label "autorelease: tagged"
-          echo "PASS annotated release ${TAG} at ${RELEASE_COMMIT} (PR #${PR_NUMBER})"
+          echo "PASS annotated release ${TAG} at ${RELEASE_COMMIT}"
 
       - name: Run release-please
         id: release
