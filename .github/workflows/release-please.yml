@@ -16,7 +16,7 @@ concurrency:
 jobs:
   release-please:
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 25
     steps:
       - name: Checkout main
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -84,3 +84,36 @@ jobs:
           config-file: release-please-config.json
           manifest-file: .release-please-manifest.json
           skip-github-release: true
+
+      - name: Sync release-candidate artifacts on open release PR
+        if: ${{ steps.release.outputs.pr != '' }}
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          PR_NUMBER='${{ steps.release.outputs.pr }}'
+          if [ -z "${PR_NUMBER}" ] || [ "${PR_NUMBER}" = "null" ]; then
+            echo "No release-please PR number; skipping candidate sync."
+            exit 0
+          fi
+          BRANCH="$(gh pr view "${PR_NUMBER}" --repo "${GITHUB_REPOSITORY}" --json headRefName -q .headRefName)"
+          if [ -z "${BRANCH}" ] || [ "${BRANCH}" = "null" ]; then
+            echo "Could not resolve headRefName for PR ${PR_NUMBER}; skipping."
+            exit 0
+          fi
+          GIT_NAME='Bridge-Node-7'
+          GIT_MAIL_LOCAL='291729790+Bridge-Node-7'
+          GIT_MAIL_DOMAIN='users.noreply.github.com'
+          gh auth setup-git
+          rm -rf .repo-sync
+          git clone --branch "${BRANCH}" --single-branch "https://github.com/${GITHUB_REPOSITORY}.git" .repo-sync
+          cd .repo-sync
+          node scripts/sync_release_candidate.mjs
+          if git diff --quiet -- docs/RELEASE_NOTES.md site/manifest.sha256; then
+            echo "Release-candidate artifacts already current on ${BRANCH}."
+            exit 0
+          fi
+          git -c "user.name=${GIT_NAME}" -c "user.email=${GIT_MAIL_LOCAL}@${GIT_MAIL_DOMAIN}" add docs/RELEASE_NOTES.md site/manifest.sha256
+          git -c "user.name=${GIT_NAME}" -c "user.email=${GIT_MAIL_LOCAL}@${GIT_MAIL_DOMAIN}" commit -m "chore: sync RELEASE_NOTES and site manifest for release candidate"
+          git push origin "HEAD:${BRANCH}"
+          echo "PASS synced release-candidate artifacts on ${BRANCH}"
