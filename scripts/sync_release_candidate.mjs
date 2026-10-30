@@ -18,16 +18,17 @@ if (!/^\d+\.\d+\.\d+$/.test(version)) {
 
 const notesPath = join(root, 'docs', 'RELEASE_NOTES.md');
 let notes = readFileSync(notesPath, 'utf8');
-notes = notes.replace(/(?m)^#\s+v\d+\.\d+\.\d+\s*$/, `# v${version}`);
+notes = notes.replace(/^#\s+v\d+\.\d+\.\d+\s*$/m, `# v${version}`);
 notes = notes.replace(
-  /(?m)^Application version is \d+\.\d+\.\d+\.\s*$/,
+  /^Application version is \d+\.\d+\.\d+\.\s*$/m,
   `Application version is ${version}.`,
 );
-if (!new RegExp(`(?m)^#\\s+v${version.replace(/\./g, '\\.')}\\s*$`).test(notes)) {
+const versionRe = version.replace(/\./g, '\\.');
+if (!new RegExp(`^#\\s+v${versionRe}\\s*$`, 'm').test(notes)) {
   console.error('RELEASE_NOTES.md heading sync failed');
   process.exit(1);
 }
-if (!new RegExp(`(?m)^Application version is ${version.replace(/\./g, '\\.')}\\.\\s*$`).test(notes)) {
+if (!new RegExp(`^Application version is ${versionRe}\\.\\s*$`, 'm').test(notes)) {
   console.error('RELEASE_NOTES.md application-version line sync failed');
   process.exit(1);
 }
