@@ -352,7 +352,10 @@ def activate_ready_example(page: Page) -> None:
     )
     button = page.locator("#use-ready-example")
     try:
-        button.wait_for(state="visible")
+        page.wait_for_load_state("domcontentloaded")
+        button.wait_for(state="attached", timeout=60_000)
+        button.scroll_into_view_if_needed()
+        button.wait_for(state="visible", timeout=60_000)
         assert button.is_visible(), "ready-example button is not visible"
         assert button.is_enabled(), "ready-example button is not enabled"
         button.click()
