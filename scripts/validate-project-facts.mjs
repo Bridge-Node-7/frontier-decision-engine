@@ -9,7 +9,7 @@ assert.deepEqual(committed, generated, 'project-facts.json is stale; run npm run
 const runtimeVersion = await readFile(`${root}/site/src/version.js`, 'utf8');
 assert.equal(
   runtimeVersion,
-  `export const APPLICATION_VERSION = '${generated.applicationVersion}';\n`,
+  `export const APPLICATION_VERSION = '${generated.applicationVersion}'; // x-release-please-version\n`,
   'site/src/version.js is stale; run npm run facts',
 );
 console.log('project facts and runtime application version: PASS');

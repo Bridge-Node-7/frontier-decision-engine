@@ -79,7 +79,7 @@ async function main() {
   await writeFile(join(root, 'project-facts.json'), `${JSON.stringify(facts, null, 2)}\n`);
   await writeFile(
     join(root, 'site', 'src', 'version.js'),
-    `export const APPLICATION_VERSION = '${facts.applicationVersion}';\n`,
+    `export const APPLICATION_VERSION = '${facts.applicationVersion}'; // x-release-please-version\n`,
   );
   console.log(`wrote project-facts.json and site/src/version.js with ${facts.testCount} discovered tests`);
 }
