@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.6.1 (2026-10-30)
+
+
+### Bug Fixes
+
+* **release:** publish annotated tags from release-please ([#102](https://github.com/Bridge-Node-7/frontier-decision-engine/issues/102)) ([52dc268](https://github.com/Bridge-Node-7/frontier-decision-engine/commit/52dc2684fef5c0fbd010d479bfbf26fcc0ecd810))
+
 ## 0.6.0
 
 
