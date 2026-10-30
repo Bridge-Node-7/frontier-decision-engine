@@ -1,6 +1,6 @@
 # Changelog
 
-## [0.6.0](https://github.com/Bridge-Node-7/frontier-decision-engine/compare/v0.5.14...v0.6.0) (2026-10-30)
+## 0.6.0
 
 
 ### Features

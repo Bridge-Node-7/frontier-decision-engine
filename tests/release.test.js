@@ -289,6 +289,7 @@ test('public repository surface stays lean and user-focused', async () => {
     .map((entry) => entry.name)
     .sort();
   assert.deepEqual(rootMarkdown, [
+    'CHANGELOG.md',
     'CODE_OF_CONDUCT.md',
     'CONTRIBUTING.md',
     'README.md',
