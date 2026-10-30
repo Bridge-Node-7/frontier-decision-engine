@@ -94,7 +94,7 @@ else:
             errors.append("Decision Receipt portable schema digest mismatch")
 
 root_markdown = {str(path.relative_to(ROOT)).replace("\\", "/") for path in ROOT.glob("*.md")}
-expected_root_markdown = {"CODE_OF_CONDUCT.md", "CONTRIBUTING.md", "README.md", "SECURITY.md"}
+expected_root_markdown = {"CHANGELOG.md", "CODE_OF_CONDUCT.md", "CONTRIBUTING.md", "README.md", "SECURITY.md"}
 if root_markdown != expected_root_markdown:
     errors.append("root Markdown surface mismatch: " + ", ".join(sorted(root_markdown)))
 

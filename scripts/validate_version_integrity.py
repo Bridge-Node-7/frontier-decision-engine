@@ -62,7 +62,10 @@ def main() -> int:
 
     runtime_module = load_text("site/src/version.js")
     expected_module = f"export const APPLICATION_VERSION = '{version}';\n"
-    if runtime_module != expected_module:
+    expected_module_marked = (
+        f"export const APPLICATION_VERSION = '{version}'; // x-release-please-version\n"
+    )
+    if runtime_module not in {expected_module, expected_module_marked}:
         fail("site/src/version.js does not match package.json", errors)
     decision_ui = load_text("site/src/decision-ui.js")
     if "import { APPLICATION_VERSION } from './version.js';" not in decision_ui:

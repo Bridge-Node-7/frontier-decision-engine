@@ -1,6 +1,6 @@
-# v0.5.16
+# v0.6.0
 
-Application version is 0.5.16.
+Application version is 0.6.0.
 
 Compatible decision schema: 0.2.10. Semantic decision schema: 0.3.0. Mission Graph Decision Context Packet: 0.3.0. Decision Receipt format: 2. Pilot Proof Envelope: 1.
 
