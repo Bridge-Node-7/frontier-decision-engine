@@ -1,5 +1,18 @@
 # Changelog
 
+## [0.6.2](https://github.com/Bridge-Node-7/frontier-decision-engine/compare/v0.6.1...v0.6.2) (2026-10-31)
+
+
+### Bug Fixes
+
+* cancel pending autosave when browser storage is cleared ([#106](https://github.com/Bridge-Node-7/frontier-decision-engine/issues/106)) ([fdda993](https://github.com/Bridge-Node-7/frontier-decision-engine/commit/fdda993b89584be21a3773d4aa8cd4728893bfad))
+* **release:** zero-touch release-candidate sync + Playwright harden ([#104](https://github.com/Bridge-Node-7/frontier-decision-engine/issues/104)) ([c7c89f3](https://github.com/Bridge-Node-7/frontier-decision-engine/commit/c7c89f315ee53f4db1b00338e24f13b1e2f78d81))
+
+
+### Documentation
+
+* partner-ready front door and unit coverage summary ([#105](https://github.com/Bridge-Node-7/frontier-decision-engine/issues/105)) ([36ef593](https://github.com/Bridge-Node-7/frontier-decision-engine/commit/36ef593cf5ab2ad770be574e4ac414c89e28f098))
+
 ## 0.6.1 (2026-10-30)
 
 
