@@ -70,6 +70,7 @@ const state = {
 };
 
 function startDecision(decision, source, status, record = null, authority = null) {
+  cancelPendingAutosave();
   state.decision = decision;
   state.source = source;
   state.pendingDraft = null;
@@ -87,10 +88,34 @@ function startDecision(decision, source, status, record = null, authority = null
   state.expandAll = false;
   state.validationIssues = [];
 }
+function cancelPendingAutosave() {
+  const clearTimer = globalThis.window?.clearTimeout || globalThis.clearTimeout;
+  if (typeof clearTimer === 'function') clearTimer(state.autosaveTimer);
+  state.autosaveTimer = null;
+}
+
 function persistDecision() {
   const result = saveDecision(browserStorage, state.decision, state.record, state.authority);
   state.saveStatus = result.status;
   return result;
+}
+
+if (typeof globalThis.window !== 'undefined' && typeof globalThis.Storage !== 'undefined') {
+  try {
+    const storageProto = Storage.prototype;
+    if (!storageProto.__fdeClearCancelsAutosave) {
+      const originalClear = storageProto.clear;
+      storageProto.clear = function clear() {
+        try {
+          if (this === browserStorage || this === globalThis.localStorage) cancelPendingAutosave();
+        } catch { /* keep storage.clear working */ }
+        return originalClear.call(this);
+      };
+      storageProto.__fdeClearCancelsAutosave = true;
+    }
+  } catch { /* storage may be unavailable */ }
+  globalThis.window.addEventListener('pagehide', cancelPendingAutosave);
+  globalThis.window.addEventListener('beforeunload', cancelPendingAutosave);
 }
 
 const escapeHtml = (value) => String(value ?? '')
@@ -1290,6 +1315,7 @@ function renderInto(main, { focusStep = false, focusMethod = false } = {}) {
 }
 
 export function renderDecisionLab(main, { openFile = false, entryMode = null, focusMethod = false } = {}) {
+  cancelPendingAutosave();
   if (state.pendingDraft && !state.entryResolved) {
     renderDraftReturn(main, { openFile, focusMethod });
     return;
