@@ -89,7 +89,8 @@ function startDecision(decision, source, status, record = null, authority = null
   state.validationIssues = [];
 }
 function cancelPendingAutosave() {
-  window.clearTimeout(state.autosaveTimer);
+  const clearTimer = globalThis.window?.clearTimeout || globalThis.clearTimeout;
+  if (typeof clearTimer === 'function') clearTimer(state.autosaveTimer);
   state.autosaveTimer = null;
 }
 
@@ -99,22 +100,23 @@ function persistDecision() {
   return result;
 }
 
-try {
-  const storageProto = Storage.prototype;
-  if (!storageProto.__fdeClearCancelsAutosave) {
-    const originalClear = storageProto.clear;
-    storageProto.clear = function clear() {
-      try {
-        if (this === browserStorage || this === globalThis.localStorage) cancelPendingAutosave();
-      } catch { /* keep storage.clear working */ }
-      return originalClear.call(this);
-    };
-    storageProto.__fdeClearCancelsAutosave = true;
-  }
-} catch { /* storage may be unavailable */ }
-
-window.addEventListener('pagehide', cancelPendingAutosave);
-window.addEventListener('beforeunload', cancelPendingAutosave);
+if (typeof globalThis.window !== 'undefined' && typeof globalThis.Storage !== 'undefined') {
+  try {
+    const storageProto = Storage.prototype;
+    if (!storageProto.__fdeClearCancelsAutosave) {
+      const originalClear = storageProto.clear;
+      storageProto.clear = function clear() {
+        try {
+          if (this === browserStorage || this === globalThis.localStorage) cancelPendingAutosave();
+        } catch { /* keep storage.clear working */ }
+        return originalClear.call(this);
+      };
+      storageProto.__fdeClearCancelsAutosave = true;
+    }
+  } catch { /* storage may be unavailable */ }
+  globalThis.window.addEventListener('pagehide', cancelPendingAutosave);
+  globalThis.window.addEventListener('beforeunload', cancelPendingAutosave);
+}
 
 const escapeHtml = (value) => String(value ?? '')
   .replaceAll('&', '&amp;')
