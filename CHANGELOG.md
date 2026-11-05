@@ -95,7 +95,7 @@
 ### Refactoring
 
 * align FDE assurance semantics and SEER with FMA ([46db63f](https://github.com/Bridge-Node-7/frontier-decision-engine/commit/46db63f597856be69baaf3412cb94f897491b14d))
-* harden public UX and OPSEC naming ([#18](https://github.com/Bridge-Node-7/frontier-decision-engine/issues/18)) ([9982eec](https://github.com/Bridge-Node-7/frontier-decision-engine/commit/9982eeca6395e719cb28415b9b60091c07a57faf))
+* harden public interface naming ([#18](https://github.com/Bridge-Node-7/frontier-decision-engine/issues/18)) ([9982eec](https://github.com/Bridge-Node-7/frontier-decision-engine/commit/9982eeca6395e719cb28415b9b60091c07a57faf))
 
 
 ### Tests

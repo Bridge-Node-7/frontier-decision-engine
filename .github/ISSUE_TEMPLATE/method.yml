@@ -1,12 +1,12 @@
 name: Method improvement
-description: Propose an evidence, calibration, privacy, or reproducibility improvement.
+description: Propose a reproducible improvement using public or synthetic information only.
 title: "method: "
 labels: [method]
 body:
   - type: textarea
     id: objective
     attributes:
-      label: Which methodological objective does this advance?
+      label: Affected public behavior
     validations:
       required: true
   - type: textarea
