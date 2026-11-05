@@ -1,5 +1,5 @@
 name: Bug report
-description: Report a reproducible software or data-validation defect.
+description: Report a reproducible defect using public or synthetic information only. For vulnerabilities, use SECURITY.md.
 title: "bug: "
 labels: [bug]
 body:

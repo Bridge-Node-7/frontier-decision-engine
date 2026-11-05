@@ -1,23 +1,15 @@
 ## Summary
 
-Describe the smallest useful change and the decision or user need it serves.
+Describe the change using public or synthetic information only.
 
 ## Release suitability
 
-- [ ] The change fits the repository's declared public scope and rights.
-- [ ] Observation, reported experience, interpretation, and candidate mechanisms remain separate.
-- [ ] Analyst inputs are not presented as probabilities, forecasts, or scientific confirmation.
+- [ ] Claims, evidence distinctions, and reuse rights remain within scope
+- [ ] Analyst inputs are not presented as forecasts or scientific confirmation
+- [ ] No personal data, secrets, or nonpublic context
 
 ## Verification
 
 - [ ] `npm run check`
 - [ ] Generated files remain current (`git diff --exit-code`)
-- [ ] Relevant desktop, mobile, keyboard, accessibility, export, and print behavior was reviewed
-
-## Release impact
-
-- [ ] No release impact
-- [ ] Documentation only
-- [ ] Patch release
-- [ ] Minor release
-- [ ] Breaking change requiring explicit maintainer review
+- [ ] Changed interface behavior is tested
