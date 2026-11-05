@@ -2,13 +2,13 @@
 
 **Human-governed decision infrastructure for Frontier Mission Assurance.**
 
-Stable public release — see the latest [GitHub Release](https://github.com/Bridge-Node-7/frontier-decision-engine/releases/latest). Quickstart: `npm ci && npm run check`.
+Turn one consequential decision into a clear brief, a bounded comparison, and an accountable local record—without calling a remote AI provider.
 
-[Open the live application](https://bridgenode7.com/frontier-decision-engine/)
+[Open the live application](https://bridgenode7.com/frontier-decision-engine/) · [Latest release](https://github.com/Bridge-Node-7/frontier-decision-engine/releases/latest) · [Partner](https://bridgenode7.com/partner/) · Quickstart: `npm ci && npm run check`
 
 ![Frontier Decision Engine Decision Lab reference](docs/screenshots/reference/desktop-decision-frame.png)
 
-*Stable Decision Lab reference surface. The public root begins with a single natural-language decision input before any formal comparison.*
+*Decision Lab reference surface. The public root begins with a single natural-language decision input before any formal comparison.*
 
 ## Start with one input
 
@@ -82,7 +82,7 @@ Generated release facts and current application identity are recorded in [`proje
 
 ## Release status
 
-`main` is the current reviewed source. GitHub Releases are stable distribution milestones and may intentionally lag reviewed maintenance on `main`. A source version ahead of the latest GitHub Release is unreleased until a release is published. The GitHub Release publication timestamp is the authoritative stable-release date; reviewed source does not claim a stable release date before publication.
+`main` is the current reviewed source. GitHub Releases are distribution milestones and may lag reviewed maintenance on `main`. The Release publication timestamp is authoritative; source ahead of the latest Release is unreleased until published.
 
 ## Documentation
 
