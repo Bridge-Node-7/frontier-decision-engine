@@ -12,6 +12,5 @@ Frontier Decision Engine intentionally retains three ordered stylesheets.
    - Start Here experience, beginner-oriented presentation, and the explicit
      solid primary-action background required by computed-style validation.
 
-The load order is part of the public contract and is validated. A broad visual
-consolidation is outside v0.2.12. Application-specific status colors and functional
-layouts must not be replaced by marketing-site rules.
+The load order is part of the public contract and is validated. Application-specific
+status colors and functional layouts must not be replaced by marketing-site rules.
