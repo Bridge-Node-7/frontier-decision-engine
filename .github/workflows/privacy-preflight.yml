@@ -10,6 +10,10 @@ on:
 permissions:
   contents: read
 
+concurrency:
+  group: validation-${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
 jobs:
   privacy:
     uses: Bridge-Node-7/Bridge-Node-7/.github/workflows/privacy-preflight.yml@329e42158fc5607b16ad5d4af34d470eeceb6214
