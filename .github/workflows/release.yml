@@ -49,11 +49,21 @@ jobs:
           GH_TOKEN: ${{ github.token }}
           RELEASE_COMMIT: ${{ steps.commit.outputs.release_commit }}
         run: |
-          PAGES_RUN_ID="$(
-            gh api "repos/$GITHUB_REPOSITORY/actions/workflows/pages.yml/runs?branch=main&status=success&per_page=100" \
-              --jq ".workflow_runs[] | select(.head_sha == \"$RELEASE_COMMIT\" and .event == \"push\" and .conclusion == \"success\") | .id" \
-              | head -n 1
-          )"
+          PAGES_RUN_ID=""
+          for attempt in $(seq 1 30); do
+            PAGES_RUN_ID="$(
+              gh api "repos/$GITHUB_REPOSITORY/actions/workflows/pages.yml/runs?branch=main&status=success&per_page=100" \
+                --jq ".workflow_runs[] | select(.head_sha == \"$RELEASE_COMMIT\" and .event == \"push\" and .conclusion == \"success\") | .id" \
+                | head -n 1
+            )"
+            [ -n "$PAGES_RUN_ID" ] && break
+            if gh api "repos/$GITHUB_REPOSITORY/actions/workflows/pages.yml/runs?branch=main&head_sha=$RELEASE_COMMIT&per_page=20" \
+              --jq '.workflow_runs[] | select(.status == "completed" and .conclusion != "success") | .id' | grep -q .; then
+              echo "Pages did not succeed for $RELEASE_COMMIT."
+              exit 1
+            fi
+            sleep 30
+          done
           test -n "$PAGES_RUN_ID"
           echo "PASS - deployed Pages run $PAGES_RUN_ID covers $RELEASE_COMMIT"
       - name: Verify release identity
