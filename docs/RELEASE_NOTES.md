@@ -1,5 +1,5 @@
-# v0.6.3
-Application version is 0.6.3.
+# v0.6.4
+Application version is 0.6.4.
 Compatible decision schema: 0.2.10. Semantic decision schema: 0.3.0. Mission Graph Decision Context Packet: 0.3.0. Decision Receipt format: 2. Pilot Proof Envelope: 1.
 
 This patch keeps the public Decision Lab and first-run experience unchanged while making release-please publish annotated tags and GitHub Releases automatically so Pages immutable-release verification stays green.
