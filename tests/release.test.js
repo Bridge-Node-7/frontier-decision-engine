@@ -159,6 +159,9 @@ test('explicit stable release workflow verifies deployed main and publishes dete
   assert.match(workflow, /cd dist[\s\S]*sha256sum --check/);
   assert.match(workflow, /Create annotated release tag/);
   assert.match(workflow, /gh release create/);
+  assert.match(workflow, /EXPECTED_ASSETS/);
+  assert.match(workflow, /releases\/tags\/\$TAG/);
+  assert.match(workflow, /Existing release \$TAG is incomplete/);
   assert.match(workflow, /release_commit=\$RELEASE_COMMIT/);
   assert.match(workflow, /--target "\$RELEASE_COMMIT"/);
   assert.match(workflow, /actions\/attest@1e69f48acb82d1966a394da916b4c1698aa569d6/);
