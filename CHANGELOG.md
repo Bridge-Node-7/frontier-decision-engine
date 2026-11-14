@@ -1,5 +1,22 @@
 # Changelog
 
+## [0.6.3](https://github.com/Bridge-Node-7/frontier-decision-engine/compare/v0.6.2...v0.6.3) (2026-11-14)
+
+
+### Bug Fixes
+
+* enforce complete stable release artifacts ([#120](https://github.com/Bridge-Node-7/frontier-decision-engine/issues/120)) ([e659b15](https://github.com/Bridge-Node-7/frontier-decision-engine/commit/e659b15bd0012a8ccb8bbfa495ce4bd93446951a))
+
+
+### CI
+
+* streamline verification workflow ([#118](https://github.com/Bridge-Node-7/frontier-decision-engine/issues/118)) ([d829e32](https://github.com/Bridge-Node-7/frontier-decision-engine/commit/d829e3222e51e1d1a5c1315cc0b9aa189aaf121d))
+
+
+### Miscellaneous
+
+* simplify contribution forms and automation ([ba1d21d](https://github.com/Bridge-Node-7/frontier-decision-engine/commit/ba1d21d8ef5f075e608154e29679fdbcc2673f47))
+
 ## [0.6.2](https://github.com/Bridge-Node-7/frontier-decision-engine/compare/v0.6.1...v0.6.2) (2026-10-31)
 
 
