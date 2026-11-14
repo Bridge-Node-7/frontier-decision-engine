@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.6.4](https://github.com/Bridge-Node-7/frontier-decision-engine/compare/v0.6.3...v0.6.4) (2026-11-14)
+
+
+### Bug Fixes
+
+* recover immutable tagged release from its original commit ([#125](https://github.com/Bridge-Node-7/frontier-decision-engine/issues/125)) ([a976f08](https://github.com/Bridge-Node-7/frontier-decision-engine/commit/a976f0836341cc5f5735ac3652616031df000147))
+* recover packaged release publication ([#124](https://github.com/Bridge-Node-7/frontier-decision-engine/issues/124)) ([2096b0f](https://github.com/Bridge-Node-7/frontier-decision-engine/commit/2096b0f1a985c2a0a52e28d7384dcb6c1ffeb88c))
+
 ## [0.6.3](https://github.com/Bridge-Node-7/frontier-decision-engine/compare/v0.6.2...v0.6.3) (2026-11-14)
 
 
