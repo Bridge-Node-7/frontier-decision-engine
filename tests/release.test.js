@@ -147,6 +147,7 @@ test('explicit stable release workflow verifies deployed main and publishes dete
   const workflow = await read('.github/workflows/release.yml');
   const verifier = await read('scripts/verify_release_tag.py');
   assert.match(workflow, /workflow_dispatch:/);
+  assert.match(workflow, /push:\n    branches: \[main\][\s\S]*\.github\/workflows\/release\.yml/);
   assert.equal(workflow.includes('workflow_run:'), false);
   assert.match(workflow, /ref: main/);
   assert.match(workflow, /actions\/workflows\/pages\.yml\/runs/);
@@ -175,7 +176,7 @@ test('current public release uses verified browser tooling and current official 
   const release = await read('.github/workflows/release.yml');
   const workflows = `${ci}\n${pages}\n${release}`;
   assert.match(requirements, /^playwright==1\.63\.0$/m);
-  assert.equal((workflows.match(/actions\/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1/g) || []).length, 4);
+  assert.equal((workflows.match(/actions\/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1/g) || []).length, 5);
   assert.equal(workflows.includes('actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0'), false);
   assert.equal((workflows.match(/actions\/setup-node@820762786026740c76f36085b0efc47a31fe5020/g) || []).length, 4);
   assert.equal((workflows.match(/package-manager-cache: false/g) || []).length, 4);
@@ -230,6 +231,7 @@ test('Release workflow requires explicit invocation, a deployed verified main an
   const release = await read('.github/workflows/release.yml');
   assert.equal(/environment:[\s\S]*name: release/.test(release), false);
   assert.match(release, /workflow_dispatch:/);
+  assert.match(release, /push:\n    branches: \[main\][\s\S]*\.github\/workflows\/release\.yml/);
   assert.equal(release.includes('workflow_run:'), false);
   assert.match(release, /ref: main/);
   assert.match(release, /actions\/workflows\/pages\.yml\/runs/);
@@ -260,6 +262,9 @@ test('Release keeps validation read-only and isolates publication authority', as
   assert.match(publish, /contents: write/);
   assert.match(publish, /id-token: write/);
   assert.match(publish, /attestations: write/);
+  assert.match(publish, /Checkout release commit for tag verification/);
+  assert.match(publish, /ref: \$\{\{ env\.RELEASE_COMMIT \}\}/);
+  assert.match(publish, /persist-credentials: false/);
   assert.equal(publish.includes('npm ci'), false);
   assert.equal(publish.includes('pip install'), false);
   assert.equal(verify.includes('contents: write'), false);
