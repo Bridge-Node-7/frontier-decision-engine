@@ -82,6 +82,18 @@ jobs:
           TAG: ${{ steps.identity.outputs.tag }}
         run: |
           if gh release view "$TAG" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
+            EXPECTED_ASSETS=(
+              "frontier-decision-engine-${TAG}.zip"
+              "frontier-decision-engine-${TAG}.zip.sha256"
+            )
+            mapfile -t ASSETS < <(
+              gh api "repos/$GITHUB_REPOSITORY/releases/tags/$TAG" --jq '.assets[].name' | LC_ALL=C sort
+            )
+            mapfile -t EXPECTED_SORTED < <(printf '%s\n' "${EXPECTED_ASSETS[@]}" | LC_ALL=C sort)
+            if ! diff -u <(printf '%s\n' "${EXPECTED_SORTED[@]}") <(printf '%s\n' "${ASSETS[@]}"); then
+              echo "::error::Existing release $TAG is incomplete; required stable-release assets are missing or unexpected."
+              exit 1
+            fi
             echo "publish_needed=false" >> "$GITHUB_OUTPUT"
             echo "tag_ready=true" >> "$GITHUB_OUTPUT"
             exit 0
