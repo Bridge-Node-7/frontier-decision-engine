@@ -164,6 +164,9 @@ test('explicit stable release workflow verifies deployed main and publishes dete
   assert.match(workflow, /releases\/tags\/\$TAG/);
   assert.match(workflow, /Existing release \$TAG is incomplete/);
   assert.match(workflow, /release_commit=\$RELEASE_COMMIT/);
+  assert.match(workflow, /Recovering unpublished annotated tag/);
+  assert.match(workflow, /git merge-base --is-ancestor "\$TAG_COMMIT" "\$CURRENT_MAIN"/);
+  assert.match(workflow, /git checkout --detach "\$RELEASE_COMMIT"/);
   assert.match(workflow, /--target "\$RELEASE_COMMIT"/);
   assert.match(workflow, /actions\/attest@1e69f48acb82d1966a394da916b4c1698aa569d6/);
   assert.match(workflow, /persist-credentials: false/);

@@ -37,16 +37,32 @@ jobs:
           ref: main
           fetch-depth: 0
           persist-credentials: false
-      - name: Verify trusted main release anchor
+      - name: Verify trusted release anchor
         id: commit
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          RELEASE_COMMIT="$(git rev-parse HEAD)"
+          CURRENT_MAIN="$(git rev-parse HEAD)"
           git fetch --no-tags origin main
-          test "$(git rev-parse origin/main)" = "$RELEASE_COMMIT"
+          test "$(git rev-parse origin/main)" = "$CURRENT_MAIN"
+
+          TAG="v$(python3 -c 'import json; print(json.load(open("package.json", encoding="utf-8"))["version"])')"
+          RELEASE_COMMIT="$CURRENT_MAIN"
+
+          if gh api "repos/$GITHUB_REPOSITORY/git/ref/tags/$TAG" >/dev/null 2>&1 &&
+             ! gh release view "$TAG" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
+            TAG_OBJECT_TYPE="$(gh api "repos/$GITHUB_REPOSITORY/git/ref/tags/$TAG" --jq '.object.type')"
+            TAG_OBJECT_SHA="$(gh api "repos/$GITHUB_REPOSITORY/git/ref/tags/$TAG" --jq '.object.sha')"
+            test "$TAG_OBJECT_TYPE" = "tag"
+            TAG_COMMIT="$(gh api "repos/$GITHUB_REPOSITORY/git/tags/$TAG_OBJECT_SHA" --jq '.object.sha')"
+            git merge-base --is-ancestor "$TAG_COMMIT" "$CURRENT_MAIN"
+            RELEASE_COMMIT="$TAG_COMMIT"
+            echo "Recovering unpublished annotated tag $TAG from $RELEASE_COMMIT."
+          fi
+
           test "$(gh api "repos/$GITHUB_REPOSITORY/commits/$RELEASE_COMMIT" --jq '.commit.verification.verified')" = "true"
           test "$(gh api "repos/$GITHUB_REPOSITORY/commits/$RELEASE_COMMIT" --jq '.commit.verification.reason')" = "valid"
+          git checkout --detach "$RELEASE_COMMIT"
           echo "release_commit=$RELEASE_COMMIT" >> "$GITHUB_OUTPUT"
       - name: Verify deployed Pages commit
         env:
